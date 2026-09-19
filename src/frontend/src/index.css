@@ -604,8 +604,12 @@ h2 {
 
 .item-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
 .item-row { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 7px 10px; font-size: 12.5px; }
-.item-row .item-name { flex: 1; }
-.item-row .item-qty { font-family: var(--font-data); color: var(--text-muted); }
+.item-row .item-qty-x { color: var(--text-muted); }
+.item-row input.item-qty:not([type="checkbox"]):not([type="radio"]) {
+  width: 44px; flex-shrink: 0; font-family: var(--font-data); color: var(--text-muted); padding: 4px 6px; text-align: center;
+}
+.item-row input.item-name:not([type="checkbox"]):not([type="radio"]) { flex: 1; padding: 4px 8px; }
+.item-row input.item-category:not([type="checkbox"]):not([type="radio"]) { width: 140px; flex-shrink: 0; padding: 4px 8px; }
 
 /* ---- Shop item table (Manage) ---- */
 .shop-item-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
@@ -1068,3 +1072,22 @@ h2 {
 @media (max-width: 900px) {
   .help-grid { columns: 1; }
 }
+
+/* AccessLock — see components/AccessGate.tsx / LockControl.tsx. Temporary,
+   simple stand-in for real auth: a code a player sets themselves. */
+.lock-gate { display: flex; align-items: center; justify-content: center; padding: 60px 20px; }
+.lock-gate-box { text-align: center; max-width: 280px; }
+.lock-gate-icon { font-size: 32px; margin-bottom: 8px; }
+.lock-gate-box h3 { font-family: var(--font-display); font-weight: normal; font-size: 18px; margin: 0 0 6px; }
+.lock-gate-box input:not([type="checkbox"]):not([type="radio"]) { width: 100%; text-align: center; margin-top: 14px; }
+.lock-gate-box button { width: 100%; margin-top: 10px; }
+.lock-gate-error { color: var(--error); font-size: 12px; margin: 8px 0 0; }
+
+.lock-control { position: relative; }
+.lock-control-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: 220px;
+  background: var(--surface); border: 1px solid var(--primary); border-radius: 8px;
+  padding: 12px; box-shadow: 0 8px 22px rgba(29,26,16,0.28);
+}
+.lock-control-popover input:not([type="checkbox"]):not([type="radio"]) { width: 100%; margin-bottom: 8px; }
+.lock-control-popover .form-actions { margin-top: 4px; }

@@ -36,6 +36,7 @@ public class AppDbContext : DbContext
     public DbSet<InitiativeState> InitiativeStates => Set<InitiativeState>();
     public DbSet<GameTimer> GameTimers => Set<GameTimer>();
     public DbSet<SessionMonster> SessionMonsters => Set<SessionMonster>();
+    public DbSet<AccessLock> AccessLocks => Set<AccessLock>();
 
     // As more entities from the ERD get their own vertical slice, they get
     // added here (DbSet<Character>, DbSet<Document>, ...) and configured below.
@@ -334,6 +335,19 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(m => m.MonsterId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<AccessLock>(entity =>
+        {
+            entity.Property(l => l.ResourceType).IsRequired().HasMaxLength(50);
+            entity.Property(l => l.ResourceKey).IsRequired().HasMaxLength(200);
+            entity.Property(l => l.CodeHash).IsRequired();
+            entity.Property(l => l.CodeSalt).IsRequired();
+            entity.HasIndex(l => new { l.GameId, l.ResourceType, l.ResourceKey }).IsUnique();
+            entity.HasOne(l => l.Game)
+                  .WithMany()
+                  .HasForeignKey(l => l.GameId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

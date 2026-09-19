@@ -8,7 +8,7 @@ namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/characters")]
-public class CharactersController(ICharacterFacade characterFacade, ICurrencyFacade currencyFacade) : ControllerBase
+public class CharactersController(ICharacterFacade characterFacade, ICurrencyFacade currencyFacade, IAccessLockFacade accessLockFacade) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CharacterDto>>> GetAll(Guid gameId) =>
@@ -17,6 +17,8 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CharacterDetailDto>> GetById(Guid gameId, Guid id)
     {
+        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
+
         var character = await characterFacade.GetCharacterDetailAsync(gameId, id);
         return character is null ? NotFound() : Ok(character);
     }
@@ -24,6 +26,8 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     [HttpGet("{id:guid}/pdf")]
     public async Task<IActionResult> GetPdf(Guid gameId, Guid id)
     {
+        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
+
         var character = await characterFacade.GetCharacterDetailAsync(gameId, id);
         if (character is null) return NotFound();
 
@@ -42,13 +46,33 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CharacterDetailDto>> Update(Guid gameId, Guid id, [FromBody] UpdateCharacterDto input)
     {
+        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
+
         var character = await characterFacade.UpdateCharacterAsync(gameId, id, input);
         return character is null ? NotFound() : Ok(character);
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid gameId, Guid id) =>
-        await characterFacade.DeleteCharacterAsync(gameId, id) ? NoContent() : NotFound();
+    public async Task<IActionResult> Delete(Guid gameId, Guid id)
+    {
+        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
+
+        return await characterFacade.DeleteCharacterAsync(gameId, id) ? NoContent() : NotFound();
+    }
+
+    // Only these few high-value actions (view/edit/export/delete the sheet
+    // itself) check the code — see AccessLock: a temporary, simple stand-in
+    // for real auth, not exhaustive protection of every sub-resource
+    // (attacks/items/spells/level-up stay open for now, deliberately, given
+    // the scope of this — the UI can't reach them without GetById anyway).
+    // GetPdf is a plain <a href> download, which can't attach a custom
+    // header, so it also accepts the code as a ?code= query param.
+    private Task<bool> HasAccessAsync(Guid gameId, Guid characterId)
+    {
+        string? code = Request.Headers["X-Access-Code"];
+        if (string.IsNullOrEmpty(code)) code = Request.Query["code"];
+        return accessLockFacade.VerifyCodeAsync(gameId, "Character", characterId.ToString(), code);
+    }
 
     [HttpPatch("{id:guid}/status")]
     public async Task<ActionResult<CharacterDto>> SetStatus(Guid gameId, Guid id, [FromBody] UpdateStatusDto input)
@@ -93,6 +117,13 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     public async Task<ActionResult<ItemDto>> AddItem(Guid gameId, Guid id, [FromBody] CreateItemDto input)
     {
         var item = await characterFacade.AddItemAsync(gameId, id, input);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpPut("{id:guid}/items/{itemId:guid}")]
+    public async Task<ActionResult<ItemDto>> UpdateItem(Guid gameId, Guid id, Guid itemId, [FromBody] CreateItemDto input)
+    {
+        var item = await characterFacade.UpdateItemAsync(gameId, id, itemId, input);
         return item is null ? NotFound() : Ok(item);
     }
 

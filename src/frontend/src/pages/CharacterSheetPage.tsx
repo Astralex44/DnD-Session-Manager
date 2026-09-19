@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { charactersApi } from '../api/characters.ts';
+import { AccessGate } from '../components/AccessGate.tsx';
 import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
+import { LockControl } from '../components/LockControl.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
@@ -53,14 +55,26 @@ function proficiencyBonusForLevel(level: number): number {
 // real wallet has been fetched, which would otherwise re-trigger it forever.
 const EMPTY_WALLET: CharacterCurrency[] = [];
 
+// AccessLock-gated at the top level (see components/AccessGate.tsx) — the
+// content component below never mounts, so never fetches, until the code
+// (if this sheet has one set) is verified.
 export function CharacterSheetPage() {
   const { id } = useParams<{ id: string }>();
   const characterId = id ?? '';
+
+  return (
+    <AccessGate resourceType="Character" resourceKey={characterId} label="this character sheet">
+      <CharacterSheetContent characterId={characterId} />
+    </AccessGate>
+  );
+}
+
+function CharacterSheetContent({ characterId }: { characterId: string }) {
   const navigate = useNavigate();
   const {
     current, isLoading, error,
     fetchCharacter, updateCharacter, setSkillProficiency, setSaveProficiency,
-    addAttack, updateAttack, removeAttack, addItem, removeItem,
+    addAttack, updateAttack, removeAttack, addItem, updateItem, removeItem,
     createLevelSheet, setActiveLevelSheet, updateHpMax, removeLevelSheet,
     upsertSpellcasting, addSpell, setSpellPrepared, removeSpell,
     upsertSpellSlot, deleteCharacter,
@@ -75,6 +89,7 @@ export function CharacterSheetPage() {
   const [showDeleteLevelConfirm, setShowDeleteLevelConfirm] = useState(false);
   const [newAttack, setNewAttack] = useState<CreateAttackInput>({ name: '', atkBonus: '', damageType: '' });
   const [newItem, setNewItem] = useState<CreateItemInput>({ category: '', name: '', quantity: 1, weight: 0, description: '' });
+  const [itemQtyDrafts, setItemQtyDrafts] = useState<Record<string, number>>({});
   const [newSpell, setNewSpell] = useState<CreateSpellInput>({ level: 0, name: '', prepared: false, description: '', isHomebrew: false });
   const [openSpellId, setOpenSpellId] = useState<string | null>(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -254,6 +269,7 @@ export function CharacterSheetPage() {
               />
             </div>
           )}
+          <LockControl resourceType="Character" resourceKey={characterId} />
           <button className="btn-ghost no-print" onClick={startLevelUp}>+ Level Up</button>
           <a
             className="btn-ghost no-print"
@@ -538,13 +554,33 @@ export function CharacterSheetPage() {
       <div className="sheet-section box">
         <h3 className="section-title">Equipment</h3>
         <div className="item-list">
-          {current.items.map((item) => (
-            <div key={item.id} className="item-row">
-              <span className="item-qty">{item.quantity}×</span>
-              <span className="item-name">{item.name}{item.category ? ` (${item.category})` : ''}</span>
-              <button className="row-remove" onClick={() => removeItem(DEMO_GAME_ID, characterId, item.id)}>✕</button>
-            </div>
-          ))}
+          {current.items.map((item) => {
+            const qty = itemQtyDrafts[item.id] ?? item.quantity;
+            const commitItem = (patch: Partial<CreateItemInput>) =>
+              updateItem(DEMO_GAME_ID, characterId, item.id, {
+                category: item.category, name: item.name, quantity: item.quantity, weight: item.weight,
+                description: item.description, ...patch,
+              });
+            return (
+              <div key={item.id} className="item-row">
+                <NumberInput
+                  className="item-qty" min={1} value={qty}
+                  onChange={(v) => setItemQtyDrafts((d) => ({ ...d, [item.id]: v }))}
+                  onBlur={() => qty !== item.quantity && commitItem({ quantity: qty })}
+                />
+                <span className="item-qty-x">×</span>
+                <input
+                  className="item-name" defaultValue={item.name}
+                  onBlur={(e) => e.target.value !== item.name && commitItem({ name: e.target.value })}
+                />
+                <input
+                  className="item-category" placeholder="Category" defaultValue={item.category}
+                  onBlur={(e) => e.target.value !== item.category && commitItem({ category: e.target.value })}
+                />
+                <button className="row-remove" onClick={() => removeItem(DEMO_GAME_ID, characterId, item.id)}>✕</button>
+              </div>
+            );
+          })}
         </div>
         <div className="add-row">
           <input placeholder="Name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={onEnter(() => void handleAddItemRow())} />

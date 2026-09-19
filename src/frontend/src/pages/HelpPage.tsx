@@ -75,9 +75,20 @@ export function HelpPage() {
         </div>
 
         <div className="sheet-section box">
+          <h3 className="section-title">Protecting your sheet with a code</h3>
+          <p>
+            There's still no real login (see below), but you can set a short code on your own
+            character sheet or notes: click <strong>🔓 Set a code</strong> at the top of the
+            sheet, or next to a notes page. Once set, that sheet or notebook stays locked behind
+            the code for anyone — including you — until it's entered again. Pick something you
+            won't forget; there's no "forgot code" recovery yet, ask the DM if you do.
+          </p>
+        </div>
+
+        <div className="sheet-section box">
           <h3 className="section-title">Known limitations tonight</h3>
           <ul>
-            <li>No login yet — anyone with the link can open or edit any character. Please only edit your own.</li>
+            <li>Still no real login — the code above is a temporary stand-in. Please only protect and edit your own character.</li>
             <li>Board, live initiative, shop, and maps aren't part of tonight's test.</li>
             <li>Something looks broken? Tell the DM directly rather than trying to fix it mid-session.</li>
           </ul>

@@ -5,7 +5,7 @@ import { CustomSelect } from '../components/CustomSelect.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { ABILITIES, SKILL_NAMES } from '../types/character.ts';
-import type { CreateAttackInput } from '../types/character.ts';
+import type { CreateAttackInput, CreateItemInput } from '../types/character.ts';
 
 const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -76,8 +76,8 @@ export function CharacterCreateWizardPage() {
   const [passivePerception, setPassivePerception] = useState(10);
 
   // Step 4
-  const [items, setItems] = useState<string[]>([]);
-  const [newItem, setNewItem] = useState('');
+  const [items, setItems] = useState<CreateItemInput[]>([]);
+  const [newItem, setNewItem] = useState<CreateItemInput>({ category: '', name: '', quantity: 1, weight: 0, description: '' });
 
   // Step 5
   const [features, setFeatures] = useState<string[]>([]);
@@ -153,8 +153,8 @@ export function CharacterCreateWizardPage() {
       for (const skill of detail.skills) {
         if (skillProf[skill.skillName]) await setSkillProficiency(DEMO_GAME_ID, created.id, skill.id, true);
       }
-      for (const itemName of items) {
-        await addItem(DEMO_GAME_ID, created.id, { category: '', name: itemName, quantity: 1, weight: 0, description: '' });
+      for (const item of items) {
+        await addItem(DEMO_GAME_ID, created.id, item);
       }
       for (const attack of attacks) {
         await addAttack(DEMO_GAME_ID, created.id, attack);
@@ -201,9 +201,9 @@ export function CharacterCreateWizardPage() {
   }
 
   function handleAddItem() {
-    if (!newItem.trim()) return;
-    setItems((s) => [...s, newItem.trim()]);
-    setNewItem('');
+    if (!newItem.name.trim()) return;
+    setItems((s) => [...s, { ...newItem, name: newItem.name.trim(), category: newItem.category.trim() }]);
+    setNewItem({ category: '', name: '', quantity: 1, weight: 0, description: '' });
   }
 
   function handleAddFeature() {
@@ -361,16 +361,20 @@ export function CharacterCreateWizardPage() {
         <div className="panel-card">
           <h2>Equipment</h2>
           <p className="hint">Enter starting equipment. No import from a previous character — every new character starts at zero.</p>
-          <div className="equip-list">
+          <div className="item-list">
             {items.map((it, i) => (
-              <div key={i} className="equip-row">
-                <span>{it}</span>
-                <button className="equip-remove" onClick={() => setItems((s) => s.filter((_, idx) => idx !== i))}>✕</button>
+              <div key={i} className="item-row">
+                <span className="item-qty">{it.quantity}×</span>
+                <span className="item-name">{it.name}</span>
+                <span className="item-category">{it.category}</span>
+                <button className="row-remove" onClick={() => setItems((s) => s.filter((_, idx) => idx !== i))}>✕</button>
               </div>
             ))}
           </div>
-          <div className="add-equip-row">
-            <input value={newItem} onChange={(e) => setNewItem(e.target.value)} onKeyDown={onEnter(handleAddItem)} placeholder="Add an item, e.g. Rope (50 ft)" />
+          <div className="add-row">
+            <input placeholder="Name, e.g. Rope (50 ft)" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={onEnter(handleAddItem)} />
+            <input placeholder="Category" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} onKeyDown={onEnter(handleAddItem)} />
+            <NumberInput className="item-qty" min={1} value={newItem.quantity} onChange={(v) => setNewItem({ ...newItem, quantity: v })} onKeyDown={onEnter(handleAddItem)} />
             <button onClick={handleAddItem}>+ Add</button>
           </div>
           <p className="hint" style={{ marginTop: 14, marginBottom: 0 }}>

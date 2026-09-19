@@ -46,6 +46,7 @@ builder.Services.AddScoped<IInitiativeEntryRepository, InitiativeEntryRepository
 builder.Services.AddScoped<IInitiativeStateRepository, InitiativeStateRepository>();
 builder.Services.AddScoped<IGameTimerRepository, GameTimerRepository>();
 builder.Services.AddScoped<ISessionMonsterRepository, SessionMonsterRepository>();
+builder.Services.AddScoped<IAccessLockRepository, AccessLockRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Facades — business logic layer, one per entity/feature area.
@@ -60,6 +61,7 @@ builder.Services.AddScoped<INoteFacade, NoteFacade>();
 builder.Services.AddScoped<IInitiativeFacade, InitiativeFacade>();
 builder.Services.AddScoped<IGameTimerFacade, GameTimerFacade>();
 builder.Services.AddScoped<ISessionMonsterFacade, SessionMonsterFacade>();
+builder.Services.AddScoped<IAccessLockFacade, AccessLockFacade>();
 builder.Services.AddSingleton<IDocumentFileStorage, DocumentFileStorage>();
 builder.Services.AddSingleton<IMonsterFileStorage, MonsterFileStorage>();
 builder.Services.AddSingleton<IGameEventsBroadcaster, GameEventsBroadcaster>();

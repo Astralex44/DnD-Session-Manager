@@ -36,13 +36,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// Optional extra headers per call — used to attach X-Access-Code for
+// AccessLock-protected resources (see lib/accessLock.ts) without every
+// caller needing to build its own fetch options.
 export const apiClient = {
-  get: <T>(path: string) => request<T>(path, { method: 'GET' }),
-  post: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-  put: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
-  patch: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  get: <T>(path: string, headers?: HeadersInit) => request<T>(path, { method: 'GET', headers }),
+  post: <T>(path: string, body: unknown, headers?: HeadersInit) =>
+    request<T>(path, { method: 'POST', body: JSON.stringify(body), headers }),
+  put: <T>(path: string, body: unknown, headers?: HeadersInit) =>
+    request<T>(path, { method: 'PUT', body: JSON.stringify(body), headers }),
+  patch: <T>(path: string, body: unknown, headers?: HeadersInit) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body), headers }),
+  delete: <T>(path: string, headers?: HeadersInit) => request<T>(path, { method: 'DELETE', headers }),
 };

@@ -36,6 +36,7 @@ interface CharactersState {
   removeAttack: (gameId: string, characterId: string, attackId: string) => Promise<void>;
 
   addItem: (gameId: string, characterId: string, input: CreateItemInput) => Promise<void>;
+  updateItem: (gameId: string, characterId: string, itemId: string, input: CreateItemInput) => Promise<void>;
   removeItem: (gameId: string, characterId: string, itemId: string) => Promise<void>;
 
   createLevelSheet: (gameId: string, characterId: string, input: CreateLevelSheetInput) => Promise<void>;
@@ -194,6 +195,15 @@ export const useCharactersStore = create<CharactersState>((set, get) => {
     addItem: async (gameId, characterId, input) => {
       try {
         await charactersApi.addItem(gameId, characterId, input);
+        await refetch(gameId, characterId);
+      } catch (err) {
+        set({ error: describeError(err) });
+      }
+    },
+
+    updateItem: async (gameId, characterId, itemId, input) => {
+      try {
+        await charactersApi.updateItem(gameId, characterId, itemId, input);
         await refetch(gameId, characterId);
       } catch (err) {
         set({ error: describeError(err) });

@@ -19,6 +19,7 @@ public interface ICharacterFacade
     Task<bool> RemoveAttackAsync(Guid gameId, Guid characterId, Guid attackId);
 
     Task<ItemDto?> AddItemAsync(Guid gameId, Guid characterId, CreateItemDto input);
+    Task<ItemDto?> UpdateItemAsync(Guid gameId, Guid characterId, Guid itemId, CreateItemDto input);
     Task<bool> RemoveItemAsync(Guid gameId, Guid characterId, Guid itemId);
 
     Task<LevelSheetDetailDto?> CreateLevelSheetAsync(Guid gameId, Guid characterId, CreateLevelSheetDto input);

@@ -233,6 +233,22 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         return new ItemDto(item.Id, item.Category, item.Name, item.Quantity, item.Weight, item.Description);
     }
 
+    public async Task<ItemDto?> UpdateItemAsync(Guid gameId, Guid characterId, Guid itemId, CreateItemDto input)
+    {
+        if (await GetOwnedCharacterAsync(gameId, characterId) is null) return null;
+        var item = await unitOfWork.CharacterItems.GetByIdAsync(itemId);
+        if (item is null || item.CharacterId != characterId) return null;
+
+        item.Category = input.Category.Trim();
+        item.Name = input.Name.Trim();
+        item.Quantity = input.Quantity;
+        item.Weight = input.Weight;
+        item.Description = input.Description;
+
+        await unitOfWork.SaveChangesAsync();
+        return new ItemDto(item.Id, item.Category, item.Name, item.Quantity, item.Weight, item.Description);
+    }
+
     public async Task<bool> RemoveItemAsync(Guid gameId, Guid characterId, Guid itemId)
     {
         if (await GetOwnedCharacterAsync(gameId, characterId) is null) return false;
