@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: dnd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dndsessionmanager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dndsessionmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./DndSessionManager.Api
+      dockerfile: Dockerfile
+    container_name: dnd-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=dndsessionmanager;Username=postgres;Password=postgres"
+
+volumes:
+  postgres_data:

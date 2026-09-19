@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Mockup</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --tertiary: #B08D4C;
+    --error: #8C4A35;
+    --sold-out: #A79C87;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(146,115,85,0.05), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(74,90,66,0.04), transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Header ===== */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 2px solid var(--primary);
+    background: var(--surface);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand .glyph {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--primary);
+    transform: rotate(-6deg);
+    display: inline-block;
+  }
+  .brand h1 {
+    font-family: var(--font-display);
+    font-size: 21px;
+    letter-spacing: 0.06em;
+    margin: 0;
+    font-weight: normal;
+    text-transform: uppercase;
+  }
+  .brand .session-name {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-left: 6px;
+  }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .back-to-dm-btn {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    background: var(--primary);
+    color: var(--bg);
+    border: none;
+    border-radius: 18px;
+    padding: 8px 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .back-to-dm-btn.hidden { display: none; }
+  .role-pill {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--primary);
+    color: var(--bg);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  /* ===== Layout ===== */
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 32px 60px;
+  }
+  .board-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0 0 20px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .grid.player { grid-template-columns: repeat(2, 1fr); max-width: 920px; margin: 0 auto; }
+  @media (max-width: 980px) {
+    .grid, .grid.player { grid-template-columns: repeat(2, 1fr); max-width: none; }
+  }
+  @media (max-width: 640px) {
+    .grid, .grid.player { grid-template-columns: 1fr; }
+    main { padding: 20px 16px 50px; }
+    header { padding: 14px 16px; }
+    .panel.span-2 { grid-column: span 1; }
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: var(--bg);
+  }
+  .panel-header h2 {
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0;
+    font-weight: normal;
+  }
+  .panel-header .tag {
+    font-size: 10px;
+    background: rgba(241,237,226,0.18);
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+  }
+  .panel-body { padding: 14px 16px; flex: 1; }
+  .panel.span-2 { grid-column: span 2; }
+
+  /* ===== Initiative ===== */
+  .init-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 14px;
+  }
+  .init-row .name { flex: 1; }
+  .init-row:last-child { border-bottom: none; }
+  .init-row.active { background: rgba(146,115,85,0.12); margin: 0 -8px; padding: 6px 8px; border-radius: 4px; }
+  .init-row .name { font-weight: bold; }
+  .init-row .name.monster { color: var(--secondary); }
+  .init-row .val { font-family: var(--font-data); color: var(--text-muted); }
+  .init-row .row-remove {
+    font-size: 12px; color: var(--sold-out); cursor: pointer; padding: 2px 6px; margin-left: 6px; touch-action: manipulation;
+  }
+  .init-row .row-remove:hover { color: var(--error); }
+
+  /* ===== Dice ===== */
+  .dice-private-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dice-private-note .lock { color: var(--primary); }
+  .die-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .die {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--primary);
+    border-radius: 8px;
+    font-family: var(--font-data);
+    font-size: 13px;
+    color: var(--primary-dark);
+    background: var(--bg);
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .die.selected { background: var(--primary); color: var(--bg); }
+  .dice-config { display: flex; gap: 18px; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
+  .dice-config .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .dice-config label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .dice-config .qty-stepper, .dice-config .mod-stepper {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px;
+  }
+  .dice-config .qty-stepper button, .dice-config .mod-stepper button {
+    width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--primary);
+    background: var(--surface); color: var(--primary-dark); font-family: var(--font-data);
+    font-size: 15px; cursor: pointer; touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;
+  }
+  .dice-config .qty-val, .dice-config .mod-val {
+    font-family: var(--font-data); font-size: 14px; min-width: 22px; text-align: center;
+  }
+  .roll-btn {
+    font-family: var(--font-body);
+    background: var(--primary);
+    color: var(--bg);
+    border: none;
+    padding: 10px 14px;
+    min-height: 40px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    touch-action: manipulation;
+    width: 100%;
+  }
+  .roll-history { margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+  .roll-history div { padding: 2px 0; }
+
+  /* ===== Monster ===== */
+  .monster-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .monster-row:last-child { border-bottom: none; }
+  .monster-name { font-weight: bold; font-size: 14px; }
+  .hp-control { display: flex; align-items: center; gap: 5px; }
+  .hp-control .hp-input {
+    width: 42px; height: 34px; text-align: center; font-family: var(--font-data); font-size: 14px;
+    border: 1px solid var(--primary); border-radius: 6px; padding: 3px 2px; background: var(--bg); color: var(--text);
+    touch-action: manipulation;
+  }
+  .hp-control .hp-sep { font-family: var(--font-data); font-size: 13px; color: var(--text-muted); }
+  .hp-bar-track { height: 6px; background: var(--border); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .hp-bar-fill { height: 100%; background: var(--secondary); }
+  .hp-bar-fill.low { background: var(--error); }
+
+  /* ===== Timer ===== */
+  .timer-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
+  .timer-row:last-child { border-bottom: none; }
+  .timer-time { font-family: var(--font-data); color: var(--primary-dark); font-weight: bold; }
+
+  /* ===== Map ===== */
+  .map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .map-thumb {
+    aspect-ratio: 4/3;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+    display: flex; align-items: flex-end;
+    overflow: hidden;
+  }
+  .map-thumb .map-actions {
+    position: absolute; top: 4px; right: 4px; display: flex; gap: 4px;
+  }
+  .map-thumb .map-actions button {
+    width: 26px; height: 26px; border-radius: 50%; border: none;
+    background: rgba(29,26,16,0.55); color: var(--bg); font-size: 12px;
+    cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .map-thumb .map-actions button.on { background: var(--primary); }
+  .map-thumb.hidden-map { opacity: 0.55; }
+  .map-thumb .map-label {
+    font-size: 10px;
+    background: rgba(29,26,16,0.72);
+    color: var(--bg);
+    padding: 3px 6px;
+    width: 100%;
+  }
+  .map-thumb .share-dot {
+    position: absolute; top: 4px; right: 4px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--sold-out);
+    cursor: pointer; touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg);
+  }
+  .map-thumb .share-dot.partial { background: var(--tertiary); }
+  .map-thumb .share-dot.full { background: var(--secondary); }
+
+  .map-share-popover {
+    position: absolute; z-index: 70; background: var(--surface); border: 1px solid var(--primary);
+    border-radius: 8px; padding: 10px 12px; box-shadow: 0 8px 22px rgba(29,26,16,0.28); display: none; width: 190px;
+  }
+  .map-share-popover.show { display: block; }
+  .map-share-popover .popover-title { font-size: 12px; font-weight: bold; margin-bottom: 6px; }
+  .map-share-popover .popover-hint { font-size: 10.5px; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+  .map-share-popover label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; padding: 4px 0; cursor: pointer; }
+  .map-share-popover hr { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+  .map-share-popover .popover-apply {
+    width: 100%; margin-top: 8px; font-family: var(--font-body); font-size: 12px; background: var(--primary);
+    color: var(--bg); border: none; border-radius: 4px; padding: 7px; cursor: pointer; touch-action: manipulation;
+  }
+
+  /* ===== Notes / Session notes ===== */
+  .note-preview {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    font-style: italic;
+    outline: none;
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    cursor: text;
+  }
+  .note-preview:focus { background: var(--bg); box-shadow: inset 0 0 0 1px var(--primary); }
+  .note-preview.muted { color: var(--text-muted); }
+
+  /* ===== Shop / ItemCard ===== */
+  .shop-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .shop-toolbar select {
+    font-family: var(--font-body);
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    background: var(--bg);
+  }
+  .shop-list { display: flex; flex-direction: column; gap: 10px; }
+  .shop-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px;
+  }
+  .shop-card .shop-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .shop-card .shop-card-name { font-weight: bold; font-size: 14px; }
+  .shop-card .shop-open-link {
+    font-size: 12px; color: var(--primary-dark); text-decoration: none; white-space: nowrap;
+    border: 1px solid var(--primary); border-radius: 14px; padding: 5px 12px; touch-action: manipulation;
+  }
+  .shop-card .shop-open-link:hover { background: var(--primary); color: var(--bg); }
+
+  .item-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .item-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .item-card .item-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .item-card .item-name { font-weight: bold; font-size: 13px; }
+  .item-card .item-price { font-family: var(--font-data); font-size: 13px; }
+  .item-card .item-qty { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .item-card.expensive .item-price { color: var(--error); }
+  .item-card.sold-out { opacity: 0.65; }
+  .icon-add-btn, .add-btn {
+    font-family: var(--font-body); font-size: 11.5px; background: transparent; color: var(--primary-dark);
+    border: 1px dashed var(--primary); border-radius: 5px; padding: 7px 10px; margin-top: 10px;
+    cursor: pointer; width: 100%; touch-action: manipulation;
+  }
+  .icon-add-btn:hover, .add-btn:hover { background: var(--bg); }
+  .item-card .mini-buy-btn {
+    font-family: var(--font-body); font-size: 11px; background: var(--primary); color: var(--bg);
+    border: none; border-radius: 4px; padding: 5px 8px; margin-top: 8px; cursor: pointer; width: 100%;
+    touch-action: manipulation;
+  }
+  .item-card .mini-buy-btn.disabled { background: var(--sold-out); cursor: not-allowed; }
+  .share-chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .share-chip {
+    font-size: 11px; padding: 4px 10px; border-radius: 12px; cursor: pointer; touch-action: manipulation;
+    border: 1px solid var(--secondary); color: var(--secondary); background: var(--bg);
+  }
+  .share-chip.off { border-color: var(--sold-out); color: var(--sold-out); }
+  .shop-full-link {
+    display: block; text-align: center; margin-top: 10px; font-size: 11px;
+    color: var(--primary-dark); text-decoration: underline; cursor: pointer;
+  }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none; z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .item-card.sold-out .item-name,
+  .item-card.sold-out .item-price { text-decoration: line-through; color: var(--sold-out); }
+  .item-card.sold-out .item-qty { color: var(--sold-out); }
+
+  /* ===== Character ===== */
+  .char-summary { display: flex; gap: 12px; align-items: center; }
+  .char-summary + .char-summary { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .view-as-btn {
+    font-family: var(--font-body); font-size: 11px; color: var(--primary-dark); background: var(--bg);
+    border: 1px solid var(--primary); border-radius: 14px; padding: 6px 13px; cursor: pointer;
+    touch-action: manipulation; margin-left: auto; white-space: nowrap; flex-shrink: 0;
+  }
+  .view-as-btn:hover { background: var(--primary); color: var(--bg); }
+  .char-portrait {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--surface-2); border: 2px solid var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 16px; color: var(--primary-dark);
+    flex-shrink: 0;
+  }
+  .char-info .char-name { font-weight: bold; font-size: 13.5px; }
+  .char-info .char-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .currency-badge { display: flex; gap: 8px; margin-top: 8px; font-family: var(--font-data); font-size: 12px; }
+  .currency-badge span { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 2px 8px; }
+
+  .inventory-section { margin-top: 14px; }
+  .inventory-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 6px; }
+  .inventory-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 14px; }
+  .inv-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12.5px; padding: 4px 0; border-bottom: 1px dashed var(--border);
+  }
+  .inv-row .inv-name { cursor: pointer; }
+  .inv-row .inv-name:hover { color: var(--primary-dark); }
+  .inv-row .inv-qty { font-family: var(--font-data); color: var(--text-muted); font-size: 11.5px; }
+  .inv-row .inv-remove { font-size: 11px; color: var(--sold-out); cursor: pointer; margin-left: 6px; }
+  .inv-row .inv-remove:hover { color: var(--error); }
+
+  .feature-section { margin-top: 14px; }
+  .feature-list { display: flex; flex-direction: column; gap: 3px; }
+  .feature-row {
+    font-size: 12.5px; padding: 4px 0; border-bottom: 1px dashed var(--border);
+    cursor: pointer;
+  }
+  .feature-row:hover { color: var(--primary-dark); }
+  .feature-row:last-child { border-bottom: none; }
+
+  .spell-section { margin-top: 14px; }
+  .spell-section.hidden { display: none; }
+  .spell-header-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .spell-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-data); }
+  .spell-slots-row { display: flex; align-items: center; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+  .spell-slots-row .slot-label { font-size: 11.5px; color: var(--text-muted); margin-right: 4px; }
+  .slot-pip {
+    width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--tertiary);
+    background: var(--tertiary); cursor: pointer; touch-action: manipulation; display: inline-block;
+  }
+  .slot-pip.expended { background: transparent; }
+  .spell-list { display: flex; flex-direction: column; gap: 3px; }
+  .spell-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12.5px; padding: 3px 0; border-bottom: 1px dashed var(--border);
+  }
+  .spell-tag { font-size: 10.5px; color: var(--text-muted); }
+  .spell-tag.prepared { color: var(--secondary); }
+
+  .char-switch { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+  .char-switch select { margin-left: 6px; font-family: var(--font-body); font-size: 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); padding: 2px 6px; }
+
+  /* ===== Character sheet mini (player) ===== */
+  .sheet-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; }
+  .ability { text-align: center; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 2px; }
+  .ability .ab-label { font-size: 9px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+  .ability .ab-score { font-family: var(--font-data); font-size: 15px; font-weight: bold; }
+
+  /* ===== Popup ===== */
+  .popup-demo-btn {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--primary);
+    color: var(--bg);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 22px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(29,26,16,0.25);
+  }
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(29,26,16,0.35);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 50;
+  }
+  .overlay.show { display: flex; }
+  .popup-card {
+    background: var(--surface);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    padding: 22px 26px;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(29,26,16,0.3);
+  }
+  .popup-card .popup-icon { font-family: var(--font-display); font-size: 26px; color: var(--primary); margin-bottom: 8px; }
+  .popup-card p { font-size: 14px; margin: 0 0 18px; }
+  .popup-actions { display: flex; gap: 10px; justify-content: center; }
+  .popup-actions button {
+    font-family: var(--font-body); font-size: 13px;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer; border: 1px solid var(--primary);
+  }
+  .popup-actions .yes { background: var(--primary); color: var(--bg); }
+  .popup-actions .no { background: transparent; color: var(--primary-dark); }
+
+  .hidden { display: none !important; }
+
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 20px;
+    font-style: italic;
+  }
+/* Erkennt echte Touch-Bedienung (Finger statt Maus), unabhängig von der
+   Bildschirmbreite — greift also z. B. auch bei einem Touch-Laptop in
+   voller Grösse, nicht nur auf kleinen Screens. */
+@media (pointer: coarse) {
+  .die { width: 46px; height: 46px; font-size: 14px; }
+  .dice-config .qty-stepper button, .dice-config .mod-stepper button { width: 40px; height: 40px; font-size: 17px; }
+  .dice-config .qty-val, .dice-config .mod-val { font-size: 15px; min-width: 26px; }
+  .roll-btn { min-height: 48px; padding: 12px 14px; font-size: 14px; }
+  .hp-control .hp-input { width: 48px; height: 40px; font-size: 15px; }
+  .back-to-dm-btn { padding: 10px 16px; font-size: 13px; }
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="glyph">&#9876;</span>
+    <h1>DnD Session Manager</h1>
+    <span class="session-name">— Der Fluch von Rabenhorst, Session 12</span>
+  </div>
+  <div class="header-right">
+    <button class="back-to-dm-btn hidden" id="backToDmBtn" onclick="switchView('dm')">&larr; Zurück zur DM-Ansicht</button>
+    <span class="role-pill" id="rolePill">DM-Ansicht</span>
+  </div>
+</header>
+
+<main>
+  <p class="board-note" id="boardNote">Live-Board — nur Mockup-Daten zur Veranschaulichung, keine echte Funktion.</p>
+
+  <!-- ===================== DM VIEW ===================== -->
+  <div class="grid" id="dmView">
+
+    <div class="panel">
+      <div class="panel-header"><h2>Charaktere</h2></div>
+      <div class="panel-body">
+        <div class="char-summary">
+          <div class="char-portrait">RD</div>
+          <div class="char-info">
+            <div class="char-name">Rhogar Drachenhorn</div>
+            <div class="char-sub">HP 34 / 41 · Level 5 Kämpfer (Eldritch Knight)</div>
+          </div>
+          <button class="view-as-btn" onclick="viewAsCharacter('Rhogar Drachenhorn')">Ansehen</button>
+        </div>
+        <div class="char-summary">
+          <div class="char-portrait">ES</div>
+          <div class="char-info">
+            <div class="char-name">Elandra Silberblatt</div>
+            <div class="char-sub">HP 22 / 28 · Level 5 Magierin</div>
+          </div>
+          <button class="view-as-btn" onclick="viewAsCharacter('Elandra Silberblatt')">Ansehen</button>
+        </div>
+        <div class="char-summary">
+          <div class="char-portrait">TS</div>
+          <div class="char-info">
+            <div class="char-name">Torvin Steinfaust</div>
+            <div class="char-sub">HP 30 / 36 · Level 5 Kleriker</div>
+          </div>
+          <button class="view-as-btn" onclick="viewAsCharacter('Torvin Steinfaust')">Ansehen</button>
+        </div>
+      </div>
+    </div>
+
+  
+    <div class="panel">
+      <div class="panel-header"><h2>Initiative</h2><span class="tag">Kampf, Runde 2</span></div>
+      <div class="panel-body" id="dmInitiativeList">
+        <div class="init-row active"><span class="name monster">Goblin-Späher</span><span class="val">19</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span></div>
+        <div class="init-row"><span class="name">Rhogar Drachenhorn</span><span class="val">18</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span></div>
+        <div class="init-row"><span class="name">Elandra Silberblatt</span><span class="val">16</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span></div>
+        <div class="init-row monster"><span class="name monster">Goblin-Grunzer 1</span><span class="val">12</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span></div>
+        <div class="init-row"><span class="name">Torvin Steinfaust</span><span class="val">9</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span></div>
+        <div class="init-row monster"><span class="name monster">Goblin-Grunzer 2</span><span class="val">7</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span></div>
+        <button class="add-btn" onclick="addInitiativeEntry()">+ Eintrag</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Monsterstats</h2><span class="tag">nur DM</span></div>
+      <div class="panel-body">
+        <div class="monster-row">
+          <div>
+            <div class="monster-name">Goblin-Späher</div>
+            <div class="hp-bar-track" style="width:120px;"><div class="hp-bar-fill" style="width:60%;" id="bar-goblin-spaeher"></div></div>
+          </div>
+          <div class="hp-control">
+            <input type="text" class="hp-input" value="9" oninput="updateHpBar('goblin-spaeher', this)"><span class="hp-sep">/</span><input type="text" class="hp-input" value="15" oninput="updateHpBar('goblin-spaeher', this)">
+          </div>
+        </div>
+        <div class="monster-row">
+          <div>
+            <div class="monster-name">Goblin-Grunzer 1</div>
+            <div class="hp-bar-track" style="width:120px;"><div class="hp-bar-fill low" style="width:20%;" id="bar-goblin-grunzer-1"></div></div>
+          </div>
+          <div class="hp-control">
+            <input type="text" class="hp-input" value="2" oninput="updateHpBar('goblin-grunzer-1', this)"><span class="hp-sep">/</span><input type="text" class="hp-input" value="10" oninput="updateHpBar('goblin-grunzer-1', this)">
+          </div>
+        </div>
+        <button class="icon-add-btn" onclick="addMonster()">+ Monster aus Vorlage in den Kampf holen</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Würfel</h2><span class="tag">privat</span></div>
+      <div class="panel-body">
+        <p class="dice-private-note"><span class="lock">&#128274;</span> nur für dich sichtbar</p>
+        <div class="die-row" id="dmDieRow" onclick="selectDie(event, 'dm')">
+          <div class="die" data-die="4">d4</div><div class="die" data-die="6">d6</div><div class="die" data-die="8">d8</div>
+          <div class="die" data-die="10">d10</div><div class="die" data-die="12">d12</div><div class="die selected" data-die="20">d20</div>
+        </div>
+        <div class="dice-config">
+          <div class="field-group">
+            <label>Anzahl</label>
+            <div class="qty-stepper">
+              <button onclick="stepDiceCount('dm', -1)">−</button><span class="qty-val" id="dmCount">1</span><button onclick="stepDiceCount('dm', 1)">+</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Modifikator</label>
+            <div class="mod-stepper">
+              <button onclick="stepMod('dm', -1)">−</button><span class="mod-val" id="dmMod">+4</span><button onclick="stepMod('dm', 1)">+</button>
+            </div>
+          </div>
+        </div>
+        <button class="roll-btn" id="dmRollBtn" onclick="rollDice('dm')">1d20 + 4 würfeln</button>
+        <div class="roll-history" id="dmHistory">
+          <div>1d20+4 → <strong>17</strong></div>
+          <div>2d6+2 → <strong>9</strong></div>
+          <div>1d20+4 → <strong>22</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Timer</h2></div>
+      <div class="panel-body" id="timerList">
+        <div class="timer-row"><span>Zauber: Segen</span><span class="timer-time" data-seconds="47">00:47</span></div>
+        <div class="timer-row"><span>Ritual: Bannung</span><span class="timer-time" data-seconds="192">03:12</span></div>
+        <div class="timer-row"><span>Gift-Effekt (Torvin)</span><span class="timer-time" data-seconds="9">00:09</span></div>
+        <button class="add-btn" onclick="addTimer()">+ Timer starten (60s)</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Karten</h2><span class="tag">Raum 3 von 5</span></div>
+      <div class="panel-body">
+        <div class="map-grid">
+          <div class="map-thumb"><span class="share-dot full" data-map="Eingangshalle" data-shared="Rhogar,Elandra,Torvin" onclick="openMapSharePopover(event, this)"></span><span class="map-label">Eingangshalle</span></div>
+          <div class="map-thumb"><span class="share-dot partial" data-map="Gang Ost" data-shared="Rhogar,Elandra" onclick="openMapSharePopover(event, this)"></span><span class="map-label">Gang Ost</span></div>
+          <div class="map-thumb"><span class="share-dot" data-map="Thronsaal" data-shared="" onclick="openMapSharePopover(event, this)"></span><span class="map-label">Thronsaal</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-share-popover" id="mapSharePopover">
+      <div class="popover-title" id="mapSharePopoverTitle">Karte</div>
+      <div class="popover-hint">Nur für ausgewählte Spieler, nie automatisch für alle.</div>
+      <label><input type="checkbox" id="mapShareAll" onchange="toggleAllPlayers(this.checked)"> <strong>Alle auswählen</strong></label>
+      <hr>
+      <label><input type="checkbox" class="map-share-player" data-player="Rhogar" onchange="updateAllCheckboxState()"> Rhogar</label>
+      <label><input type="checkbox" class="map-share-player" data-player="Elandra" onchange="updateAllCheckboxState()"> Elandra</label>
+      <label><input type="checkbox" class="map-share-player" data-player="Torvin" onchange="updateAllCheckboxState()"> Torvin</label>
+      <button class="popover-apply" onclick="applyMapShare()">Übernehmen</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Session-Notizen</h2><span class="tag">vorbereitet</span></div>
+      <div class="panel-body">
+        <div class="note-preview" contenteditable="true">Bei Betreten des Thronsaals: Wahrnehmung SG 15 für die
+verborgene Falltür hinter dem Thron. Goblinkönig Vrak flieht
+bei &lt; 30% HP in den Ostgang.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Notizen</h2><span class="tag">privat</span></div>
+      <div class="panel-body">
+        <div class="note-preview muted" contenteditable="true">Elandra hat den Ring noch nicht bemerkt — evtl.
+nächste Session als Hook nutzen.</div>
+      </div>
+    </div>
+
+    <div class="panel span-2">
+      <div class="panel-header"><h2>Shops</h2><span class="tag">Freigabe verwalten</span></div>
+      <div class="panel-body">
+        <div class="shop-list">
+          <div class="shop-card">
+            <div class="shop-card-top">
+              <span class="shop-card-name">Krämerladen "Zum müden Wanderer"</span>
+              <a class="shop-open-link" href="../../../../../../Downloads/files/DnD_Tool_Shop_Mockup.html" target="_blank">Shop öffnen &rarr;</a>
+            </div>
+            <div class="share-chip-row">
+              <span class="share-chip" onclick="toggleShare(this)">Rhogar: freigegeben</span>
+              <span class="share-chip" onclick="toggleShare(this)">Elandra: freigegeben</span>
+              <span class="share-chip off" onclick="toggleShare(this)">Torvin: nicht freigegeben</span>
+            </div>
+          </div>
+          <div class="shop-card">
+            <div class="shop-card-top">
+              <span class="shop-card-name">Schmiede Grimbarts</span>
+              <a class="shop-open-link" href="../../../../../../Downloads/files/DnD_Tool_Shop_Mockup.html" target="_blank">Shop öffnen &rarr;</a>
+            </div>
+            <div class="share-chip-row">
+              <span class="share-chip off" onclick="toggleShare(this)">Rhogar: nicht freigegeben</span>
+              <span class="share-chip off" onclick="toggleShare(this)">Elandra: nicht freigegeben</span>
+              <span class="share-chip off" onclick="toggleShare(this)">Torvin: nicht freigegeben</span>
+            </div>
+          </div>
+        </div>
+        <span class="shop-full-link" onclick="showToast('Würde eine Liste aller Shops aus der Verwaltung zum Freigeben zeigen.')">+ Neuen Shop für diese Session freigeben</span>
+      </div>
+    </div>
+</div>
+
+  <!-- ===================== PLAYER VIEW ===================== -->
+  <div class="grid player hidden" id="playerView">
+
+    <div class="panel span-2">
+      <div class="panel-header"><h2 id="charName">Rhogar Drachenhorn</h2><span class="tag" id="charClass">Level 5 Kämpfer (Eldritch Knight)</span></div>
+      <div class="panel-body">
+        <div class="char-switch">Charakter: <select onchange="switchCharacter(this.value)"><option value="rhogar">Rhogar Drachenhorn</option><option value="fenn">Fenn Aschgrau (inaktiv)</option><option value="new">+ Neuer Charakter</option></select></div>
+        <div class="monster-row" style="margin-top:10px;">
+          <div>
+            <div class="monster-name">Trefferpunkte</div>
+            <div class="hp-bar-track" style="width:140px;"><div class="hp-bar-fill" style="width:83%;" id="bar-rhogar"></div></div>
+          </div>
+          <div class="hp-control">
+            <input type="text" class="hp-input" id="charHpCurrent" value="34" oninput="updateHpBar('rhogar', this)"><span class="hp-sep">/</span><input type="text" class="hp-input" id="charHpMax" value="41" oninput="updateHpBar('rhogar', this)">
+          </div>
+        </div>
+        <div class="sheet-grid" id="charAbilities">
+          <div class="ability"><div class="ab-label">Stärke</div><div class="ab-score">17</div></div>
+          <div class="ability"><div class="ab-label">Geschick</div><div class="ab-score">12</div></div>
+          <div class="ability"><div class="ab-label">Konstit.</div><div class="ab-score">15</div></div>
+          <div class="ability"><div class="ab-label">Intell.</div><div class="ab-score">9</div></div>
+          <div class="ability"><div class="ab-label">Weisheit</div><div class="ab-score">11</div></div>
+          <div class="ability"><div class="ab-label">Charisma</div><div class="ab-score">13</div></div>
+        </div>
+        <div class="currency-badge" id="charCurrency">
+          <span>34 GP</span><span>7 SP</span><span>12 CP</span>
+        </div>
+        <div class="inventory-section">
+          <div class="inventory-title">Ausrüstung</div>
+          <div class="inventory-list" id="inventoryList">
+            <div class="inv-row"><span class="inv-name" onclick="showToast('Langschwert: 1W8 Wumpfschaden, vielseitig')">Langschwert</span><span><span class="inv-qty">1×</span><span class="inv-remove" onclick="this.closest('.inv-row').remove()">✕</span></span></div>
+            <div class="inv-row"><span class="inv-name" onclick="showToast('Kettenhemd: RK 13 + Geschick (max. 2)')">Kettenhemd</span><span><span class="inv-qty">1×</span><span class="inv-remove" onclick="this.closest('.inv-row').remove()">✕</span></span></div>
+            <div class="inv-row"><span class="inv-name" onclick="showToast('Heiltrank: heilt 2W4+2')">Heiltrank</span><span><span class="inv-qty">2×</span><span class="inv-remove" onclick="this.closest('.inv-row').remove()">✕</span></span></div>
+            <div class="inv-row"><span class="inv-name" onclick="showToast('Seil (15m), 2.3 kg')">Seil (15m)</span><span><span class="inv-qty">1×</span><span class="inv-remove" onclick="this.closest('.inv-row').remove()">✕</span></span></div>
+            <div class="inv-row"><span class="inv-name" onclick="showToast('Rationen, 1 Tag pro Stück')">Rationen</span><span><span class="inv-qty">5×</span><span class="inv-remove" onclick="this.closest('.inv-row').remove()">✕</span></span></div>
+          </div>
+          <button class="add-btn" onclick="addInventoryItem()">+ Gegenstand</button>
+        </div>
+        <div class="feature-section">
+          <div class="inventory-title">Fähigkeiten</div>
+          <div class="feature-list" id="featureList">
+            <div class="feature-row" onclick="showToast('Kriegsgesang: einmal pro Kampf zusätzlicher Angriff.')">Kriegsgesang</div>
+            <div class="feature-row" onclick="showToast('Waffenbindung: Langschwert kehrt auf Ruf zurück.')">Waffenbindung</div>
+            <div class="feature-row" onclick="showToast('Kriegsmagie: kann Zauber und Angriff kombinieren.')">Kriegsmagie</div>
+          </div>
+        </div>
+        <div class="spell-section" id="spellSection">
+          <div class="spell-header-row">
+            <div class="inventory-title">Zauber</div>
+            <div class="spell-meta" id="spellMeta">Attribut: Intelligenz · SG 13 · Angriff +5</div>
+          </div>
+          <div class="spell-slots-row" id="spellSlots">
+            <span class="slot-label">Grad 1</span>
+            <span class="slot-pip" onclick="this.classList.toggle('expended')"></span>
+            <span class="slot-pip" onclick="this.classList.toggle('expended')"></span>
+          </div>
+          <div class="spell-list" id="spellList">
+            <div class="spell-row"><span>Feuerpfeil</span><span class="spell-tag">Zaubertrick</span></div>
+            <div class="spell-row"><span>Magierhand</span><span class="spell-tag">Zaubertrick</span></div>
+            <div class="spell-row"><span>Schild</span><span class="spell-tag prepared">Grad 1 · vorbereitet</span></div>
+          </div>
+        </div>
+        <button class="add-btn" style="margin-top:12px;" onclick="showToast('PDF-Export folgt später — Design steht schon (siehe Charakterbogen-PDF).')">&#128190; Als PDF herunterladen</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Würfel</h2><span class="tag">privat</span></div>
+      <div class="panel-body">
+        <p class="dice-private-note"><span class="lock">&#128274;</span> nur du siehst deine Würfe</p>
+        <div class="die-row" id="playerDieRow" onclick="selectDie(event, 'player')">
+          <div class="die" data-die="4">d4</div><div class="die" data-die="6">d6</div><div class="die" data-die="8">d8</div>
+          <div class="die" data-die="10">d10</div><div class="die" data-die="12">d12</div><div class="die selected" data-die="20">d20</div>
+        </div>
+        <div class="dice-config">
+          <div class="field-group">
+            <label>Anzahl</label>
+            <div class="qty-stepper">
+              <button onclick="stepDiceCount('player', -1)">−</button><span class="qty-val" id="playerCount">1</span><button onclick="stepDiceCount('player', 1)">+</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Modifikator</label>
+            <div class="mod-stepper">
+              <button onclick="stepMod('player', -1)">−</button><span class="mod-val" id="playerMod">+0</span><button onclick="stepMod('player', 1)">+</button>
+            </div>
+          </div>
+        </div>
+        <button class="roll-btn" id="playerRollBtn" onclick="rollDice('player')">1d20 würfeln</button>
+        <div class="roll-history" id="playerHistory"><div>1d20 → <strong>14</strong></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Karten</h2></div>
+      <div class="panel-body">
+        <div class="map-grid" id="playerVisibleMaps">
+          <div class="map-thumb" id="map-eingangshalle">
+            <span class="map-label">Eingangshalle</span>
+            <div class="map-actions">
+              <button onclick="hideMap(this,'map-eingangshalle')" title="Ausblenden">&#128065;</button>
+              <button onclick="toggleLockMap(this)" title="Sperren, bleibt nach Sessionende sichtbar">&#128274;</button>
+            </div>
+          </div>
+          <div class="map-thumb" id="map-gangost">
+            <span class="map-label">Gang Ost</span>
+            <div class="map-actions">
+              <button onclick="hideMap(this,'map-gangost')" title="Ausblenden">&#128065;</button>
+              <button onclick="toggleLockMap(this)" title="Sperren, bleibt nach Sessionende sichtbar">&#128274;</button>
+            </div>
+          </div>
+        </div>
+        <div class="map-grid hidden" id="playerHiddenMaps" style="margin-top:8px;"></div>
+        <span class="shop-full-link" id="hiddenMapsToggle" onclick="toggleHiddenMapsView()">Ausgeblendete Karten anzeigen (0) &darr;</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Notizen</h2><span class="tag">privat</span></div>
+      <div class="panel-body">
+        <div class="note-preview muted" contenteditable="true">Der alte Mann am Brunnen wusste meinen Namen...</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Initiative</h2></div>
+      <div class="panel-body">
+        <div class="init-row active"><span class="name monster">Goblin-Späher</span><span class="val">19</span></div>
+        <div class="init-row"><span class="name">Rhogar Drachenhorn</span><span class="val">18</span></div>
+        <div class="init-row"><span class="name">Elandra Silberblatt</span><span class="val">16</span></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<button class="popup-demo-btn" onclick="showPopup()">Karten-Popup zeigen (Demo)</button>
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="popup-card">
+    <div class="popup-icon">&#9876;</div>
+    <p><strong>Karte "Kellergewölbe"</strong> wurde mit dir geteilt.<br>Jetzt anschauen?</p>
+    <div class="popup-actions">
+      <button class="yes" onclick="hidePopup()">Ja</button>
+      <button class="no" onclick="hidePopup()">Später / Nein</button>
+    </div>
+  </div>
+</div>
+
+<footer>Mockup — DnD Session Manager · Farbpalette Amber/Pergament · nur zur Veranschaulichung, keine echte Funktion</footer>
+
+<script>
+const diceState = {
+  dm: { die: 20, count: 1, mod: 4 },
+  player: { die: 20, count: 1, mod: 0 },
+};
+
+function selectDie(event, who) {
+  const target = event.target.closest('.die');
+  if (!target) return;
+  const row = document.getElementById(who + 'DieRow');
+  row.querySelectorAll('.die').forEach(function (d) { d.classList.remove('selected'); });
+  target.classList.add('selected');
+  diceState[who].die = parseInt(target.dataset.die, 10);
+  updateRollLabel(who);
+}
+
+function stepDiceCount(who, delta) {
+  let n = diceState[who].count + delta;
+  if (n < 1) n = 1;
+  if (n > 9) n = 9;
+  diceState[who].count = n;
+  document.getElementById(who + 'Count').textContent = n;
+  updateRollLabel(who);
+}
+
+function stepMod(who, delta) {
+  let n = diceState[who].mod + delta;
+  if (n < -10) n = -10;
+  if (n > 20) n = 20;
+  diceState[who].mod = n;
+  document.getElementById(who + 'Mod').textContent = (n >= 0 ? '+' : '−') + Math.abs(n);
+  updateRollLabel(who);
+}
+
+function updateRollLabel(who) {
+  const state = diceState[who];
+  const btn = document.getElementById(who + 'RollBtn');
+  let label = state.count + 'd' + state.die;
+  if (state.mod > 0) label += ' + ' + state.mod;
+  if (state.mod < 0) label += ' − ' + Math.abs(state.mod);
+  btn.textContent = label + ' würfeln';
+}
+
+function rollDice(who) {
+  const state = diceState[who];
+  let total = 0;
+  for (let i = 0; i < state.count; i++) {
+    total += 1 + Math.floor(Math.random() * state.die);
+  }
+  total += state.mod;
+  let formula = state.count + 'd' + state.die;
+  if (state.mod > 0) formula += '+' + state.mod;
+  if (state.mod < 0) formula += state.mod;
+  const history = document.getElementById(who + 'History');
+  const entry = document.createElement('div');
+  entry.innerHTML = formula + ' → <strong>' + total + '</strong>';
+  history.insertBefore(entry, history.firstChild);
+  while (history.children.length > 5) {
+    history.removeChild(history.lastChild);
+  }
+}
+
+function updateHpBar(id, input) {
+  const row = input.closest('.monster-row');
+  const inputs = row.querySelectorAll('.hp-input');
+  const current = parseInt(inputs[0].value, 10) || 0;
+  const max = parseInt(inputs[1].value, 10) || 1;
+  const pct = Math.max(0, Math.min(100, (current / max) * 100));
+  const bar = document.getElementById('bar-' + id);
+  if (bar) {
+    bar.style.width = pct + '%';
+    bar.classList.toggle('low', pct <= 25);
+  }
+}
+
+function addMonster() {
+  const list = document.getElementById('dmInitiativeList');
+  showToast('Monster aus Vorlage gewählt — würde hier Name + HP übernehmen und als neue Zeile bei Monsterstats sowie Initiative erscheinen.');
+}
+
+function addTimer() {
+  const list = document.getElementById('timerList');
+  const row = document.createElement('div');
+  row.className = 'timer-row';
+  row.innerHTML = '<span>Neuer Timer</span><span class="timer-time" data-seconds="60">01:00</span>';
+  list.insertBefore(row, list.lastElementChild);
+}
+
+setInterval(function () {
+  document.querySelectorAll('.timer-time').forEach(function (el) {
+    let s = parseInt(el.dataset.seconds, 10);
+    if (isNaN(s) || s <= 0) return;
+    s -= 1;
+    el.dataset.seconds = s;
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    el.textContent = m + ':' + sec;
+  });
+}, 1000);
+
+function addInitiativeEntry() {
+  const list = document.getElementById('dmInitiativeList');
+  const row = document.createElement('div');
+  row.className = 'init-row';
+  row.innerHTML = '<span class="name" contenteditable="true">Neuer Eintrag</span><span class="val" contenteditable="true">0</span><span class="row-remove" onclick="this.parentElement.remove()">✕</span>';
+  list.insertBefore(row, list.lastElementChild);
+}
+
+let activeMapDot = null;
+
+function openMapSharePopover(e, dotEl) {
+  e.stopPropagation();
+  activeMapDot = dotEl;
+  document.getElementById('mapSharePopoverTitle').textContent = dotEl.dataset.map;
+  const shared = (dotEl.dataset.shared || '').split(',').filter(Boolean);
+  document.querySelectorAll('.map-share-player').forEach(function (cb) {
+    cb.checked = shared.includes(cb.dataset.player);
+  });
+  updateAllCheckboxState();
+  const popover = document.getElementById('mapSharePopover');
+  const rect = dotEl.getBoundingClientRect();
+  popover.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+  popover.style.left = (window.scrollX + rect.left - 80) + 'px';
+  popover.classList.add('show');
+}
+
+function toggleAllPlayers(checked) {
+  document.querySelectorAll('.map-share-player').forEach(function (cb) { cb.checked = checked; });
+}
+
+function updateAllCheckboxState() {
+  const boxes = document.querySelectorAll('.map-share-player');
+  const checkedCount = Array.from(boxes).filter(function (cb) { return cb.checked; }).length;
+  document.getElementById('mapShareAll').checked = checkedCount === boxes.length;
+}
+
+function applyMapShare() {
+  if (!activeMapDot) return;
+  const checked = Array.from(document.querySelectorAll('.map-share-player')).filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.dataset.player; });
+  activeMapDot.dataset.shared = checked.join(',');
+  activeMapDot.classList.remove('partial', 'full');
+  if (checked.length > 0 && checked.length < 3) activeMapDot.classList.add('partial');
+  if (checked.length === 3) activeMapDot.classList.add('full');
+  document.getElementById('mapSharePopover').classList.remove('show');
+  const label = checked.length === 0 ? 'niemandem' : checked.join(', ');
+  showToast(activeMapDot.dataset.map + ' freigegeben für: ' + label);
+}
+
+document.addEventListener('click', function (e) {
+  const popover = document.getElementById('mapSharePopover');
+  if (popover && popover.classList.contains('show') && !popover.contains(e.target) && !e.target.classList.contains('share-dot')) {
+    popover.classList.remove('show');
+  }
+});
+
+function hideMap(btn, mapId) {
+  const thumb = document.getElementById(mapId);
+  const hiddenGrid = document.getElementById('playerHiddenMaps');
+  thumb.classList.add('hidden-map');
+  const unhideBtn = document.createElement('button');
+  unhideBtn.className = 'add-btn';
+  unhideBtn.textContent = 'Wieder einblenden: ' + thumb.querySelector('.map-label').textContent;
+  unhideBtn.onclick = function () {
+    thumb.classList.remove('hidden-map');
+    document.getElementById('playerVisibleMaps').appendChild(thumb);
+    unhideBtn.remove();
+    updateHiddenMapsCount();
+  };
+  hiddenGrid.appendChild(thumb);
+  hiddenGrid.appendChild(unhideBtn);
+  updateHiddenMapsCount();
+}
+
+function updateHiddenMapsCount() {
+  const hiddenGrid = document.getElementById('playerHiddenMaps');
+  const count = hiddenGrid.querySelectorAll('.map-thumb').length;
+  document.getElementById('hiddenMapsToggle').textContent = 'Ausgeblendete Karten anzeigen (' + count + ') ↓';
+}
+
+function toggleHiddenMapsView() {
+  document.getElementById('playerHiddenMaps').classList.toggle('hidden');
+}
+
+function toggleLockMap(btn) {
+  btn.classList.toggle('on');
+  showToast(btn.classList.contains('on') ? 'Karte gesperrt, bleibt nach Sessionende sichtbar.' : 'Sperre aufgehoben.');
+}
+
+const characterPresets = {
+  rhogar: {
+    name: 'Rhogar Drachenhorn', cls: 'Level 5 Kämpfer (Eldritch Knight)',
+    hp: [34, 41], abilities: [17, 12, 15, 9, 11, 13], currency: '34 GP · 7 SP · 12 CP',
+    items: [
+      { name: 'Langschwert', qty: 1, tip: 'Langschwert: 1W8 Wumpfschaden, vielseitig' },
+      { name: 'Kettenhemd', qty: 1, tip: 'Kettenhemd: RK 13 + Geschick (max. 2)' },
+      { name: 'Heiltrank', qty: 2, tip: 'Heiltrank: heilt 2W4+2' },
+      { name: 'Seil (15m)', qty: 1, tip: 'Seil (15m), 2.3 kg' },
+      { name: 'Rationen', qty: 5, tip: 'Rationen, 1 Tag pro Stück' },
+    ],
+    features: [
+      { name: 'Kriegsgesang', tip: 'Kriegsgesang: einmal pro Kampf zusätzlicher Angriff.' },
+      { name: 'Waffenbindung', tip: 'Waffenbindung: Langschwert kehrt auf Ruf zurück.' },
+      { name: 'Kriegsmagie', tip: 'Kriegsmagie: kann Zauber und Angriff kombinieren.' },
+    ],
+    spellcasting: {
+      meta: 'Attribut: Intelligenz · SG 13 · Angriff +5',
+      slots: [{ level: 1, total: 2 }],
+      spells: [
+        { name: 'Feuerpfeil', tag: 'Zaubertrick' },
+        { name: 'Magierhand', tag: 'Zaubertrick' },
+        { name: 'Schild', tag: 'Grad 1 · vorbereitet', prepared: true },
+      ],
+    },
+  },
+  fenn: {
+    name: 'Fenn Aschgrau', cls: 'Level 1 Schurke',
+    hp: [9, 9], abilities: [10, 16, 12, 13, 9, 14], currency: '6 GP · 2 SP · 4 CP',
+    items: [
+      { name: 'Zwei Kurzschwerter', qty: 1, tip: 'Kurzschwerter: 1W6 Wumpfschaden, Finesse' },
+      { name: 'Diebeswerkzeug', qty: 1, tip: 'Für Schlösser und Fallen' },
+      { name: 'Lederrüstung', qty: 1, tip: 'RK 11 + Geschick' },
+    ],
+    features: [
+      { name: 'Hinterhältiger Angriff', tip: 'Hinterhältiger Angriff: +1W6 Schaden mit Vorteil oder wenn ein Verbündeter angrenzt.' },
+      { name: 'Diebesjargon', tip: 'Diebesjargon: geheime Zeichen und Codes unter Gaunern.' },
+    ],
+    spellcasting: null,
+  },
+  new: {
+    name: 'Neuer Charakter (unbenannt)', cls: 'noch nicht erstellt',
+    hp: [0, 0], abilities: [10, 10, 10, 10, 10, 10], currency: '0 GP · 0 SP · 0 CP',
+    items: [],
+    features: [],
+    spellcasting: null,
+  },
+};
+
+function switchCharacter(key) {
+  const preset = characterPresets[key];
+  document.getElementById('charName').textContent = preset.name;
+  document.getElementById('charClass').textContent = preset.cls;
+  document.getElementById('charHpCurrent').value = preset.hp[0];
+  document.getElementById('charHpMax').value = preset.hp[1];
+  updateHpBar('rhogar', document.getElementById('charHpCurrent'));
+
+  const abilityEls = document.querySelectorAll('#charAbilities .ab-score');
+  preset.abilities.forEach(function (val, i) { abilityEls[i].textContent = val; });
+
+  const parts = preset.currency.split(' · ');
+  document.getElementById('charCurrency').innerHTML = parts.map(function (p) { return '<span>' + p + '</span>'; }).join('');
+
+  const list = document.getElementById('inventoryList');
+  list.innerHTML = preset.items.length
+    ? preset.items.map(function (it) {
+        return '<div class="inv-row"><span class="inv-name" onclick="showToast(\'' + it.tip.replace(/'/g, "\\'") + '\')">' + it.name + '</span><span><span class="inv-qty">' + it.qty + '×</span><span class="inv-remove" onclick="this.closest(\'.inv-row\').remove()">✕</span></span></div>';
+      }).join('')
+    : '<div class="inv-row" style="color:var(--text-muted); font-style:italic;">Noch leer</div>';
+
+  const featureList = document.getElementById('featureList');
+  featureList.innerHTML = preset.features.length
+    ? preset.features.map(function (f) {
+        return '<div class="feature-row" onclick="showToast(\'' + f.tip.replace(/'/g, "\\'") + '\')">' + f.name + '</div>';
+      }).join('')
+    : '<div class="feature-row" style="color:var(--text-muted); font-style:italic; cursor:default;">Noch keine</div>';
+
+  const spellSection = document.getElementById('spellSection');
+  if (preset.spellcasting) {
+    spellSection.classList.remove('hidden');
+    document.getElementById('spellMeta').textContent = preset.spellcasting.meta;
+    document.getElementById('spellSlots').innerHTML = preset.spellcasting.slots.map(function (s) {
+      let pips = '';
+      for (let i = 0; i < s.total; i++) pips += '<span class="slot-pip" onclick="this.classList.toggle(\'expended\')"></span>';
+      return '<span class="slot-label">Grad ' + s.level + '</span>' + pips;
+    }).join('');
+    document.getElementById('spellList').innerHTML = preset.spellcasting.spells.map(function (sp) {
+      return '<div class="spell-row"><span>' + sp.name + '</span><span class="spell-tag' + (sp.prepared ? ' prepared' : '') + '">' + sp.tag + '</span></div>';
+    }).join('');
+  } else {
+    spellSection.classList.add('hidden');
+  }
+
+  showToast('Charakter gewechselt: ' + preset.name + ' — eigenes Inventar, eigene Werte, eigenes Guthaben.');
+}
+
+function addInventoryItem() {
+  const list = document.getElementById('inventoryList');
+  const row = document.createElement('div');
+  row.className = 'inv-row';
+  row.innerHTML = '<span class="inv-name" contenteditable="true">Neuer Gegenstand</span><span><span class="inv-qty" contenteditable="true">1×</span><span class="inv-remove" onclick="this.closest(\'.inv-row\').remove()">✕</span></span>';
+  list.appendChild(row);
+}
+
+function switchView(v, charName) {
+  const dm = document.getElementById('dmView');
+  const player = document.getElementById('playerView');
+  const pill = document.getElementById('rolePill');
+  const note = document.getElementById('boardNote');
+  const backBtn = document.getElementById('backToDmBtn');
+  if (v === 'player') {
+    dm.classList.add('hidden');
+    player.classList.remove('hidden');
+    backBtn.classList.remove('hidden');
+    const name = charName || 'Rhogar Drachenhorn';
+    pill.textContent = 'Spieler-Ansicht (als ' + name + ')';
+    note.textContent = 'Live-Board aus Sicht von ' + name + ' — nur Mockup-Daten.';
+  } else {
+    player.classList.add('hidden');
+    dm.classList.remove('hidden');
+    backBtn.classList.add('hidden');
+    pill.textContent = 'DM-Ansicht';
+    note.textContent = 'Live-Board — nur Mockup-Daten zur Veranschaulichung, keine echte Funktion.';
+  }
+}
+
+function viewAsCharacter(name) {
+  switchView('player', name);
+  showToast('Ansicht als ' + name + ' — mit dem Button oben rechts geht\u2019s schnell zurück.');
+}
+
+function showPopup() { document.getElementById('overlay').classList.add('show'); }
+function hidePopup() { document.getElementById('overlay').classList.remove('show'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+function toggleShare(chip) {
+  const name = chip.textContent.split(':')[0];
+  const nowOff = chip.classList.toggle('off');
+  chip.textContent = name + (nowOff ? ': nicht freigegeben' : ': freigegeben');
+  if (!nowOff) showToast(name + ' bekommt den Shop jetzt als Pop-up angezeigt.');
+}
+
+function boardBuyItem(name, price) {
+  const buyer = document.getElementById('shopBuyFor').value;
+  showToast(name + ' für ' + buyer + ' gekauft (' + price + ' GP).');
+}
+</script>
+
+</body>
+</html>

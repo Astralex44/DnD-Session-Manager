@@ -1,0 +1,13 @@
+bin/
+obj/
+
+# User-uploaded files (Documents/Monster PDFs, images) saved by
+# DocumentFileStorage/MonsterFileStorage — local runtime data, not source.
+# In production this directory lives inside the dnd-uploads Docker volume
+# instead (see ../../../docker-compose.prod.yml), so it's never meant to be
+# committed either way.
+uploads/
+
+.vs/
+*.user
+appsettings.Development.json

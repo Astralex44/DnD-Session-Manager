@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Character Creation Mockup</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --tertiary: #B08D4C;
+    --error: #8C4A35;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; border-bottom: 2px solid var(--primary); background: var(--surface);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 22px; color: var(--primary); transform: rotate(-6deg); display: inline-block; }
+  .brand h1 { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .back-link {
+    font-family: var(--font-body); font-size: 13px; color: var(--primary-dark); text-decoration: none;
+    border: 1px solid var(--border); padding: 6px 13px; border-radius: 16px; background: var(--bg);
+  }
+
+  .stepper {
+    display: flex; justify-content: center; gap: 6px; padding: 18px 20px 4px; flex-wrap: wrap;
+  }
+  .step-dot {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted);
+    padding: 5px 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; touch-action: manipulation;
+  }
+  .step-dot.active { background: var(--primary); color: var(--bg); border-color: var(--primary); font-weight: bold; }
+  .step-dot.done { border-color: var(--secondary); color: var(--secondary); }
+
+  main { max-width: 760px; margin: 0 auto; padding: 20px 24px 60px; }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  .panel-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 26px 28px;
+  }
+  .panel-card h2 { font-family: var(--font-display); font-size: 19px; font-weight: normal; margin: 0 0 6px; }
+  .panel-card p.hint { font-size: 12.5px; color: var(--text-muted); margin: 0 0 20px; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .field input, .field select, .field textarea {
+    font-family: var(--font-body); font-size: 14px; border: 1px solid var(--border); border-radius: 6px;
+    padding: 9px 11px; background: var(--bg); color: var(--text);
+  }
+  .field textarea { min-height: 70px; resize: vertical; }
+
+  .template-note {
+    font-size: 11.5px; color: var(--text-muted); font-style: italic; margin-top: 16px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+  }
+
+  /* Step 2: abilities */
+  .ability-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .ability-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+  .ability-card label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; margin-bottom: 6px; }
+  .ability-stepper { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .ability-stepper button {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--primary); background: var(--surface);
+    color: var(--primary-dark); font-family: var(--font-data); font-size: 15px; cursor: pointer; touch-action: manipulation;
+  }
+  .ability-stepper .val { font-family: var(--font-data); font-size: 18px; font-weight: bold; min-width: 30px; }
+  .points-remaining {
+    text-align: center; font-size: 12.5px; color: var(--primary-dark); margin-bottom: 14px;
+    background: rgba(146,115,85,0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 8px;
+  }
+
+  /* Step 3: skills & saving throws */
+  .saves-skills-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .list-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 12.5px; }
+  .list-row:last-child { border-bottom: none; }
+  .list-row .row-name { flex: 1; }
+  .list-row .row-mod { font-family: var(--font-data); color: var(--text-muted); font-size: 12px; min-width: 28px; text-align: right; }
+  .prof-dot {
+    width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--primary); cursor: pointer;
+    touch-action: manipulation; display: inline-block; flex-shrink: 0;
+  }
+  .prof-dot.on { background: var(--primary); }
+
+  /* Step 4: equipment */
+  .equip-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .equip-row {
+    display: flex; align-items: center; justify-content: space-between; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: 13px;
+  }
+  .equip-row .equip-remove { color: var(--error); cursor: pointer; font-size: 12px; }
+  .add-equip-row { display: flex; gap: 8px; }
+  .add-equip-row input { flex: 1; }
+  .add-equip-row button {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg); border: none;
+    border-radius: 6px; padding: 9px 16px; cursor: pointer; touch-action: manipulation;
+  }
+
+  /* Step 4: personality */
+  .personality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .toggle-row {
+    display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px; margin-bottom: 18px;
+  }
+  .toggle-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; }
+  .toggle-row label { font-size: 13.5px; cursor: pointer; }
+
+  .spell-fields { display: none; }
+  .spell-fields.show { display: block; }
+
+  .unsure-note {
+    font-size: 11.5px; color: var(--text-muted); font-style: italic; margin-top: 16px;
+    background: var(--bg); border: 1px dashed var(--border); border-radius: 6px; padding: 10px 12px;
+  }
+
+  .homebrew-check {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted);
+    margin: 6px 0 4px; cursor: pointer;
+  }
+  .homebrew-check input { width: 14px; height: 14px; accent-color: var(--primary); cursor: pointer; }
+  .homebrew-desc-row { margin-bottom: 12px; }
+  .homebrew-desc-row.hidden { display: none; }
+  .homebrew-desc-row textarea {
+    width: 100%; font-family: var(--font-body); font-size: 12.5px; border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px; min-height: 54px; background: var(--bg); resize: vertical;
+  }
+  .equip-row .name-wrap { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+  .equip-row .hb-name { cursor: pointer; }
+  .equip-row .hb-name:hover { color: var(--primary-dark); }
+  .equip-row .homebrew-badge {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--tertiary); color: var(--bg);
+    padding: 2px 7px; border-radius: 8px; flex-shrink: 0;
+  }
+
+  /* Custom dropdown */
+  .custom-select { position: relative; }
+  .custom-select-trigger {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; font-family: var(--font-body); font-size: 14px; border: 1px solid var(--border); border-radius: 6px;
+    padding: 9px 11px; background: var(--bg); color: var(--text); cursor: pointer; touch-action: manipulation; text-align: left;
+  }
+  .custom-select-trigger:hover { border-color: var(--primary); }
+  .custom-select.open .custom-select-trigger { border-color: var(--primary); }
+  .custom-select-trigger .cs-arrow { color: var(--text-muted); font-size: 10px; transition: transform 0.15s; flex-shrink: 0; }
+  .custom-select.open .cs-arrow { transform: rotate(180deg); }
+  .custom-select-menu {
+    display: none; position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 45;
+    background: var(--surface); border: 1px solid var(--primary); border-radius: 6px;
+    box-shadow: 0 10px 24px rgba(29,26,16,0.25); overflow: hidden; max-height: 240px; overflow-y: auto;
+  }
+  .custom-select.open .custom-select-menu { display: block; }
+  .cs-option { padding: 9px 12px; font-size: 13px; cursor: pointer; touch-action: manipulation; color: var(--text); }
+  .cs-option:hover { background: var(--bg); }
+  .cs-option.selected { background: rgba(146,115,85,0.16); font-weight: bold; color: var(--primary-dark); }
+
+  /* Nav */
+  .step-nav { display: flex; justify-content: space-between; margin-top: 22px; }
+  .btn-primary {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg); border: none;
+    padding: 11px 22px; border-radius: 6px; font-size: 14px; cursor: pointer; touch-action: manipulation;
+  }
+  .btn-ghost {
+    font-family: var(--font-body); background: transparent; color: var(--primary-dark);
+    border: 1px solid var(--border); padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; touch-action: manipulation;
+  }
+  .btn-ghost.invisible { visibility: hidden; }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 10px 20px 24px; font-style: italic; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    .saves-skills-columns { grid-template-columns: 1fr; gap: 4px; }
+    main { padding: 16px 16px 50px; }
+    .panel-card { padding: 20px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="glyph">&#9876;</span>
+    <h1>Create New Character</h1>
+  </div>
+  <a class="back-link" href="DnD_Tool_CharacterOverview_Mockup_EN.html">&larr; Cancel</a>
+</header>
+
+<div class="stepper" id="stepper">
+  <div class="step-dot active" data-step="1" onclick="goStep(1)">1 · Basics</div>
+  <div class="step-dot" data-step="2" onclick="goStep(2)">2 · Abilities</div>
+  <div class="step-dot" data-step="3" onclick="goStep(3)">3 · Skills &amp; Saves</div>
+  <div class="step-dot" data-step="4" onclick="goStep(4)">4 · Equipment</div>
+  <div class="step-dot" data-step="5" onclick="goStep(5)">5 · Features</div>
+  <div class="step-dot" data-step="6" onclick="goStep(6)">6 · Magic</div>
+  <div class="step-dot" data-step="7" onclick="goStep(7)">7 · Personality</div>
+</div>
+
+<main>
+
+  <!-- STEP 1 -->
+  <div class="step-panel active" id="step1">
+    <div class="panel-card">
+      <h2>Basics</h2>
+      <p class="hint">Based on the official D&amp;D 5e template (FA-02). The only template available for Release 1.</p>
+      <div class="field-grid">
+        <div class="field"><label>Character Name</label><input type="text" placeholder="e.g. Fenn Ashgrove"></div>
+        <div class="field"><label>Player Name</label><input type="text" value="Severin" disabled></div>
+        <div class="field"><label>Race</label><input type="text" placeholder="e.g. Halfling"></div>
+        <div class="field"><label>Class</label><input type="text" placeholder="e.g. Rogue"></div>
+        <div class="field"><label>Background</label><input type="text" placeholder="e.g. Criminal"></div>
+        <div class="field">
+          <label>Alignment</label>
+          <div class="custom-select" id="alignmentSelect">
+            <button class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+              <span id="alignmentSelectLabel">Lawful Good</span><span class="cs-arrow">&#9662;</span>
+            </button>
+            <div class="custom-select-menu">
+              <div class="cs-option selected" onclick="pickSimple(this,'alignmentSelectLabel')">Lawful Good</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Neutral Good</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Chaotic Good</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Lawful Neutral</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">True Neutral</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Chaotic Neutral</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Lawful Evil</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Neutral Evil</div>
+              <div class="cs-option" onclick="pickSimple(this,'alignmentSelectLabel')">Chaotic Evil</div>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>Starting Level</label><input type="text" value="1"></div>
+        <div class="field"><label>Experience Points</label><input type="text" value="0"></div>
+        <div class="field"><label>Proficiency Bonus</label><input type="text" id="creationProfBonus" value="2" oninput="recalcSkillsAndSaves()"></div>
+      </div>
+      <div class="template-note">Level and ability scores can be manually adjusted by the DM to match the rest of the group, e.g. for a replacement character after the previous one died (see Pflichtenheft 8.10).</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-panel" id="step2">
+    <div class="panel-card">
+      <h2>Abilities</h2>
+      <p class="hint">Enter values freely, e.g. via point buy or a rolling method, however you handle it at the table.</p>
+      <div class="points-remaining">For reference only, not an enforced rule: point-buy total currently <strong id="pointSum">72</strong></div>
+      <div class="ability-grid" id="abilityGrid">
+        <div class="ability-card"><label>Strength</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Dexterity</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Constitution</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Intelligence</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Wisdom</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Charisma</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Hit Points Maximum</label><input type="text" placeholder="e.g. 10"></div>
+        <div class="field"><label>Armor Class</label><input type="text" placeholder="e.g. 12"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-panel" id="step3">
+    <div class="panel-card">
+      <h2>Skills &amp; Saving Throws</h2>
+      <p class="hint">Mark which saving throws and skills your character is proficient in. Bonuses are calculated automatically from the ability scores in Step 2 and the Proficiency Bonus from Step 1.</p>
+      <div class="saves-skills-columns">
+        <div>
+          <p class="hint" style="margin-top:0; margin-bottom:8px;">Saving Throws</p>
+          <div id="creationSaves">
+            <div class="list-row" data-ability="0"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Strength</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="1"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Dexterity</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="2"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Constitution</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="3"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Intelligence</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="4"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Wisdom</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="5"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Charisma</span><span class="row-mod">+0</span></div>
+          </div>
+        </div>
+        <div>
+          <p class="hint" style="margin-top:0; margin-bottom:8px;">Skills</p>
+          <div id="creationSkills">
+            <div class="list-row" data-ability="1"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Acrobatics (Dex)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="4"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Animal Handling (Wis)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="3"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Arcana (Int)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="0"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Athletics (Str)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="5"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Deception (Cha)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="3"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">History (Int)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="4"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Insight (Wis)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="5"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Intimidation (Cha)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="3"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Investigation (Int)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="4"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Medicine (Wis)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="3"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Nature (Int)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="4"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Perception (Wis)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="5"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Performance (Cha)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="5"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Persuasion (Cha)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="3"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Religion (Int)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="1"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Sleight of Hand (Dex)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="1"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Stealth (Dex)</span><span class="row-mod">+0</span></div>
+            <div class="list-row" data-ability="4"><span class="prof-dot" onclick="toggleCreationProf(this)"></span><span class="row-name">Survival (Wis)</span><span class="row-mod">+0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-panel" id="step4">
+    <div class="panel-card">
+      <h2>Equipment</h2>
+      <p class="hint">Enter starting equipment. No import from a previous character, every new character starts at zero (intentional, see Pflichtenheft 8.10).</p>
+      <div class="equip-list" id="equipList">
+        <div class="equip-row"><span>Shortsword (1×)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        <div class="equip-row"><span>Leather Armor (1×)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        <div class="equip-row"><span>Adventurer's Pack (1×)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+      </div>
+      <div class="add-equip-row">
+        <input type="text" id="newEquipInput" placeholder="Add an item, e.g. Rope (50 ft)">
+        <button onclick="addEquip()">+ Add</button>
+      </div>
+      <div class="field-grid" style="margin-top:18px;">
+        <div class="field"><label>Starting Gold</label><input type="text" placeholder="e.g. 10 GP"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-panel" id="step5">
+    <div class="panel-card">
+      <h2>Features</h2>
+      <p class="hint">Class and race features, e.g. "Battle Cry" or "Darkvision". For now just a simple reference list, no usage/cooldown logic behind it.</p>
+      <div class="equip-list" id="featureList">
+        <div class="equip-row"><span>Fighting Style (Defense)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        <div class="equip-row"><span>Battle Cry</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+      </div>
+      <div class="add-equip-row">
+        <input type="text" id="newFeatureInput" placeholder="Add a feature, e.g. Tough">
+        <button onclick="addFeature()">+ Add</button>
+      </div>
+      <div class="unsure-note">Confirmed with the DM: display only, no usage/cooldown tracking. Whether a feature like this has been used this session stays the player's own responsibility, same as on a paper sheet.</div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-panel" id="step6">
+    <div class="panel-card">
+      <h2>Magic</h2>
+      <p class="hint">Only fill this in if your character can cast spells. Optional, like CHARACTER_SPELLCASTING in the data model.</p>
+      <div class="toggle-row">
+        <input type="checkbox" id="hasMagicToggle" onchange="toggleMagicFields(this.checked)">
+        <label for="hasMagicToggle">My character can cast spells</label>
+      </div>
+      <div class="spell-fields" id="spellFields">
+        <div class="field-grid">
+          <div class="field">
+            <label>Spellcasting Ability</label>
+            <div class="custom-select" id="spellAbilitySelectWrap">
+              <button class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                <span id="spellAbilitySelectLabel">Charisma</span><span class="cs-arrow">&#9662;</span>
+              </button>
+              <div class="custom-select-menu">
+                <div class="cs-option" data-value="3" onclick="pickSpellAbility(3, this)">Intelligence</div>
+                <div class="cs-option" data-value="4" onclick="pickSpellAbility(4, this)">Wisdom</div>
+                <div class="cs-option selected" data-value="5" onclick="pickSpellAbility(5, this)">Charisma</div>
+              </div>
+            </div>
+            <input type="hidden" id="spellAbilitySelect" value="5">
+          </div>
+          <div class="field"><label>Proficiency Bonus</label><input type="text" id="profBonusInput" value="2" oninput="recalcSpellValues()"></div>
+        </div>
+        <div class="ability-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:14px;">
+          <div class="ability-card"><label>Ability Modifier</label><div class="val" id="calcAbilityMod" style="font-size:18px; font-weight:bold;">+0</div></div>
+          <div class="ability-card"><label>Spell Save DC</label><div class="val" id="calcSaveDC" style="font-size:18px; font-weight:bold;">8</div></div>
+          <div class="ability-card"><label>Spell Attack Bonus</label><div class="val" id="calcAttackBonus" style="font-size:18px; font-weight:bold;">+0</div></div>
+        </div>
+        <div class="unsure-note" style="margin-top:10px;">Calculated automatically: Ability Modifier = (Ability Score − 10) ÷ 2, rounded down. Spell Save DC = 8 + Proficiency Bonus + Modifier. Spell Attack Bonus = Modifier + Proficiency Bonus. Value comes from the matching ability in Step 2.</div>
+
+        <p class="hint" style="margin-top:20px; margin-bottom:8px;">Cantrips — usable unlimited times, never need to be prepared, no spell slots required</p>
+        <div class="equip-list" id="cantripList">
+          <div class="equip-row"><span>Fire Bolt</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        </div>
+        <div class="add-equip-row">
+          <input type="text" id="newCantripInput" placeholder="Add a cantrip, e.g. Mage Hand">
+          <button onclick="addCantrip()">+ Add</button>
+        </div>
+        <label class="homebrew-check">
+          <input type="checkbox" id="newCantripHomebrewToggle" onchange="document.getElementById('newCantripDescRow').classList.toggle('hidden', !this.checked)">
+          This is homebrew, not from an official rulebook
+        </label>
+        <div class="homebrew-desc-row hidden" id="newCantripDescRow">
+          <textarea id="newCantripDesc" placeholder="Short description of what it does — won't be in any rulebook the party can look up"></textarea>
+        </div>
+
+        <p class="hint" style="margin-top:20px; margin-bottom:8px;">Leveled spells — require spell slots, some need to be prepared</p>
+        <div class="equip-list" id="spellList">
+          <div class="equip-row"><span>Shield (Level 1)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        </div>
+        <div class="add-equip-row">
+          <input type="text" id="newSpellInput" placeholder="Add a spell, e.g. Magic Missile (Level 1)">
+          <button onclick="addSpell()">+ Add</button>
+        </div>
+        <label class="homebrew-check">
+          <input type="checkbox" id="newSpellHomebrewToggle" onchange="document.getElementById('newSpellDescRow').classList.toggle('hidden', !this.checked)">
+          This is homebrew, not from an official rulebook
+        </label>
+        <div class="homebrew-desc-row hidden" id="newSpellDescRow">
+          <textarea id="newSpellDesc" placeholder="Short description of what it does — won't be in any rulebook the party can look up"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-panel" id="step7">
+    <div class="panel-card">
+      <h2>Personality &amp; Background</h2>
+      <p class="hint">Optional, but helps the DM weave your character into the story.</p>
+      <div class="personality-grid">
+        <div class="field"><label>Personality Traits</label><textarea placeholder="How does your character carry themselves?"></textarea></div>
+        <div class="field"><label>Ideals</label><textarea placeholder="What does your character stand for?"></textarea></div>
+        <div class="field"><label>Bonds</label><textarea placeholder="What ties your character to the world?"></textarea></div>
+        <div class="field"><label>Flaws</label><textarea placeholder="What is your character's weakness?"></textarea></div>
+      </div>
+      <div class="field full" style="margin-top:14px;"><label>Backstory</label><textarea style="min-height:110px;" placeholder="Where does your character come from, what drives them?"></textarea></div>
+    </div>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn-ghost" id="prevBtn" onclick="prevStep()">&larr; Back</button>
+    <button class="btn-primary" id="nextBtn" onclick="nextStep()">Next &rarr;</button>
+  </div>
+
+</main>
+
+<footer>Mockup — Character Creation · illustrative only, not a working feature</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 7;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+/* ===== Custom dropdown ===== */
+function toggleCustomSelect(triggerBtn) {
+  const wrap = triggerBtn.closest('.custom-select');
+  const wasOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.custom-select.open').forEach(function (cs) { cs.classList.remove('open'); });
+  if (!wasOpen) wrap.classList.add('open');
+}
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.custom-select')) {
+    document.querySelectorAll('.custom-select.open').forEach(function (cs) { cs.classList.remove('open'); });
+  }
+});
+function pickSimple(optionEl, labelId) {
+  const menu = optionEl.closest('.custom-select-menu');
+  menu.querySelectorAll('.cs-option').forEach(function (o) { o.classList.remove('selected'); });
+  optionEl.classList.add('selected');
+  document.getElementById(labelId).textContent = optionEl.textContent;
+  optionEl.closest('.custom-select').classList.remove('open');
+}
+function pickSpellAbility(value, optionEl) {
+  pickSimple(optionEl, 'spellAbilitySelectLabel');
+  document.getElementById('spellAbilitySelect').value = value;
+  recalcSpellValues();
+}
+
+function goStep(step) {
+  currentStep = step;
+  document.querySelectorAll('.step-panel').forEach(function (p) { p.classList.remove('active'); });
+  document.getElementById('step' + step).classList.add('active');
+  document.querySelectorAll('.step-dot').forEach(function (d) {
+    const s = parseInt(d.dataset.step, 10);
+    d.classList.toggle('active', s === step);
+    d.classList.toggle('done', s < step);
+  });
+  document.getElementById('prevBtn').classList.toggle('invisible', step === 1);
+  document.getElementById('nextBtn').textContent = step === totalSteps ? 'Create Character \u2713' : 'Next \u2192';
+}
+
+function nextStep() {
+  if (currentStep < totalSteps) {
+    goStep(currentStep + 1);
+  } else {
+    showToast('Character would now be created and added to the game (mockup).');
+  }
+}
+
+function prevStep() {
+  if (currentStep > 1) goStep(currentStep - 1);
+}
+
+function stepAbility(btn, delta) {
+  const span = btn.parentElement.querySelector('.val');
+  let n = parseInt(span.textContent, 10) + delta;
+  if (n < 3) n = 3;
+  if (n > 18) n = 18;
+  span.textContent = n;
+  updatePointSum();
+  recalcSpellValues();
+  recalcSkillsAndSaves();
+}
+
+function updatePointSum() {
+  const vals = Array.from(document.querySelectorAll('#abilityGrid .val')).map(function (el) { return parseInt(el.textContent, 10); });
+  const sum = vals.reduce(function (a, b) { return a + b; }, 0);
+  document.getElementById('pointSum').textContent = sum;
+}
+
+function toggleCreationProf(dot) {
+  dot.classList.toggle('on');
+  recalcSkillsAndSaves();
+}
+
+function recalcSkillsAndSaves() {
+  const scores = Array.from(document.querySelectorAll('#abilityGrid .val')).map(function (el) { return parseInt(el.textContent, 10) || 10; });
+  const profBonusInput = document.getElementById('creationProfBonus');
+  const profBonus = profBonusInput ? (parseInt(profBonusInput.value, 10) || 0) : 2;
+
+  document.querySelectorAll('#creationSaves .list-row, #creationSkills .list-row').forEach(function (row) {
+    const idx = parseInt(row.dataset.ability, 10);
+    const score = scores[idx] !== undefined ? scores[idx] : 10;
+    const abilityMod = Math.floor((score - 10) / 2);
+    const isProf = row.querySelector('.prof-dot').classList.contains('on');
+    const mod = abilityMod + (isProf ? profBonus : 0);
+    row.querySelector('.row-mod').textContent = (mod >= 0 ? '+' : '\u2212') + Math.abs(mod);
+  });
+}
+
+function addEquip() {
+  const input = document.getElementById('newEquipInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('equipList');
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  row.innerHTML = '<span>' + val + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  list.appendChild(row);
+  input.value = '';
+}
+
+function addFeature() {
+  const input = document.getElementById('newFeatureInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('featureList');
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  row.innerHTML = '<span>' + val + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  list.appendChild(row);
+  input.value = '';
+}
+
+function buildSpellRow(name, isHomebrew, desc) {
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  if (isHomebrew) {
+    const safeDesc = (desc || 'No description added.').replace(/'/g, "\\'").replace(/</g, '&lt;');
+    row.innerHTML =
+      '<span class="name-wrap">' +
+        '<span class="hb-name" onclick="showToast(\'' + safeDesc + '\')">' + name + '</span>' +
+        '<span class="homebrew-badge">Homebrew</span>' +
+      '</span>' +
+      '<span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  } else {
+    row.innerHTML = '<span>' + name + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  }
+  return row;
+}
+
+function addCantrip() {
+  const input = document.getElementById('newCantripInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const homebrewToggle = document.getElementById('newCantripHomebrewToggle');
+  const descInput = document.getElementById('newCantripDesc');
+  const isHomebrew = homebrewToggle.checked;
+  const list = document.getElementById('cantripList');
+  list.appendChild(buildSpellRow(val, isHomebrew, descInput.value.trim()));
+  input.value = '';
+  descInput.value = '';
+  homebrewToggle.checked = false;
+  document.getElementById('newCantripDescRow').classList.add('hidden');
+}
+
+function addSpell() {
+  const input = document.getElementById('newSpellInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const homebrewToggle = document.getElementById('newSpellHomebrewToggle');
+  const descInput = document.getElementById('newSpellDesc');
+  const isHomebrew = homebrewToggle.checked;
+  const list = document.getElementById('spellList');
+  list.appendChild(buildSpellRow(val, isHomebrew, descInput.value.trim()));
+  input.value = '';
+  descInput.value = '';
+  homebrewToggle.checked = false;
+  document.getElementById('newSpellDescRow').classList.add('hidden');
+}
+
+function toggleMagicFields(checked) {
+  document.getElementById('spellFields').classList.toggle('show', checked);
+  if (checked) recalcSpellValues();
+}
+
+function recalcSpellValues() {
+  const abilityIndex = parseInt(document.getElementById('spellAbilitySelect').value, 10);
+  const abilityEls = document.querySelectorAll('#abilityGrid .val');
+  const score = parseInt(abilityEls[abilityIndex].textContent, 10) || 10;
+  const mod = Math.floor((score - 10) / 2);
+  const prof = parseInt(document.getElementById('profBonusInput').value, 10) || 0;
+  const saveDC = 8 + prof + mod;
+  const attackBonus = mod + prof;
+
+  document.getElementById('calcAbilityMod').textContent = (mod >= 0 ? '+' : '') + mod;
+  document.getElementById('calcSaveDC').textContent = saveDC;
+  document.getElementById('calcAttackBonus').textContent = (attackBonus >= 0 ? '+' : '') + attackBonus;
+}
+
+recalcSpellValues();
+recalcSkillsAndSaves();
+</script>
+
+</body>
+</html>

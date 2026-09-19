@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Verwaltung (Mockup)</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --tertiary: #B08D4C;
+    --error: #8C4A35;
+    --sold-out: #A79C87;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 2px solid var(--primary);
+    background: var(--surface);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 26px; color: var(--primary); transform: rotate(-6deg); display: inline-block; }
+  .brand h1 { font-family: var(--font-display); font-size: 21px; letter-spacing: 0.06em; margin: 0; font-weight: normal; text-transform: uppercase; }
+  .brand .sub { font-size: 13px; color: var(--text-muted); font-style: italic; margin-left: 6px; }
+  .back-link {
+    font-family: var(--font-body); font-size: 13px; color: var(--primary-dark);
+    text-decoration: none; border: 1px solid var(--border); padding: 7px 14px;
+    border-radius: 18px; background: var(--bg);
+  }
+
+  .layout { display: flex; min-height: calc(100vh - 68px); }
+  @media (max-width: 520px) {
+    .layout { flex-direction: column; }
+    nav.sidebar {
+      width: 100%; display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding: 8px 10px; gap: 4px; border-right: none; border-bottom: 1px solid var(--border);
+    }
+    nav.sidebar .nav-item {
+      flex-shrink: 0; border-left: none; border-bottom: 3px solid transparent;
+      white-space: nowrap; padding: 10px 16px; border-radius: 6px;
+    }
+    nav.sidebar .nav-item.active { border-left-color: transparent; border-bottom-color: var(--primary); background: var(--surface-2); }
+    main { padding: 22px 18px 50px; }
+  }
+
+  nav.sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+  }
+  nav.sidebar .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 22px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+  }
+  nav.sidebar .nav-item .glyph { width: 18px; text-align: center; color: var(--primary); }
+  nav.sidebar .nav-item:hover { background: var(--surface-2); }
+  nav.sidebar .nav-item.active {
+    border-left-color: var(--primary);
+    background: var(--surface-2);
+    font-weight: bold;
+  }
+
+  main { flex: 1; padding: 30px 40px 60px; max-width: 1100px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .section-header h2 { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.03em; margin: 0; font-weight: normal; }
+  .section-header p.hint { font-size: 12px; color: var(--text-muted); font-style: italic; margin: 4px 0 0; }
+
+  .btn-primary {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg);
+    border: none; padding: 9px 16px; border-radius: 4px; font-size: 13px; cursor: pointer;
+  }
+  .btn-ghost {
+    font-family: var(--font-body); background: transparent; color: var(--primary-dark);
+    border: 1px solid var(--border); padding: 8px 14px; border-radius: 4px; font-size: 13px; cursor: pointer;
+  }
+
+  .card-list { display: flex; flex-direction: column; gap: 10px; }
+  .row-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+  }
+  .row-top { display: flex; justify-content: space-between; align-items: center; }
+  .row-title { font-weight: bold; font-size: 14px; }
+  .row-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .row-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    font-family: var(--font-body); font-size: 12px; color: var(--primary-dark);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 5px 10px; cursor: pointer;
+  }
+
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip {
+    font-size: 11px; padding: 3px 10px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text-muted);
+  }
+  .chip.visible { border-color: var(--secondary); color: var(--secondary); }
+  .chip.hidden-chip { border-color: var(--sold-out); color: var(--sold-out); }
+  .chip.locked { border-color: var(--tertiary); color: var(--tertiary); }
+
+  .hp-field { display: flex; align-items: center; gap: 6px; font-family: var(--font-data); font-size: 13px; }
+  .hp-field input { width: 46px; text-align: center; font-family: var(--font-data); border: 1px solid var(--border); border-radius: 4px; padding: 3px; background: var(--bg); }
+
+  .shop-card { }
+  .item-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  .item-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .item-table td { padding: 8px; border-bottom: 1px dashed var(--border); }
+  .item-table tr:last-child td { border-bottom: none; }
+  .mode-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--surface-2); color: var(--text-muted); }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .upload-zone .glyph { font-size: 22px; color: var(--primary); display: block; margin-bottom: 8px; }
+
+  .quote-card { font-style: italic; }
+  .quote-toggle { font-size: 11px; }
+
+  .session-notes-preview {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 12px; font-size: 12px; color: var(--text); margin-top: 10px; white-space: pre-wrap;
+  }
+
+  .settings-block { margin-bottom: 34px; }
+  .settings-block h3 { font-family: var(--font-display); font-size: 15px; font-weight: normal; margin: 0 0 4px; }
+  .settings-block p.hint { font-size: 12px; color: var(--text-muted); margin: 0 0 14px; }
+
+  .order-banner {
+    display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--primary-dark);
+    background: rgba(146,115,85,0.1); border: 1px solid var(--primary); border-radius: 6px;
+    padding: 9px 12px; margin-bottom: 12px; max-width: 560px;
+  }
+  .currency-editor { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+  .currency-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+    touch-action: none;
+  }
+  .currency-row.dragging { opacity: 0.4; }
+  .currency-row.base-row { border-color: var(--primary); background: rgba(146,115,85,0.1); }
+  .drag-handle { cursor: grab; color: var(--text-muted); font-size: 15px; flex-shrink: 0; user-select: none; }
+  .color-swatch {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+    border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--border);
+  }
+  .currency-row input {
+    font-family: var(--font-body); font-size: 13px; border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; background: var(--bg); color: var(--text);
+  }
+  .currency-row input.cur-name { width: 108px; }
+  .currency-row input.cur-code { width: 52px; text-transform: uppercase; text-align: center; }
+  .currency-row input.cur-value { width: 84px; font-family: var(--font-data); }
+  .value-locked {
+    font-family: var(--font-data); font-size: 12.5px; color: var(--primary-dark); width: 84px;
+    text-align: center; font-style: italic;
+  }
+  .value-unit { font-size: 11px; color: var(--text-muted); }
+  .base-badge {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--primary); color: var(--bg);
+    padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+  }
+  .currency-row .row-remove { color: var(--sold-out); cursor: pointer; font-size: 12px; margin-left: auto; flex-shrink: 0; }
+  .currency-row .row-remove:hover { color: var(--error); }
+
+  .color-popover {
+    position: absolute; z-index: 60; background: var(--bg); border: 1px solid var(--primary); border-radius: 8px;
+    padding: 10px; box-shadow: 0 8px 22px rgba(29,26,16,0.28); display: none; width: 210px;
+  }
+  .color-popover.show { display: block; }
+  .color-popover .popover-label { font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .preset-swatches { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; max-height: 170px; overflow-y: auto; }
+  .swatch-row { display: flex; align-items: center; gap: 8px; padding: 4px 5px; border-radius: 4px; cursor: pointer; }
+  .swatch-row:hover { background: var(--bg); }
+  .swatch-row .dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px var(--border); }
+  .swatch-row .hex { font-family: var(--font-data); font-size: 10.5px; color: var(--text); flex: 1; }
+  .swatch-row .copy-btn {
+    font-size: 9px; color: var(--primary-dark); background: none; border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; padding: 2px 6px; touch-action: manipulation;
+  }
+  .swatch-row .copy-btn:hover { border-color: var(--primary); }
+  .color-popover input[type="color"] { width: 100%; height: 32px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; padding: 2px; background: var(--surface); }
+
+  .access-list { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+  .access-row { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 7px 12px; font-size: 13px; }
+  .access-row .remove { color: var(--error); font-size: 12px; cursor: pointer; }
+  .add-access { display: flex; gap: 8px; margin-top: 10px; }
+  .add-access input { flex: 1; font-family: var(--font-body); border: 1px solid var(--border); border-radius: 4px; padding: 7px 10px; background: var(--surface); }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 20px; font-style: italic; }
+/* Just-in-case-Absicherung, falls die Verwaltung doch mal auf einem
+   Touch-Gerät genutzt wird, obwohl der DM primär am Laptop arbeitet. */
+@media (pointer: coarse) {
+  .icon-btn, .btn-primary, .btn-ghost { min-height: 38px; font-size: 13px; }
+  .nav-item { padding: 13px 22px; }
+  .hp-field input { width: 54px; height: 32px; font-size: 14px; }
+}
+
+/* ===== Modal ===== */
+.overlay {
+  position: fixed; inset: 0; background: rgba(29,26,16,0.42);
+  display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+}
+.overlay.show { display: flex; }
+.modal-box {
+  background: var(--bg); border: 1px solid var(--primary); border-radius: 10px;
+  width: 440px; max-width: 100%; max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 14px 36px rgba(29,26,16,0.32);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 22px; border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { font-family: var(--font-display); font-size: 17px; font-weight: normal; margin: 0; }
+.modal-close { cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 4px; touch-action: manipulation; }
+.modal-close:hover { color: var(--error); }
+.modal-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+}
+.form-field input, .form-field select, .form-field textarea {
+  font-family: var(--font-body); font-size: 13px; border: 1px solid var(--border); border-radius: 5px;
+  padding: 8px 10px; background: var(--surface); color: var(--text);
+}
+.form-field textarea { min-height: 84px; resize: vertical; font-family: var(--font-body); }
+.mode-hint {
+  font-size: 11.5px; color: var(--text-muted); font-style: italic; line-height: 1.5;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; margin-top: -6px;
+}
+.form-row { display: flex; gap: 12px; }
+.form-row .form-field { flex: 1; }
+.file-fake {
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px dashed var(--border); border-radius: 5px; padding: 9px 12px;
+  font-size: 12px; color: var(--text-muted); background: var(--surface); cursor: pointer;
+}
+.file-fake:hover { border-color: var(--primary); }
+.share-checks { display: flex; gap: 14px; flex-wrap: wrap; }
+.share-checks label {
+  display: flex; align-items: center; gap: 6px; font-size: 12.5px;
+  font-weight: normal; text-transform: none; letter-spacing: 0; color: var(--text);
+}
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--border);
+}
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+  font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none; z-index: 110;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="glyph">&#9876;</span>
+    <h1>DnD Session Manager</h1>
+    <span class="sub">— Verwaltung</span>
+  </div>
+  <a class="back-link" href="#">&larr; Zurück zum Board</a>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-item active" data-target="maps"><span class="glyph">&#9733;</span> Karten</div>
+    <div class="nav-item" data-target="monsters"><span class="glyph">&#9760;</span> Monster</div>
+    <div class="nav-item" data-target="shops"><span class="glyph">&#9878;</span> Shops</div>
+    <div class="nav-item" data-target="books"><span class="glyph">&#128214;</span> Bücher</div>
+    <div class="nav-item" data-target="quotes"><span class="glyph">&#10077;</span> Zitate</div>
+    <div class="nav-item" data-target="sessions"><span class="glyph">&#9711;</span> Sessions</div>
+    <div class="nav-item" data-target="settings"><span class="glyph">&#9881;</span> Einstellungen</div>
+  </nav>
+
+  <main>
+
+    <section class="section active" id="maps">
+      <div class="section-header">
+        <div>
+          <h2>Karten</h2>
+          <p class="hint">Eine Karte pro Raum — einfacher freizugeben als Ausschnitte einer grossen Karte.</p>
+        </div>
+      </div>
+      <div class="upload-zone" onclick="openModal('map-add')" style="cursor:pointer;">
+        <span class="glyph">&#128506;</span>
+        PDF oder PNG hierher ziehen oder klicken zum Hochladen
+      </div>
+      <div class="card-list">
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Eingangshalle</div>
+              <div class="row-sub">eingangshalle.pdf · hochgeladen 12.11.2025</div>
+            </div>
+            <div class="row-actions">
+              <button class="icon-btn" onclick="openModal('map-edit')">Ersetzen</button>
+              <button class="icon-btn">Löschen</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip visible">Rhogar: sichtbar</span>
+            <span class="chip visible">Elandra: sichtbar</span>
+            <span class="chip locked">Torvin: gesperrt</span>
+          </div>
+        </div>
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Gang Ost</div>
+              <div class="row-sub">gang_ost.png · hochgeladen 12.11.2025</div>
+            </div>
+            <div class="row-actions">
+              <button class="icon-btn" onclick="openModal('map-edit')">Ersetzen</button>
+              <button class="icon-btn">Löschen</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip visible">Rhogar: sichtbar</span>
+            <span class="chip visible">Elandra: sichtbar</span>
+            <span class="chip visible">Torvin: sichtbar</span>
+          </div>
+        </div>
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Thronsaal</div>
+              <div class="row-sub">thronsaal.pdf · hochgeladen 12.11.2025</div>
+            </div>
+            <div class="row-actions">
+              <button class="icon-btn" onclick="openModal('map-edit')">Ersetzen</button>
+              <button class="icon-btn">Löschen</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip hidden-chip">Rhogar: ausgeblendet</span>
+            <span class="chip hidden-chip">Elandra: ausgeblendet</span>
+            <span class="chip hidden-chip">Torvin: ausgeblendet</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="monsters">
+      <div class="section-header">
+        <div>
+          <h2>Monster</h2>
+          <p class="hint">Vorlagen mit PDF und Standard-HP. Die tatsächliche, live veränderliche HP eines Monsters im Kampf gehört nicht hierher, sondern läuft separat pro Session auf dem Board.</p>
+        </div>
+      </div>
+      <div class="upload-zone" onclick="openModal('monster-add')" style="cursor:pointer;">
+        <span class="glyph">&#128128;</span>
+        PDF hierher ziehen oder klicken zum Anlegen
+      </div>
+      <div class="card-list">
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Goblin-Späher</div>
+              <div class="row-sub">goblin_spaeher.pdf</div>
+            </div>
+            <div class="hp-field">Standard-HP <input type="text" value="15"></div>
+          </div>
+        </div>
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Goblin-Grunzer</div>
+              <div class="row-sub">goblin_grunzer.pdf</div>
+            </div>
+            <div class="hp-field">Standard-HP <input type="text" value="10"></div>
+          </div>
+        </div>
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Goblinkönig Vrak</div>
+              <div class="row-sub">vrak_boss.pdf</div>
+            </div>
+            <div class="hp-field">Standard-HP <input type="text" value="58"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="shops">
+      <div class="section-header">
+        <div>
+          <h2>Shops</h2>
+          <p class="hint">Preis, Menge, Münzart und Verkaufsmodus pro Gegenstand.</p>
+        </div>
+        <button class="btn-primary" onclick="openModal('shop-add')">+ Shop anlegen</button>
+      </div>
+      <div class="row-card shop-card">
+        <div class="row-top">
+          <div>
+            <div class="row-title">Krämerladen "Zum müden Wanderer"</div>
+            <div class="row-sub">freigegeben für: Rhogar, Elandra, Torvin</div>
+          </div>
+          <button class="icon-btn" onclick="openModal('item-add')">+ Artikel</button>
+        </div>
+        <table class="item-table">
+          <tr><th>Name</th><th>Preis</th><th>Menge</th><th>Modus</th><th></th></tr>
+          <tr><td>Heiltrank</td><td>12 GP</td><td>8</td><td><span class="mode-tag">geteilter Vorrat</span></td><td><button class="icon-btn" onclick="openModal('item-add')">Bearbeiten</button></td></tr>
+          <tr><td>Schwert +1</td><td>450 GP</td><td>1</td><td><span class="mode-tag">geteilter Vorrat</span></td><td><button class="icon-btn" onclick="openModal('item-add')">Bearbeiten</button></td></tr>
+          <tr><td>Reiseumhang</td><td>5 GP</td><td>—</td><td><span class="mode-tag">an alle verkaufbar</span></td><td><button class="icon-btn" onclick="openModal('item-add')">Bearbeiten</button></td></tr>
+        </table>
+      </div>
+      <div class="row-card shop-card" style="margin-top:14px;">
+        <div class="row-top">
+          <div>
+            <div class="row-title">Schmiede Grimbarts</div>
+            <div class="row-sub">freigegeben für: niemanden (noch nicht geöffnet)</div>
+          </div>
+          <button class="icon-btn" onclick="openModal('item-add')">+ Artikel</button>
+        </div>
+        <table class="item-table">
+          <tr><th>Name</th><th>Preis</th><th>Menge</th><th>Modus</th><th></th></tr>
+          <tr><td>Kettenhemd</td><td>75 GP</td><td>3</td><td><span class="mode-tag">geteilter Vorrat</span></td><td><button class="icon-btn" onclick="openModal('item-add')">Bearbeiten</button></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="books">
+      <div class="section-header">
+        <div>
+          <h2>Bücher</h2>
+          <p class="hint">Nur für dich als DM, keine Freigabe an Spieler nötig.</p>
+        </div>
+      </div>
+      <div class="upload-zone" onclick="openModal('book-add')" style="cursor:pointer;">
+        <span class="glyph">&#128214;</span>
+        PDF hierher ziehen oder klicken zum Hochladen
+      </div>
+      <div class="card-list">
+        <div class="row-card"><div class="row-top"><div class="row-title">Dungeon Master's Guide</div><button class="icon-btn">Öffnen</button></div></div>
+        <div class="row-card"><div class="row-top"><div class="row-title">Monster Manual</div><button class="icon-btn">Öffnen</button></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="quotes">
+      <div class="section-header">
+        <div>
+          <h2>Zitate</h2>
+          <p class="hint">Einprägsame Sprüche aus vergangenen Sessions.</p>
+        </div>
+        <button class="btn-primary" onclick="openModal('quote-add')">+ Zitat hinzufügen</button>
+      </div>
+      <div class="card-list">
+        <div class="row-card quote-card">
+          <div class="row-top">
+            <div>&bdquo;Ich hab doch nur gefragt, ob die Falltür verschlossen ist&hellip;&ldquo; — Torvin, kurz bevor er hindurchfiel</div>
+            <span class="chip visible quote-toggle">freigegeben</span>
+          </div>
+        </div>
+        <div class="row-card quote-card">
+          <div class="row-top">
+            <div>&bdquo;Wir greifen den Drachen frontal an. Was soll schon schiefgehen?&ldquo; — Rhogar, Session 4</div>
+            <span class="chip hidden-chip quote-toggle">versteckt</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sessions">
+      <div class="section-header">
+        <div>
+          <h2>Sessions</h2>
+          <p class="hint">Titel und vorbereitete Notizen pro Session.</p>
+        </div>
+        <button class="btn-primary" onclick="openModal('session-add')">+ Session anlegen</button>
+      </div>
+      <div class="card-list">
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Session 12 — Der Fluch von Rabenhorst</div>
+              <div class="row-sub">geplant für 08.02.2026, 19:00</div>
+            </div>
+            <button class="icon-btn" onclick="openModal('session-edit')">Bearbeiten</button>
+          </div>
+          <div class="session-notes-preview">Bei Betreten des Thronsaals: Wahrnehmung SG 15 für die verborgene Falltür hinter dem Thron. Goblinkönig Vrak flieht bei &lt; 30% HP in den Ostgang.</div>
+        </div>
+        <div class="row-card">
+          <div class="row-top">
+            <div>
+              <div class="row-title">Session 13</div>
+              <div class="row-sub">noch kein Titel · geplant für 22.02.2026, 19:00</div>
+            </div>
+            <button class="icon-btn" onclick="openModal('session-add')">Bearbeiten</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="settings">
+      <div class="section-header">
+        <div>
+          <h2>Einstellungen</h2>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <h3>Währungen</h3>
+        <p class="hint">Komplett frei pro Kampagne: Name, Kürzel, Farbe und Wert selbst festlegen, nicht nur die klassischen fünf D&amp;D-Münzen.</p>
+        <div class="order-banner">
+          &#8693; Reihenfolge per Drag &amp; Drop von der wertvollsten Münze (oben) zur kleinsten Einheit (unten). <strong>Die unterste Währung ist immer die Basis-Einheit (Wert = 1)</strong>, alle anderen Werte gelten relativ dazu.
+        </div>
+        <div class="currency-editor" id="currencyEditor">
+          <div class="currency-row" draggable="true" data-name="Platin" data-code="PP" data-color="#B7C0AE">
+            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="color-swatch" style="background:#B7C0AE" onclick="openColorPicker(this)"></span>
+            <input type="text" class="cur-name" value="Platin">
+            <input type="text" class="cur-code" value="PP" maxlength="4">
+            <input type="text" class="cur-value" value="100000">
+            <span class="value-unit">CP</span>
+            <span class="row-remove" onclick="this.closest('.currency-row').remove(); refreshCurrencyOrder();">✕</span>
+          </div>
+          <div class="currency-row" draggable="true" data-name="Gold" data-code="GP" data-color="#B08D4C">
+            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="color-swatch" style="background:#B08D4C" onclick="openColorPicker(this)"></span>
+            <input type="text" class="cur-name" value="Gold">
+            <input type="text" class="cur-code" value="GP" maxlength="4">
+            <input type="text" class="cur-value" value="10000">
+            <span class="value-unit">CP</span>
+            <span class="row-remove" onclick="this.closest('.currency-row').remove(); refreshCurrencyOrder();">✕</span>
+          </div>
+          <div class="currency-row" draggable="true" data-name="Elektrum" data-code="EP" data-color="#C9B278">
+            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="color-swatch" style="background:#C9B278" onclick="openColorPicker(this)"></span>
+            <input type="text" class="cur-name" value="Elektrum">
+            <input type="text" class="cur-code" value="EP" maxlength="4">
+            <input type="text" class="cur-value" value="500">
+            <span class="value-unit">CP</span>
+            <span class="row-remove" onclick="this.closest('.currency-row').remove(); refreshCurrencyOrder();">✕</span>
+          </div>
+          <div class="currency-row" draggable="true" data-name="Silber" data-code="SP" data-color="#9C978A">
+            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="color-swatch" style="background:#9C978A" onclick="openColorPicker(this)"></span>
+            <input type="text" class="cur-name" value="Silber">
+            <input type="text" class="cur-code" value="SP" maxlength="4">
+            <input type="text" class="cur-value" value="100">
+            <span class="value-unit">CP</span>
+            <span class="row-remove" onclick="this.closest('.currency-row').remove(); refreshCurrencyOrder();">✕</span>
+          </div>
+          <div class="currency-row base-row" draggable="true" data-name="Kupfer" data-code="CP" data-color="#A9673E">
+            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="color-swatch" style="background:#A9673E" onclick="openColorPicker(this)"></span>
+            <input type="text" class="cur-name" value="Kupfer">
+            <input type="text" class="cur-code" value="CP" maxlength="4">
+            <span class="value-locked">= 1 (Basis)</span>
+            <span class="base-badge">Basis-Einheit</span>
+            <span class="row-remove" onclick="this.closest('.currency-row').remove(); refreshCurrencyOrder();">✕</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button class="btn-ghost" onclick="addCurrencyRow()">+ Neue Währung</button>
+          <button class="btn-ghost" onclick="showToast('Währungen gespeichert (Mockup).')">Speichern</button>
+        </div>
+      </div>
+
+      <div class="color-popover" id="colorPopover">
+        <div class="popover-label">Vorschläge</div>
+        <div class="preset-swatches" id="presetSwatches"></div>
+        <div class="popover-label">Eigene Farbe</div>
+        <input type="color" id="colorPickerInput" value="#927355">
+      </div>
+
+      <div class="settings-block">
+        <h3>Zugriffsliste</h3>
+        <p class="hint">Nur Discord-Benutzer auf dieser Liste erhalten Zugriff auf eure Sessions.</p>
+        <div class="access-list">
+          <div class="access-row"><span>rhogar_dh#discord</span><span class="remove">Entfernen</span></div>
+          <div class="access-row"><span>elandra.silber#discord</span><span class="remove">Entfernen</span></div>
+          <div class="access-row"><span>torvin_stein#discord</span><span class="remove">Entfernen</span></div>
+        </div>
+        <div class="add-access">
+          <input type="text" placeholder="Discord-Benutzername hinzufügen">
+          <button class="btn-primary">Hinzufügen</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>Mockup — DnD Session Manager Verwaltung · nur zur Veranschaulichung, keine echte Funktion</footer>
+
+<div class="overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle">Titel</h3>
+      <span class="modal-close" onclick="closeModal()">✕</span>
+    </div>
+    <div class="modal-body" id="modalFields"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-primary" onclick="saveModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+document.querySelectorAll('.nav-item').forEach(function (item) {
+  item.addEventListener('click', function () {
+    document.querySelectorAll('.nav-item').forEach(function (i) { i.classList.remove('active'); });
+    document.querySelectorAll('.section').forEach(function (s) { s.classList.remove('active'); });
+    item.classList.add('active');
+    document.getElementById(item.dataset.target).classList.add('active');
+  });
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+const shareChecks = '<div class="form-field"><label>Freigabe pro Spieler</label><div class="share-checks">' +
+  '<label><input type="checkbox" checked> Rhogar</label>' +
+  '<label><input type="checkbox" checked> Elandra</label>' +
+  '<label><input type="checkbox"> Torvin</label>' +
+  '</div></div>';
+
+const modalTemplates = {
+  'map-add': {
+    title: 'Karte hochladen',
+    fields:
+      '<div class="form-field"><label>Raumname</label><input type="text" placeholder="z. B. Krypta"></div>' +
+      '<div class="form-field"><label>Datei</label><div class="file-fake" onclick="showToast(\'Datei-Auswahl (Mockup)\')">PDF oder PNG auswählen &#128194;</div></div>',
+  },
+  'map-edit': {
+    title: 'Karte bearbeiten',
+    fields:
+      '<div class="form-field"><label>Raumname</label><input type="text" value="Eingangshalle"></div>' +
+      '<div class="form-field"><label>Datei</label><div class="file-fake" onclick="showToast(\'Datei-Auswahl (Mockup)\')">eingangshalle.pdf — ersetzen &#128194;</div></div>' +
+      shareChecks,
+  },
+  'monster-add': {
+    title: 'Monster anlegen',
+    fields:
+      '<div class="form-field"><label>Name</label><input type="text" placeholder="z. B. Oger"></div>' +
+      '<div class="form-field"><label>Datei (Statblock-PDF)</label><div class="file-fake" onclick="showToast(\'Datei-Auswahl (Mockup)\')">PDF auswählen &#128194;</div></div>' +
+      '<div class="form-field"><label>Standard-HP</label><input type="text" placeholder="z. B. 45"></div>',
+  },
+  'shop-add': {
+    title: 'Shop anlegen',
+    fields: '<div class="form-field"><label>Shopname</label><input type="text" placeholder="z. B. Alchemistin Vex"></div>',
+  },
+  'item-add': {
+    title: 'Artikel hinzufügen',
+    fields:
+      '<div class="form-field"><label>Name</label><input type="text" placeholder="z. B. Pfeile (20 Stk.)"></div>' +
+      '<div class="form-row">' +
+        '<div class="form-field"><label>Preis</label><input type="text" placeholder="z. B. 3"></div>' +
+        '<div class="form-field"><label>Münzart</label><select><option>GP</option><option>SP</option><option>EP</option><option>CP</option><option>PP</option></select></div>' +
+      '</div>' +
+      '<div class="form-field"><label>Verkaufsmodus</label>' +
+        '<select id="itemSaleMode" onchange="updateSaleModeUI()">' +
+          '<option value="shared">Gemeinsamer Vorrat \u2014 ein Topf für alle Spieler</option>' +
+          '<option value="per_player">Pro Spieler einzeln \u2014 jeder kann für sich selbst kaufen</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="mode-hint" id="modeHint">Alle Spieler teilen sich denselben Vorrat. Ist er aufgebraucht, kann niemand mehr kaufen, unabhängig davon wer ihn genutzt hat.</div>' +
+      '<div class="form-field"><label id="qtyLabel">Menge</label><input type="text" placeholder="z. B. 10"></div>',
+  },
+  'quote-add': {
+    title: 'Zitat hinzufügen',
+    fields:
+      '<div class="form-field"><label>Zitat</label><textarea placeholder="Wer hat was gesagt, wann?"></textarea></div>' +
+      '<div class="form-field" style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="quoteReleased" style="width:auto;"><label for="quoteReleased" style="text-transform:none; font-size:13px; color:var(--text);">Sofort freigeben</label></div>',
+  },
+  'session-add': {
+    title: 'Session anlegen',
+    fields:
+      '<div class="form-field"><label>Titel</label><input type="text" placeholder="z. B. Der Fluch von Rabenhorst"></div>' +
+      '<div class="form-row">' +
+        '<div class="form-field"><label>Datum</label><input type="date"></div>' +
+        '<div class="form-field"><label>Uhrzeit</label><input type="time" value="19:00"></div>' +
+      '</div>' +
+      '<div class="form-field"><label>Session-Notizen (Vorbereitung)</label><textarea placeholder="Was ist geplant, was sollte der DM griffbereit haben?"></textarea></div>',
+  },
+  'session-edit': {
+    title: 'Session bearbeiten',
+    fields:
+      '<div class="form-field"><label>Titel</label><input type="text" value="Der Fluch von Rabenhorst"></div>' +
+      '<div class="form-row">' +
+        '<div class="form-field"><label>Datum</label><input type="date" value="2026-02-08"></div>' +
+        '<div class="form-field"><label>Uhrzeit</label><input type="time" value="19:00"></div>' +
+      '</div>' +
+      '<div class="form-field"><label>Session-Notizen (Vorbereitung)</label><textarea>Bei Betreten des Thronsaals: Wahrnehmung SG 15 für die verborgene Falltür hinter dem Thron. Goblinkönig Vrak flieht bei < 30% HP in den Ostgang.</textarea></div>',
+  },
+  'book-add': {
+    title: 'Buch hochladen',
+    fields:
+      '<div class="form-field"><label>Titel</label><input type="text" placeholder="z. B. Spielerhandbuch"></div>' +
+      '<div class="form-field"><label>Datei</label><div class="file-fake" onclick="showToast(\'Datei-Auswahl (Mockup)\')">PDF auswählen &#128194;</div></div>',
+  },
+};
+
+function openModal(type) {
+  const tpl = modalTemplates[type];
+  if (!tpl) return;
+  document.getElementById('modalTitle').textContent = tpl.title;
+  document.getElementById('modalFields').innerHTML = tpl.fields;
+  document.getElementById('modalOverlay').classList.add('show');
+  if (type === 'item-add') updateSaleModeUI();
+}
+
+function updateSaleModeUI() {
+  const select = document.getElementById('itemSaleMode');
+  const hint = document.getElementById('modeHint');
+  const qtyLabel = document.getElementById('qtyLabel');
+  if (!select) return;
+  if (select.value === 'per_player') {
+    hint.textContent = 'Jeder Spieler kann unabhängig von den anderen selbst kaufen, bis zu der unten festgelegten Menge. Was Spieler A kauft, hat keinen Einfluss auf das Kontingent von Spieler B.';
+    qtyLabel.textContent = 'Menge pro Spieler';
+  } else {
+    hint.textContent = 'Alle Spieler teilen sich denselben Vorrat. Ist er aufgebraucht, kann niemand mehr kaufen, unabhängig davon wer ihn genutzt hat.';
+    qtyLabel.textContent = 'Menge';
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+function saveModal() {
+  const title = document.getElementById('modalTitle').textContent;
+  closeModal();
+  showToast(title + ' gespeichert (Mockup, keine echte Funktion).');
+}
+
+/* ===== Währungs-Editor ===== */
+const presetColors = ['#B7C0AE', '#B08D4C', '#C9B278', '#9C978A', '#A9673E', '#8C4A35', '#4A5A42', '#6B5D4A'];
+let customColors = [];
+let draggedRow = null;
+let activeSwatch = null;
+
+function renderPresetSwatches() {
+  const wrap = document.getElementById('presetSwatches');
+  const all = presetColors.concat(customColors);
+  wrap.innerHTML = all.map(function (c) {
+    const hex = c.toUpperCase();
+    return '<div class="swatch-row" onclick="pickColor(\'' + c + '\')">' +
+      '<span class="dot" style="background:' + c + '"></span>' +
+      '<span class="hex">' + hex + '</span>' +
+      '<button class="copy-btn" onclick="event.stopPropagation(); copyHex(\'' + hex + '\')">Kopieren</button>' +
+      '</div>';
+  }).join('');
+}
+
+function copyHex(hex) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(hex).then(function () { showToast('Hex-Code ' + hex + ' kopiert.'); });
+  } else {
+    showToast('Hex-Code: ' + hex);
+  }
+}
+
+function openColorPicker(swatchEl) {
+  activeSwatch = swatchEl;
+  renderPresetSwatches();
+  const popover = document.getElementById('colorPopover');
+  const rect = swatchEl.getBoundingClientRect();
+  popover.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+  popover.style.left = (window.scrollX + rect.left) + 'px';
+  popover.classList.add('show');
+  document.getElementById('colorPickerInput').value = rgbToHex(swatchEl.style.backgroundColor) || '#927355';
+}
+
+function rgbToHex(rgb) {
+  const m = rgb.match(/\d+/g);
+  if (!m) return null;
+  return '#' + m.slice(0, 3).map(function (n) { return parseInt(n, 10).toString(16).padStart(2, '0'); }).join('');
+}
+
+function pickColor(color) {
+  if (activeSwatch) activeSwatch.style.background = color;
+  document.getElementById('colorPopover').classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const colorInput = document.getElementById('colorPickerInput');
+  if (colorInput) {
+    colorInput.addEventListener('change', function () {
+      const color = this.value;
+      if (activeSwatch) activeSwatch.style.background = color;
+      if (!presetColors.includes(color) && !customColors.includes(color)) {
+        customColors.push(color);
+        showToast('Eigene Farbe gespeichert, ab jetzt als Vorschlag verfügbar.');
+      }
+      document.getElementById('colorPopover').classList.remove('show');
+    });
+  }
+});
+
+document.addEventListener('click', function (e) {
+  const popover = document.getElementById('colorPopover');
+  if (popover && !popover.contains(e.target) && !e.target.classList.contains('color-swatch')) {
+    popover.classList.remove('show');
+  }
+});
+
+function addCurrencyRow() {
+  const editor = document.getElementById('currencyEditor');
+  const row = document.createElement('div');
+  row.className = 'currency-row';
+  row.draggable = true;
+  row.innerHTML =
+    '<span class="drag-handle">&#8942;&#8942;</span>' +
+    '<span class="color-swatch" style="background:#927355" onclick="openColorPicker(this)"></span>' +
+    '<input type="text" class="cur-name" placeholder="Name" value="Neue Währung">' +
+    '<input type="text" class="cur-code" placeholder="Kürzel" value="XX" maxlength="4">' +
+    '<input type="text" class="cur-value" value="1">' +
+    '<span class="value-unit"></span>' +
+    '<span class="row-remove" onclick="this.closest(\'.currency-row\').remove(); refreshCurrencyOrder();">✕</span>';
+  editor.insertBefore(row, editor.lastElementChild);
+  attachDragHandlers(row);
+  refreshCurrencyOrder();
+}
+
+function refreshCurrencyOrder() {
+  const rows = Array.from(document.querySelectorAll('#currencyEditor .currency-row'));
+  rows.forEach(function (row, i) {
+    const isBase = i === rows.length - 1;
+    row.classList.toggle('base-row', isBase);
+    const valueSlot = row.querySelector('.value-locked') || row.querySelector('.cur-value');
+    let badge = row.querySelector('.base-badge');
+    if (isBase) {
+      if (valueSlot.classList.contains('cur-value')) {
+        const locked = document.createElement('span');
+        locked.className = 'value-locked';
+        locked.textContent = '= 1 (Basis)';
+        valueSlot.replaceWith(locked);
+      }
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'base-badge';
+        badge.textContent = 'Basis-Einheit';
+        row.querySelector('.row-remove').insertAdjacentElement('beforebegin', badge);
+      }
+      const unit = row.querySelector('.value-unit');
+      if (unit) unit.remove();
+    } else {
+      if (valueSlot.classList.contains('value-locked')) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'cur-value';
+        input.value = '1';
+        valueSlot.replaceWith(input);
+      }
+      if (badge) badge.remove();
+      if (!row.querySelector('.value-unit')) {
+        const unit = document.createElement('span');
+        unit.className = 'value-unit';
+        row.querySelector('.row-remove').insertAdjacentElement('beforebegin', unit);
+      }
+    }
+  });
+  const baseCode = rows[rows.length - 1].querySelector('.cur-code').value || '?';
+  rows.forEach(function (row, i) {
+    if (i === rows.length - 1) return;
+    const unit = row.querySelector('.value-unit');
+    if (unit) unit.textContent = baseCode;
+  });
+}
+
+function attachDragHandlers(row) {
+  row.addEventListener('dragstart', function () {
+    draggedRow = row;
+    row.classList.add('dragging');
+  });
+  row.addEventListener('dragend', function () {
+    row.classList.remove('dragging');
+    draggedRow = null;
+    refreshCurrencyOrder();
+  });
+  row.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    const editor = document.getElementById('currencyEditor');
+    const after = getDragAfterElement(editor, e.clientY);
+    if (!draggedRow) return;
+    if (after == null) {
+      editor.appendChild(draggedRow);
+    } else {
+      editor.insertBefore(draggedRow, after);
+    }
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const rows = Array.from(container.querySelectorAll('.currency-row:not(.dragging)'));
+  return rows.reduce(function (closest, child) {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    }
+    return closest;
+  }, { offset: -Infinity }).element;
+}
+
+document.querySelectorAll('#currencyEditor .currency-row').forEach(attachDragHandlers);
+refreshCurrencyOrder();
+</script>
+
+</body>
+</html>

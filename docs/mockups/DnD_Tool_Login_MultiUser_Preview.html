@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Login, Multi-User-Vorschau (Mockup)</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --error: #8C4A35;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 15%, rgba(146,115,85,0.07), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(74,90,66,0.06), transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 380px;
+    max-width: 100%;
+    padding: 34px 32px 28px;
+    box-shadow: 0 16px 40px rgba(29,26,16,0.18);
+  }
+  .brand { text-align: center; margin-bottom: 22px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 34px; color: var(--primary); display: block; transform: rotate(-6deg); margin-bottom: 6px; }
+  .brand h1 { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .brand p { font-size: 12px; color: var(--text-muted); font-style: italic; margin: 6px 0 0; }
+
+  .tab-row {
+    display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+    padding: 3px; margin-bottom: 24px;
+  }
+  .tab-row button {
+    flex: 1; font-family: var(--font-body); font-size: 13px; border: none; background: transparent;
+    padding: 8px; border-radius: 16px; cursor: pointer; color: var(--text-muted); touch-action: manipulation;
+  }
+  .tab-row button.active { background: var(--primary); color: var(--bg); }
+
+  .oauth-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; font-family: var(--font-body); font-size: 14px;
+    padding: 12px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; touch-action: manipulation;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .oauth-btn:hover { border-color: var(--primary); }
+  .oauth-btn .icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .oauth-btn.discord { background: #5865F2; color: #fff; border: none; }
+  .oauth-btn.discord:hover { background: #4a55d4; }
+
+  .divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--text-muted); font-size: 11px; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  .hint-box {
+    font-size: 11.5px; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 12px; margin-top: 18px; line-height: 1.5;
+  }
+  .hint-box strong { color: var(--primary-dark); }
+
+  .invite-note {
+    display: none;
+    font-size: 12px; color: var(--secondary); background: rgba(74,90,66,0.1); border: 1px solid var(--secondary);
+    border-radius: 6px; padding: 10px 12px; margin-bottom: 18px; line-height: 1.5;
+  }
+  .invite-note.show { display: block; }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 16px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="card">
+    <div class="brand">
+      <span class="glyph">&#9876;</span>
+      <h1>DnD Session Manager</h1>
+      <p id="subtitle">Melde dich an, um weiterzumachen.</p>
+      <div style="margin-top:10px; display:inline-block; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; background:var(--secondary); color:var(--bg); padding:4px 10px; border-radius:10px;">Vorschau spätere Multi-User-Ausbaustufe (Pflichtenheft 8.11) — nicht Release 1</div>
+    </div>
+
+    <div class="invite-note" id="inviteNote">
+      Du wurdest von <strong>Severin</strong> zur Kampagne <strong>"Der Fluch von Rabenhorst"</strong> eingeladen. Melde dich an oder erstelle ein Konto, um beizutreten.
+    </div>
+
+    <div class="tab-row">
+      <button class="active" id="tabLogin" onclick="setTab('login')">Anmelden</button>
+      <button id="tabSignup" onclick="setTab('signup')">Konto erstellen</button>
+    </div>
+
+    <button class="oauth-btn discord" onclick="showToast('Discord-Login (Mockup)')">
+      <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.6 3c-.2.4-.5 1-.7 1.4a18 18 0 0 0-5.8 0c-.2-.5-.4-1-.7-1.4a19.7 19.7 0 0 0-4.7 1.4C1.4 8.6.7 12.6 1 16.6a20 20 0 0 0 6 3c.5-.6.9-1.3 1.3-2a13 13 0 0 1-2-1c.2-.1.3-.3.5-.4a14.3 14.3 0 0 0 12.4 0l.5.4a13 13 0 0 1-2 1c.4.7.8 1.4 1.3 2a20 20 0 0 0 6-3c.4-4.6-.8-8.6-3.7-12.2ZM8.7 14.3c-.9 0-1.6-.8-1.6-1.8s.7-1.8 1.6-1.8 1.6.8 1.6 1.8-.7 1.8-1.6 1.8Zm6.6 0c-.9 0-1.6-.8-1.6-1.8s.7-1.8 1.6-1.8 1.6.8 1.6 1.8-.7 1.8-1.6 1.8Z"/></svg>
+      Mit Discord fortfahren
+    </button>
+    <button class="oauth-btn" onclick="showToast('Google-Login (Mockup)')">
+      <svg class="icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-8Z"/><path fill="#34A853" d="M12 23c3 0 5.4-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9l3.7-2.8Z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.3 1.6l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8c.9-2.6 3.3-4.5 6.2-4.5Z"/></svg>
+      Mit Google fortfahren
+    </button>
+
+    <div class="divider">oder per E-Mail</div>
+
+    <div class="hint-box" id="emailHint">
+      E-Mail-Login ist optional und nicht Teil des ersten Release. Discord und Google decken den Start ab.
+    </div>
+
+    <div class="hint-box" id="linkHint" style="margin-top:10px;">
+      Bereits mit Discord angemeldet? Du kannst dein Konto später in den Einstellungen zusätzlich mit Google verknüpfen, und umgekehrt, um dich mit beiden anzumelden.
+    </div>
+  </div>
+  <footer>Mockup — Login/Sign-up · nur zur Veranschaulichung, keine echte Funktion</footer>
+  <div style="text-align:center; margin-top:8px;">
+    <span style="font-size:11px; color:var(--primary-dark); text-decoration:underline; cursor:pointer;" onclick="document.getElementById('inviteNote').classList.toggle('show')">Einladungs-Ansicht umschalten (Demo)</span>
+  </div>
+</div>
+
+<div class="toast" id="toast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--primary); color:var(--bg); padding:10px 18px; border-radius:20px; font-size:13px; opacity:0; transition:all .25s ease; pointer-events:none;"></div>
+
+<script>
+function setTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  document.getElementById('subtitle').textContent = tab === 'login'
+    ? 'Melde dich an, um weiterzumachen.'
+    : 'Erstelle ein neues Konto, geht mit Discord oder Google in einem Schritt.';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(function () {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 1900);
+}
+
+// Demo: URL-Parameter ?invite=1 zeigt, wie die Seite bei einem Einladungslink aussieht
+if (window.location.search.includes('invite')) {
+  document.getElementById('inviteNote').classList.add('show');
+}
+</script>
+
+</body>
+</html>

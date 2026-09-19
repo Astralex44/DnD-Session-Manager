@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Shop Mockup</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --error: #8C4A35;
+    --sold-out: #A79C87;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    padding: 18px 32px;
+    border-bottom: 2px solid var(--primary);
+    background: var(--surface);
+  }
+  .top-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 24px; color: var(--primary); transform: rotate(-6deg); display: inline-block; }
+  .brand h1 { font-family: var(--font-display); font-size: 19px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .brand .sub { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .toggle-group {
+    display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px;
+  }
+  .toggle-group button {
+    font-family: var(--font-body); font-size: 12px; border: none; background: transparent;
+    padding: 6px 14px; border-radius: 16px; cursor: pointer; color: var(--text-muted); touch-action: manipulation;
+  }
+  .toggle-group button.active { background: var(--primary); color: var(--bg); }
+
+  /* ===== Custom dropdown (replaces native <select> everywhere) ===== */
+  .custom-select { position: relative; }
+  .custom-select-trigger {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-family: var(--font-body); font-size: 13px; border: 1px solid var(--border); border-radius: 14px;
+    padding: 6px 12px; background: var(--bg); color: var(--text); cursor: pointer; touch-action: manipulation;
+  }
+  .custom-select-trigger:hover { border-color: var(--primary); }
+  .custom-select.open .custom-select-trigger { border-color: var(--primary); }
+  .custom-select-trigger .cs-arrow { color: var(--text-muted); font-size: 9px; transition: transform 0.15s; }
+  .custom-select.open .cs-arrow { transform: rotate(180deg); }
+  .custom-select-menu {
+    display: none; position: absolute; top: calc(100% + 5px); left: 0; min-width: 100%; z-index: 45;
+    background: var(--surface); border: 1px solid var(--primary); border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(29,26,16,0.25); overflow: hidden;
+  }
+  .custom-select.open .custom-select-menu { display: block; }
+  .cs-option { padding: 9px 14px; font-size: 13px; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
+  .cs-option:hover { background: var(--bg); }
+  .cs-option.selected { background: rgba(146,115,85,0.16); font-weight: bold; color: var(--primary-dark); }
+
+  .role-controls { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+
+  .wallet {
+    display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 12px;
+    margin-top: 12px;
+  }
+  .wallet .label { font-family: var(--font-body); font-size: 11px; color: var(--text-muted); font-style: italic; }
+  .wallet span.coin { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 2px 9px; }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 26px 32px 60px; display: flex; gap: 24px; align-items: flex-start; }
+  @media (max-width: 900px) {
+    main { flex-direction: column; padding: 20px 16px 50px; }
+    .cart-panel { width: 100%; position: static; }
+  }
+  .items-area { flex: 1; }
+  .item-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .item-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .item-grid { grid-template-columns: 1fr; } }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .item-icon {
+    width: 40px; height: 40px; border-radius: 6px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); color: var(--primary-dark); font-size: 18px;
+  }
+  .item-name { font-weight: bold; font-size: 14px; }
+  .item-desc { font-size: 11px; color: var(--text-muted); min-height: 28px; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .item-price { font-family: var(--font-data); font-size: 14px; }
+  .item-meta { font-size: 10.5px; color: var(--text-muted); }
+
+  .item-card.expensive .item-price { color: var(--error); }
+  .item-card.sold-out { opacity: 0.6; }
+  .item-card.sold-out .item-name, .item-card.sold-out .item-price { text-decoration: line-through; color: var(--sold-out); }
+  .item-card.owned { opacity: 0.75; }
+
+  .qty-stepper {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 30px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 0 5px;
+  }
+  .qty-stepper button {
+    width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--primary);
+    background: var(--surface); color: var(--primary-dark); font-family: var(--font-data); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; flex-shrink: 0;
+    touch-action: manipulation;
+  }
+  .qty-stepper button:disabled { opacity: 0.35; cursor: not-allowed; border-color: var(--border); color: var(--text-muted); }
+  .qty-stepper .qty-val { font-family: var(--font-data); font-size: 13px; line-height: 1; text-align: center; flex: 1; }
+
+  .item-actions { display: flex; flex-direction: column; gap: 8px; }
+
+  .buy-btn {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg);
+    border: none; padding: 7px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; width: 100%;
+    height: 32px; touch-action: manipulation;
+  }
+  .buy-btn.disabled { background: var(--sold-out); cursor: not-allowed; }
+  .buy-btn.secondary { background: transparent; color: var(--primary-dark); border: 1px solid var(--primary); }
+  .buy-btn.hidden { display: none; }
+
+  /* Cart sidebar */
+  .cart-panel {
+    width: 300px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 20px; position: sticky; top: 20px;
+  }
+  .cart-panel.hidden { display: none; }
+  .cart-panel h3 { font-family: var(--font-display); font-size: 15px; font-weight: normal; margin: 0 0 12px; }
+  .cart-line { display: flex; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .cart-line:last-of-type { border-bottom: none; }
+  .cart-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
+  .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-top: 12px; padding-top: 10px; border-top: 1.5px solid var(--primary); }
+  .cart-warning {
+    margin-top: 10px; font-size: 11.5px; background: rgba(140,74,53,0.12); color: var(--error);
+    border: 1px solid var(--error); border-radius: 4px; padding: 8px 10px; display: none;
+  }
+  .cart-warning.show { display: block; }
+  .checkout-btn { margin-top: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 10px 20px 24px; font-style: italic; }
+
+  @media (pointer: coarse) {
+    .qty-stepper { height: 38px; }
+    .qty-stepper button { width: 30px; height: 30px; font-size: 16px; }
+    .qty-stepper .qty-val { font-size: 14px; }
+    .buy-btn { min-height: 40px; font-size: 13px; }
+    .toggle-group button { padding: 9px 16px; font-size: 13px; }
+    .wallet span.coin { padding: 5px 12px 5px 9px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-row">
+    <div class="brand">
+      <span class="glyph">&#9878;</span>
+      <div>
+        <h1>General Store "The Weary Traveler"</h1>
+        <div class="sub">shared by the DM · shared stock &amp; individual offers</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="role-controls">
+        View:
+        <div class="custom-select" id="roleSelect">
+          <button class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+            <span id="roleSelectLabel">Player (Rhogar Ironheart)</span><span class="cs-arrow">&#9662;</span>
+          </button>
+          <div class="custom-select-menu">
+            <div class="cs-option selected" onclick="pickRole('player', this)">Player (Rhogar Ironheart)</div>
+            <div class="cs-option" onclick="pickRole('dm', this)">Dungeon Master</div>
+          </div>
+        </div>
+      </div>
+      <div class="toggle-group" id="modeToggle">
+        <button class="active" onclick="setMode('single')">Single Purchase</button>
+        <button onclick="setMode('cart')">Cart</button>
+      </div>
+    </div>
+  </div>
+  <div class="wallet" id="dmBuyFor" style="display:none;">
+    <span class="label">Buy on behalf of:</span>
+    <div class="custom-select" id="buyForSelect">
+      <button class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+        <span id="buyForSelectLabel">Rhogar Ironheart</span><span class="cs-arrow">&#9662;</span>
+      </button>
+      <div class="custom-select-menu">
+        <div class="cs-option selected" onclick="pickSimple(this,'buyForSelectLabel')">Rhogar Ironheart</div>
+        <div class="cs-option" onclick="pickSimple(this,'buyForSelectLabel')">Elandra Moonwhisper</div>
+        <div class="cs-option" onclick="pickSimple(this,'buyForSelectLabel')">Torvin Stonefist</div>
+      </div>
+    </div>
+  </div>
+  <div class="wallet" id="walletDisplay">
+    <span class="label">Balance:</span>
+    <span class="coin">34 GP</span><span class="coin">7 SP</span><span class="coin">12 CP</span>
+  </div>
+</header>
+
+<main>
+  <div class="items-area">
+    <div class="item-grid">
+
+      <div class="item-card" data-price="12" data-name="Potion of Healing">
+        <div class="item-icon">&#9906;</div>
+        <div class="item-name">Potion of Healing</div>
+        <div class="item-desc">Heals 2d4+2 hit points.</div>
+        <div class="item-meta">Available: 8</div>
+        <div class="item-row">
+          <span class="item-price">12 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="8">
+            <button onclick="stepQty(this,-1)">−</button><span class="qty-val">1</span><button onclick="stepQty(this,1)">+</button>
+          </div>
+          <button class="buy-btn single-btn" onclick="buyItem(this,'Potion of Healing',12)">Buy</button>
+          <button class="buy-btn secondary cart-btn hidden" onclick="addToCart(this,'Potion of Healing',12)">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="item-card" data-price="5" data-name="Traveler's Cloak">
+        <div class="item-icon">&#128092;</div>
+        <div class="item-name">Traveler's Cloak</div>
+        <div class="item-desc">Weatherproof, with plenty of pockets.</div>
+        <div class="item-meta">Available: 1</div>
+        <div class="item-row">
+          <span class="item-price">5 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn single-btn" onclick="buyItem(this,'Traveler\'s Cloak',5)">Buy</button>
+          <button class="buy-btn secondary cart-btn hidden" onclick="addToCart(this,'Traveler\'s Cloak',5)">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="item-card expensive" data-price="450" data-name="Longsword +1">
+        <div class="item-icon">&#9876;</div>
+        <div class="item-name">Longsword +1</div>
+        <div class="item-desc">Magical, +1 to attack &amp; damage.</div>
+        <div class="item-meta">Available: 1</div>
+        <div class="item-row">
+          <span class="item-price">450 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn disabled single-btn" disabled title="Not enough gold">Too expensive</button>
+          <button class="buy-btn disabled cart-btn hidden" disabled>Too expensive</button>
+        </div>
+      </div>
+
+      <div class="item-card sold-out" data-price="2" data-name="Rope (50 ft)">
+        <div class="item-icon">&#128220;</div>
+        <div class="item-name">Rope (50 ft)</div>
+        <div class="item-desc">Sturdy hemp rope.</div>
+        <div class="item-meta">Sold out</div>
+        <div class="item-row">
+          <span class="item-price">2 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn disabled single-btn" disabled>Sold out</button>
+          <button class="buy-btn disabled cart-btn hidden" disabled>Sold out</button>
+        </div>
+      </div>
+
+      <div class="item-card owned" data-price="8" data-name="Climbing Kit">
+        <div class="item-icon">&#129522;</div>
+        <div class="item-name">Climbing Kit</div>
+        <div class="item-desc">Hooks, rope, and harness.</div>
+        <div class="item-meta">Already purchased</div>
+        <div class="item-row">
+          <span class="item-price">8 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn disabled single-btn" disabled>Already bought</button>
+          <button class="buy-btn disabled cart-btn hidden" disabled>Already bought</button>
+        </div>
+      </div>
+
+      <div class="item-card" data-price="18" data-name="Alchemist's Fire">
+        <div class="item-icon">&#128293;</div>
+        <div class="item-name">Alchemist's Fire</div>
+        <div class="item-desc">1d4 fire damage, 3 rounds.</div>
+        <div class="item-meta">Available: 4</div>
+        <div class="item-row">
+          <span class="item-price">18 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="4">
+            <button onclick="stepQty(this,-1)">−</button><span class="qty-val">1</span><button onclick="stepQty(this,1)">+</button>
+          </div>
+          <button class="buy-btn single-btn" onclick="buyItem(this,'Alchemist\'s Fire',18)">Buy</button>
+          <button class="buy-btn secondary cart-btn hidden" onclick="addToCart(this,'Alchemist\'s Fire',18)">Add to Cart</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <aside class="cart-panel hidden" id="cartPanel">
+    <h3>Cart</h3>
+    <div id="cartLines"><div class="cart-empty">Nothing selected yet.</div></div>
+    <div class="cart-total"><span>Total</span><span id="cartTotal">0 GP</span></div>
+    <div class="cart-warning" id="cartWarning">Too many or too expensive items selected — not enough gold for the full cart.</div>
+    <button class="buy-btn checkout-btn" onclick="checkout()">Checkout</button>
+  </aside>
+</main>
+
+<div class="toast" id="toast"></div>
+<footer>Mockup — Shop view · illustrative only, not a working feature</footer>
+
+<script>
+const WALLET_GP = 34;
+let cart = [];
+
+/* ===== Custom dropdown ===== */
+function toggleCustomSelect(triggerBtn) {
+  const wrap = triggerBtn.closest('.custom-select');
+  const wasOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.custom-select.open').forEach(function (cs) { cs.classList.remove('open'); });
+  if (!wasOpen) wrap.classList.add('open');
+}
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.custom-select')) {
+    document.querySelectorAll('.custom-select.open').forEach(function (cs) { cs.classList.remove('open'); });
+  }
+});
+function pickSimple(optionEl, labelId) {
+  const menu = optionEl.closest('.custom-select-menu');
+  menu.querySelectorAll('.cs-option').forEach(function (o) { o.classList.remove('selected'); });
+  optionEl.classList.add('selected');
+  document.getElementById(labelId).textContent = optionEl.textContent;
+  optionEl.closest('.custom-select').classList.remove('open');
+}
+function pickRole(role, optionEl) {
+  pickSimple(optionEl, 'roleSelectLabel');
+  updateRole(role);
+}
+
+function setMode(mode) {
+  const buttons = document.querySelectorAll('#modeToggle button');
+  buttons.forEach(function (b) { b.classList.remove('active'); });
+  const cartPanel = document.getElementById('cartPanel');
+  document.querySelectorAll('.single-btn').forEach(function (el) { el.classList.toggle('hidden', mode === 'cart'); });
+  document.querySelectorAll('.cart-btn').forEach(function (el) { el.classList.toggle('hidden', mode === 'single'); });
+  if (mode === 'cart') {
+    buttons[1].classList.add('active');
+    cartPanel.classList.remove('hidden');
+  } else {
+    buttons[0].classList.add('active');
+    cartPanel.classList.add('hidden');
+  }
+}
+
+function updateRole(role) {
+  document.getElementById('dmBuyFor').style.display = role === 'dm' ? 'flex' : 'none';
+  document.querySelectorAll('.item-meta').forEach(function (el) {
+    const dmHtml = el.getAttribute('data-dm');
+    const playerText = el.getAttribute('data-player');
+    if (!dmHtml || !playerText) return;
+    el.innerHTML = role === 'dm' ? dmHtml : playerText;
+  });
+}
+updateRole('player');
+
+function stepQty(btn, delta) {
+  const stepper = btn.parentElement;
+  const val = stepper.querySelector('.qty-val');
+  const max = parseInt(stepper.dataset.max || '99', 10);
+  let n = parseInt(val.textContent, 10) + delta;
+  if (n < 1) n = 1;
+  if (n > max) n = max;
+  val.textContent = n;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+function buyItem(btn, name, price) {
+  const qty = parseInt(btn.closest('.item-actions').querySelector('.qty-val').textContent, 10);
+  showToast(qty + '× ' + name + ' purchased (' + (qty * price) + ' GP).');
+}
+
+function addToCart(btn, name, price) {
+  const qty = parseInt(btn.closest('.item-actions').querySelector('.qty-val').textContent, 10);
+  cart.push({ name: name, price: price, qty: qty });
+  renderCart();
+}
+
+function renderCart() {
+  const linesEl = document.getElementById('cartLines');
+  const totalEl = document.getElementById('cartTotal');
+  const warningEl = document.getElementById('cartWarning');
+  if (cart.length === 0) {
+    linesEl.innerHTML = '<div class="cart-empty">Nothing selected yet.</div>';
+    totalEl.textContent = '0 GP';
+    warningEl.classList.remove('show');
+    return;
+  }
+  linesEl.innerHTML = cart.map(function (c) {
+    return '<div class="cart-line"><span>' + c.qty + '× ' + c.name + '</span><span>' + (c.qty * c.price) + ' GP</span></div>';
+  }).join('');
+  const total = cart.reduce(function (sum, c) { return sum + c.qty * c.price; }, 0);
+  totalEl.textContent = total + ' GP';
+  warningEl.classList.toggle('show', total > WALLET_GP);
+}
+
+function checkout() {
+  const total = cart.reduce(function (sum, c) { return sum + c.qty * c.price; }, 0);
+  if (total > WALLET_GP) {
+    showToast('Purchase blocked — not enough gold.');
+    return;
+  }
+  if (cart.length === 0) {
+    showToast('Cart is empty.');
+    return;
+  }
+  showToast('Purchase complete: ' + total + ' GP paid.');
+  cart = [];
+  renderCart();
+}
+</script>
+
+</body>
+</html>

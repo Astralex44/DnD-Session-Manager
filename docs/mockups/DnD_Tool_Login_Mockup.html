@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Login (Mockup, Release 1)</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --error: #8C4A35;
+    --secondary: #4A5A42;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 15%, rgba(146,115,85,0.07), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(74,90,66,0.06), transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 360px;
+    max-width: 100%;
+    padding: 36px 32px 30px;
+    box-shadow: 0 16px 40px rgba(29,26,16,0.18);
+    text-align: center;
+  }
+  .glyph { font-family: var(--font-display); font-size: 34px; color: var(--primary); display: block; transform: rotate(-6deg); margin-bottom: 8px; }
+  h1 { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .session-name { font-size: 12px; color: var(--text-muted); font-style: italic; margin: 8px 0 26px; }
+
+  .oauth-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; font-family: var(--font-body); font-size: 15px;
+    padding: 13px; border-radius: 8px; cursor: pointer; touch-action: manipulation;
+    background: #5865F2; color: #fff; border: none;
+  }
+  .oauth-btn:hover { background: #4a55d4; }
+  .oauth-btn .icon { width: 19px; height: 19px; flex-shrink: 0; }
+
+  .access-hint {
+    font-size: 11.5px; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 12px; margin-top: 20px; line-height: 1.5; text-align: left;
+  }
+  .access-hint strong { color: var(--primary-dark); }
+
+  .invite-note {
+    font-size: 12px; color: var(--secondary); background: rgba(74,90,66,0.1); border: 1px solid var(--secondary);
+    border-radius: 6px; padding: 10px 12px; margin-bottom: 18px; text-align: left; line-height: 1.5;
+  }
+  .invite-note strong { color: var(--secondary); }
+  .hidden { display: none; }
+
+  .denied-note {
+    display: none;
+    font-size: 12px; color: var(--error); background: rgba(140,74,53,0.1); border: 1px solid var(--error);
+    border-radius: 6px; padding: 10px 12px; margin-top: 16px; text-align: left; line-height: 1.5;
+  }
+  .denied-note.show { display: block; }
+
+  .demo-toggle { font-size: 11px; color: var(--primary-dark); text-decoration: underline; cursor: pointer; margin-top: 14px; display: inline-block; }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 16px; font-style: italic; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="card" id="loginCard">
+    <span class="glyph">&#9876;</span>
+    <h1>DnD Session Manager</h1>
+    <div class="session-name">Der Fluch von Rabenhorst</div>
+
+    <div class="invite-note" id="inviteNote">
+      Du wurdest von <strong>Severin</strong> zur Kampagne <strong>"Der Fluch von Rabenhorst"</strong> hinzugefügt. Melde dich mit Discord an, um beizutreten.
+    </div>
+
+    <button class="oauth-btn" onclick="simulateLogin()">
+      <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.6 3c-.2.4-.5 1-.7 1.4a18 18 0 0 0-5.8 0c-.2-.5-.4-1-.7-1.4a19.7 19.7 0 0 0-4.7 1.4C1.4 8.6.7 12.6 1 16.6a20 20 0 0 0 6 3c.5-.6.9-1.3 1.3-2a13 13 0 0 1-2-1c.2-.1.3-.3.5-.4a14.3 14.3 0 0 0 12.4 0l.5.4a13 13 0 0 1-2 1c.4.7.8 1.4 1.3 2a20 20 0 0 0 6-3c.4-4.6-.8-8.6-3.7-12.2ZM8.7 14.3c-.9 0-1.6-.8-1.6-1.8s.7-1.8 1.6-1.8 1.6.8 1.6 1.8-.7 1.8-1.6 1.8Zm6.6 0c-.9 0-1.6-.8-1.6-1.8s.7-1.8 1.6-1.8 1.6.8 1.6 1.8-.7 1.8-1.6 1.8Z"/></svg>
+      Mit Discord anmelden
+    </button>
+
+    <div class="access-hint">
+      Zugriff nur für Discord-Konten auf der <strong>Zugriffsliste</strong> (vom DM in der Verwaltung gepflegt, siehe Einstellungen). Kein separater Sign-up-Schritt, ein bekanntes Discord-Konto reicht.
+    </div>
+
+    <div class="denied-note" id="deniedNote">
+      Dieses Discord-Konto steht noch nicht auf der Zugriffsliste. Bitte den Spielleiter bitten, dich hinzuzufügen.
+    </div>
+
+    <span class="demo-toggle" onclick="document.getElementById('deniedNote').classList.toggle('show')">Zugriff-verweigert-Zustand zeigen (Demo)</span><br>
+    <span class="demo-toggle" onclick="document.getElementById('inviteNote').classList.toggle('hidden')">Einladungs-Hinweis ein-/ausblenden (Demo)</span>
+  </div>
+
+  <div class="card" id="usernameCard" style="display:none;">
+    <span class="glyph">&#9876;</span>
+    <h1>Willkommen!</h1>
+    <div class="session-name">Nur beim allerersten Login, einmalig</div>
+    <div class="access-hint" style="text-align:left;">
+      Wähle einen eindeutigen <strong>Benutzernamen</strong>. Der ist getrennt von deinem Discord-Anzeigenamen und wird später gebraucht, um dich gezielt zu einem Spiel einladen zu können.
+    </div>
+    <input type="text" id="usernameInput" placeholder="z. B. rhogar_dh" style="width:100%; margin-top:14px; padding:11px; border-radius:6px; border:1px solid var(--border); font-family:var(--font-body); font-size:14px; background:var(--bg); color:var(--text);">
+    <button class="oauth-btn" style="background:var(--primary); margin-top:14px;" onclick="showToast('Benutzername gespeichert (Mockup) — weiter zum Board.')">Bestätigen</button>
+  </div>
+
+  <footer>Mockup — Login, Release-1-Stand (nur Discord) · nur zur Veranschaulichung, keine echte Funktion</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+function simulateLogin() {
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('usernameCard').style.display = 'block';
+}
+</script>
+
+</body>
+</html>

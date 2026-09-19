@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Shop (Mockup)</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --tertiary: #B08D4C;
+    --error: #8C4A35;
+    --sold-out: #A79C87;
+    --silver: #9C978A;
+    --copper: #A9673E;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    padding: 18px 32px;
+    border-bottom: 2px solid var(--primary);
+    background: var(--surface);
+  }
+  .top-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 24px; color: var(--primary); transform: rotate(-6deg); display: inline-block; }
+  .brand h1 { font-family: var(--font-display); font-size: 19px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .brand .sub { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .toggle-group {
+    display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px;
+  }
+  .toggle-group button {
+    font-family: var(--font-body); font-size: 12px; border: none; background: transparent;
+    padding: 6px 14px; border-radius: 16px; cursor: pointer; color: var(--text-muted);
+  }
+  .toggle-group button.active { background: var(--primary); color: var(--bg); }
+
+  .role-controls { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+  .role-controls select {
+    font-family: var(--font-body); font-size: 13px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 5px 10px; color: var(--text);
+  }
+
+  .wallet {
+    display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 12px;
+    margin-top: 12px;
+  }
+  .wallet .label { font-family: var(--font-body); font-size: 11px; color: var(--text-muted); font-style: italic; }
+  .wallet span.coin {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 3px 10px 3px 7px;
+  }
+  .wallet .coin-icon { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .wallet .coin-gold { border-color: var(--tertiary); }
+  .wallet .coin-gold .coin-icon { background: var(--tertiary); }
+  .wallet .coin-silver { border-color: var(--silver); }
+  .wallet .coin-silver .coin-icon { background: var(--silver); }
+  .wallet .coin-copper { border-color: var(--copper); }
+  .wallet .coin-copper .coin-icon { background: var(--copper); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 26px 32px 60px; display: flex; gap: 24px; align-items: flex-start; }
+  @media (max-width: 900px) {
+    main { flex-direction: column; padding: 20px 16px 50px; }
+    .cart-panel { width: 100%; position: static; }
+  }
+  .items-area { flex: 1; }
+  .item-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .item-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .item-grid { grid-template-columns: 1fr; } }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .item-icon {
+    width: 40px; height: 40px; border-radius: 6px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); color: var(--primary-dark); font-size: 18px;
+  }
+  .item-name { font-weight: bold; font-size: 14px; }
+  .item-desc { font-size: 11px; color: var(--text-muted); min-height: 28px; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .item-price { font-family: var(--font-data); font-size: 14px; }
+  .item-meta { font-size: 10.5px; color: var(--text-muted); }
+  .mode-tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; background: var(--surface-2); color: var(--text-muted); }
+
+  .item-card.expensive .item-price { color: var(--error); }
+  .item-card.sold-out { opacity: 0.6; }
+  .item-card.sold-out .item-name, .item-card.sold-out .item-price { text-decoration: line-through; color: var(--sold-out); }
+  .item-card.owned { opacity: 0.75; }
+
+  .item-actions { display: flex; flex-direction: column; gap: 8px; }
+
+  .qty-stepper {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 30px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 0 5px;
+  }
+  .qty-stepper button {
+    width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--primary);
+    background: var(--surface); color: var(--primary-dark); font-family: var(--font-data); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; flex-shrink: 0;
+  }
+  .qty-stepper button:disabled { opacity: 0.35; cursor: not-allowed; border-color: var(--border); color: var(--text-muted); }
+  .qty-stepper .qty-val { font-family: var(--font-data); font-size: 13px; line-height: 1; text-align: center; flex: 1; }
+
+  .buy-btn {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg);
+    border: none; padding: 7px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; width: 100%;
+    height: 32px;
+  }
+  .buy-btn.disabled { background: var(--sold-out); cursor: not-allowed; }
+  .buy-btn.secondary { background: transparent; color: var(--primary-dark); border: 1px solid var(--primary); }
+  .buy-btn.hidden { display: none; }
+
+  /* Cart sidebar */
+  .cart-panel {
+    width: 300px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 20px; position: sticky; top: 20px;
+  }
+  .cart-panel.hidden { display: none; }
+  .cart-panel h3 { font-family: var(--font-display); font-size: 15px; font-weight: normal; margin: 0 0 12px; }
+  .cart-line { display: flex; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .cart-line:last-of-type { border-bottom: none; }
+  .cart-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
+  .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-top: 12px; padding-top: 10px; border-top: 1.5px solid var(--primary); }
+  .cart-warning {
+    margin-top: 10px; font-size: 11.5px; background: rgba(140,74,53,0.12); color: var(--error);
+    border: 1px solid var(--error); border-radius: 4px; padding: 8px 10px; display: none;
+  }
+  .cart-warning.show { display: block; }
+  .checkout-btn { margin-top: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 10px 20px 24px; font-style: italic; }
+/* Erkennt echte Touch-Bedienung, unabhängig von der Bildschirmbreite. */
+@media (pointer: coarse) {
+  .qty-stepper { height: 38px; }
+  .qty-stepper button { width: 30px; height: 30px; font-size: 16px; }
+  .qty-stepper .qty-val { font-size: 14px; }
+  .buy-btn { min-height: 40px; font-size: 13px; }
+  .toggle-group button { padding: 9px 16px; font-size: 13px; }
+  .role-controls select { padding: 8px 12px; font-size: 14px; }
+  .wallet span.coin { padding: 5px 12px 5px 9px; font-size: 13px; }
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-row">
+    <div class="brand">
+      <span class="glyph">&#9878;</span>
+      <div>
+        <h1>Krämerladen "Zum müden Wanderer"</h1>
+        <div class="sub">freigegeben von Spielleiter · geteilter Vorrat &amp; individuelle Angebote</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="role-controls">
+        Ansicht:
+        <select id="roleSelect" onchange="updateRole(this.value)">
+          <option value="player">Spieler (Rhogar Drachenhorn)</option>
+          <option value="dm">Spielleiter</option>
+        </select>
+      </div>
+      <div class="toggle-group" id="modeToggle">
+        <button class="active" onclick="setMode('single')">Einzelkauf</button>
+        <button onclick="setMode('cart')">Warenkorb</button>
+      </div>
+    </div>
+  </div>
+  <div class="wallet" id="dmBuyFor" style="display:none;">
+    <span class="label">Kauf im Namen von:</span>
+    <select style="font-family: var(--font-body); font-size:12px; border:1px solid var(--border); border-radius:12px; padding:4px 10px; background:var(--bg);">
+      <option>Rhogar Drachenhorn</option>
+      <option>Elandra Silberblatt</option>
+      <option>Torvin Steinfaust</option>
+    </select>
+  </div>
+  <div class="wallet" id="walletDisplay">
+    <span class="label">Guthaben:</span>
+    <span class="coin coin-gold"><span class="coin-icon"></span>34 GP</span><span class="coin coin-silver"><span class="coin-icon"></span>7 SP</span><span class="coin coin-copper"><span class="coin-icon"></span>12 CP</span>
+  </div>
+</header>
+
+<main>
+  <div class="items-area">
+    <div class="item-grid">
+
+      <div class="item-card" data-price="12" data-name="Heiltrank">
+        <div class="item-icon">&#9906;</div>
+        <div class="item-name">Heiltrank</div>
+        <div class="item-desc">Heilt 2W4+2 Trefferpunkte.</div>
+        <div class="item-meta" data-dm="&lt;span class=&quot;mode-tag&quot;&gt;geteilter Vorrat&lt;/span&gt; · Vorrat: 8" data-player="Verfügbar: 8"><span class="mode-tag">geteilter Vorrat</span> · Vorrat: 8</div>
+        <div class="item-row">
+          <span class="item-price">12 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="8">
+            <button onclick="stepQty(this,-1)">−</button><span class="qty-val">1</span><button onclick="stepQty(this,1)">+</button>
+          </div>
+          <button class="buy-btn single-btn" onclick="buyItem(this,'Heiltrank',12)">Kaufen</button>
+          <button class="buy-btn secondary cart-btn hidden" onclick="addToCart(this,'Heiltrank',12)">In den Warenkorb</button>
+        </div>
+      </div>
+
+      <div class="item-card" data-price="5" data-name="Reiseumhang">
+        <div class="item-icon">&#128092;</div>
+        <div class="item-name">Reiseumhang</div>
+        <div class="item-desc">Wetterfest, mit vielen Taschen.</div>
+        <div class="item-meta" data-dm="&lt;span class=&quot;mode-tag&quot;&gt;an alle verkaufbar&lt;/span&gt; · je 1×" data-player="Verfügbar: 1"><span class="mode-tag">an alle verkaufbar</span> · je 1×</div>
+        <div class="item-row">
+          <span class="item-price">5 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn single-btn" onclick="buyItem(this,'Reiseumhang',5)">Kaufen</button>
+          <button class="buy-btn secondary cart-btn hidden" onclick="addToCart(this,'Reiseumhang',5)">In den Warenkorb</button>
+        </div>
+      </div>
+
+      <div class="item-card expensive" data-price="450" data-name="Schwert +1">
+        <div class="item-icon">&#9876;</div>
+        <div class="item-name">Schwert +1</div>
+        <div class="item-desc">Magisch, +1 auf Angriff &amp; Schaden.</div>
+        <div class="item-meta" data-dm="&lt;span class=&quot;mode-tag&quot;&gt;geteilter Vorrat&lt;/span&gt; · Vorrat: 1" data-player="Verfügbar: 1"><span class="mode-tag">geteilter Vorrat</span> · Vorrat: 1</div>
+        <div class="item-row">
+          <span class="item-price">450 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn disabled single-btn" disabled title="Nicht genug Guthaben">Zu teuer</button>
+          <button class="buy-btn disabled cart-btn hidden" disabled>Zu teuer</button>
+        </div>
+      </div>
+
+      <div class="item-card sold-out" data-price="2" data-name="Seil (15m)">
+        <div class="item-icon">&#128220;</div>
+        <div class="item-name">Seil (15m)</div>
+        <div class="item-desc">Hanfseil, reissfest.</div>
+        <div class="item-meta">Ausverkauft</div>
+        <div class="item-row">
+          <span class="item-price">2 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn disabled single-btn" disabled>Ausverkauft</button>
+          <button class="buy-btn disabled cart-btn hidden" disabled>Ausverkauft</button>
+        </div>
+      </div>
+
+      <div class="item-card owned" data-price="8" data-name="Kletterset">
+        <div class="item-icon">&#129522;</div>
+        <div class="item-name">Kletterset</div>
+        <div class="item-desc">Haken, Seil und Gurt.</div>
+        <div class="item-meta" data-dm="&lt;span class=&quot;mode-tag&quot;&gt;an alle verkaufbar&lt;/span&gt; · bereits erworben" data-player="Bereits gekauft"><span class="mode-tag">an alle verkaufbar</span> · bereits erworben</div>
+        <div class="item-row">
+          <span class="item-price">8 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="1">
+            <button disabled>−</button><span class="qty-val">1</span><button disabled>+</button>
+          </div>
+          <button class="buy-btn disabled single-btn" disabled>Bereits gekauft</button>
+          <button class="buy-btn disabled cart-btn hidden" disabled>Bereits gekauft</button>
+        </div>
+      </div>
+
+      <div class="item-card" data-price="18" data-name="Alchemistenfeuer">
+        <div class="item-icon">&#128293;</div>
+        <div class="item-name">Alchemistenfeuer</div>
+        <div class="item-desc">1W4 Feuerschaden, 3 Runden.</div>
+        <div class="item-meta" data-dm="&lt;span class=&quot;mode-tag&quot;&gt;geteilter Vorrat&lt;/span&gt; · Vorrat: 4" data-player="Verfügbar: 4"><span class="mode-tag">geteilter Vorrat</span> · Vorrat: 4</div>
+        <div class="item-row">
+          <span class="item-price">18 GP</span>
+        </div>
+        <div class="item-actions">
+          <div class="qty-stepper" data-max="4">
+            <button onclick="stepQty(this,-1)">−</button><span class="qty-val">1</span><button onclick="stepQty(this,1)">+</button>
+          </div>
+          <button class="buy-btn single-btn" onclick="buyItem(this,'Alchemistenfeuer',18)">Kaufen</button>
+          <button class="buy-btn secondary cart-btn hidden" onclick="addToCart(this,'Alchemistenfeuer',18)">In den Warenkorb</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <aside class="cart-panel hidden" id="cartPanel">
+    <h3>Warenkorb</h3>
+    <div id="cartLines"><div class="cart-empty">Noch nichts ausgewählt.</div></div>
+    <div class="cart-total"><span>Total</span><span id="cartTotal">0 GP</span></div>
+    <div class="cart-warning" id="cartWarning">Zu viele oder zu teure Artikel ausgewählt — nicht genug Guthaben für den gesamten Warenkorb.</div>
+    <button class="buy-btn checkout-btn" onclick="checkout()">Zur Kasse</button>
+  </aside>
+</main>
+
+<div class="toast" id="toast"></div>
+<footer>Mockup — Shop-Ansicht · nur zur Veranschaulichung, keine echte Funktion</footer>
+
+<script>
+const WALLET_GP = 34;
+let cart = [];
+
+function setMode(mode) {
+  const buttons = document.querySelectorAll('#modeToggle button');
+  buttons.forEach(b => b.classList.remove('active'));
+  const cartPanel = document.getElementById('cartPanel');
+  document.querySelectorAll('.single-btn').forEach(el => el.classList.toggle('hidden', mode === 'cart'));
+  document.querySelectorAll('.cart-btn').forEach(el => el.classList.toggle('hidden', mode === 'single'));
+  if (mode === 'cart') {
+    buttons[1].classList.add('active');
+    cartPanel.classList.remove('hidden');
+  } else {
+    buttons[0].classList.add('active');
+    cartPanel.classList.add('hidden');
+  }
+}
+
+function updateRole(role) {
+  document.getElementById('dmBuyFor').style.display = role === 'dm' ? 'flex' : 'none';
+  document.querySelectorAll('.item-meta').forEach(function (el) {
+    const dmHtml = el.getAttribute('data-dm');
+    const playerText = el.getAttribute('data-player');
+    if (!dmHtml || !playerText) return; // e.g. "Ausverkauft" has no role-specific variants
+    el.innerHTML = role === 'dm' ? dmHtml : playerText;
+  });
+}
+updateRole('player');
+
+function stepQty(btn, delta) {
+  const stepper = btn.parentElement;
+  const val = stepper.querySelector('.qty-val');
+  const max = parseInt(stepper.dataset.max || '99', 10);
+  let n = parseInt(val.textContent, 10) + delta;
+  if (n < 1) n = 1;
+  if (n > max) n = max;
+  val.textContent = n;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function buyItem(btn, name, price) {
+  const qty = parseInt(btn.closest('.item-actions').querySelector('.qty-val').textContent, 10);
+  showToast(qty + '× ' + name + ' gekauft (' + (qty * price) + ' GP).');
+}
+
+function addToCart(btn, name, price) {
+  const qty = parseInt(btn.closest('.item-actions').querySelector('.qty-val').textContent, 10);
+  cart.push({ name, price, qty });
+  renderCart();
+}
+
+function renderCart() {
+  const linesEl = document.getElementById('cartLines');
+  const totalEl = document.getElementById('cartTotal');
+  const warningEl = document.getElementById('cartWarning');
+  if (cart.length === 0) {
+    linesEl.innerHTML = '<div class="cart-empty">Noch nichts ausgewählt.</div>';
+    totalEl.textContent = '0 GP';
+    warningEl.classList.remove('show');
+    return;
+  }
+  linesEl.innerHTML = cart.map(function (c) {
+    return '<div class="cart-line"><span>' + c.qty + '× ' + c.name + '</span><span>' + (c.qty * c.price) + ' GP</span></div>';
+  }).join('');
+  const total = cart.reduce(function (sum, c) { return sum + c.qty * c.price; }, 0);
+  totalEl.textContent = total + ' GP';
+  warningEl.classList.toggle('show', total > WALLET_GP);
+}
+
+function checkout() {
+  const total = cart.reduce(function (sum, c) { return sum + c.qty * c.price; }, 0);
+  if (total > WALLET_GP) {
+    showToast('Kauf blockiert — nicht genug Guthaben.');
+    return;
+  }
+  if (cart.length === 0) {
+    showToast('Warenkorb ist leer.');
+    return;
+  }
+  showToast('Kauf abgeschlossen: ' + total + ' GP bezahlt.');
+  cart = [];
+  renderCart();
+}
+</script>
+
+</body>
+</html>

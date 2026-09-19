@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Charakter-Übersicht (Mockup)</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --tertiary: #B08D4C;
+    --error: #8C4A35;
+    --sold-out: #A79C87;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; border-bottom: 2px solid var(--primary); background: var(--surface);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 24px; color: var(--primary); transform: rotate(-6deg); display: inline-block; }
+  .brand h1 { font-family: var(--font-display); font-size: 19px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .back-link {
+    font-family: var(--font-body); font-size: 13px; color: var(--primary-dark); text-decoration: none;
+    border: 1px solid var(--border); padding: 7px 14px; border-radius: 18px; background: var(--bg);
+  }
+
+  main { max-width: 900px; margin: 0 auto; padding: 28px 24px 60px; }
+  main > p.hint { font-size: 12.5px; color: var(--text-muted); margin: 0 0 22px; font-style: italic; }
+
+  .char-list { display: flex; flex-direction: column; gap: 14px; }
+  .char-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; display: flex; align-items: center; gap: 18px;
+  }
+  .char-card.dead { opacity: 0.6; }
+  .char-card .portrait {
+    width: 54px; height: 54px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--primary);
+    display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 20px;
+    color: var(--primary-dark); flex-shrink: 0;
+  }
+  .char-card.dead .portrait { border-color: var(--sold-out); color: var(--sold-out); }
+  .char-info { flex: 1; min-width: 0; }
+  .char-info .name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .char-info .name { font-weight: bold; font-size: 16px; }
+  .char-info .sub { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .status-badge {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 3px 9px; border-radius: 10px; white-space: nowrap;
+  }
+  .status-badge.active { background: var(--secondary); color: var(--bg); }
+  .status-badge.inactive { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+  .status-badge.dead { background: var(--error); color: var(--bg); }
+
+  .hp-mini { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .hp-bar-track { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .hp-bar-fill { height: 100%; background: var(--secondary); }
+  .hp-mini .hp-text { font-family: var(--font-data); font-size: 11px; color: var(--text-muted); }
+
+  .char-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+  .char-actions button, .char-actions a {
+    font-family: var(--font-body); font-size: 12.5px; text-decoration: none; text-align: center;
+    padding: 8px 16px; border-radius: 6px; cursor: pointer; touch-action: manipulation; white-space: nowrap;
+  }
+  .btn-open { background: var(--primary); color: var(--bg); border: none; }
+  .btn-set-active { background: var(--bg); color: var(--primary-dark); border: 1px solid var(--primary); }
+  .btn-set-active:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .new-char-card {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    color: var(--text-muted); cursor: pointer; touch-action: manipulation; margin-top: 6px;
+  }
+  .new-char-card:hover { border-color: var(--primary); color: var(--primary-dark); }
+  .new-char-card .glyph { font-family: var(--font-display); font-size: 20px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 10px 20px 24px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="glyph">&#9876;</span>
+    <h1>Meine Charaktere</h1>
+  </div>
+  <a class="back-link" href="DnD_Tool_Board_Mockup.html">&larr; Zurück zum Board</a>
+</header>
+
+<main>
+  <p class="hint">Nur deine eigenen Charaktere sind hier sichtbar. Ein aktiver Charakter ist der, den dein Board-Panel und dein Guthaben gerade zeigen.</p>
+
+  <div class="char-list" id="charList">
+    <div class="char-card" data-status="active">
+      <div class="portrait">RD</div>
+      <div class="char-info">
+        <div class="name-row">
+          <span class="name">Rhogar Drachenhorn</span>
+          <span class="status-badge active">Aktiv</span>
+        </div>
+        <div class="sub">Level 5 Kämpfer (Eldritch Knight) · Mensch</div>
+        <div class="hp-mini">
+          <div class="hp-bar-track"><div class="hp-bar-fill" style="width:83%;"></div></div>
+          <span class="hp-text">34 / 41 HP</span>
+        </div>
+      </div>
+      <div class="char-actions">
+        <a class="btn-open" href="DnD_Tool_CharacterSheet_Mockup.html">Bogen öffnen</a>
+        <button class="btn-set-active" disabled>Bereits aktiv</button>
+      </div>
+    </div>
+
+    <div class="char-card" data-status="inactive">
+      <div class="portrait">FA</div>
+      <div class="char-info">
+        <div class="name-row">
+          <span class="name">Fenn Aschgrau</span>
+          <span class="status-badge inactive">Inaktiv</span>
+        </div>
+        <div class="sub">Level 1 Schurke · Halbling</div>
+        <div class="hp-mini">
+          <div class="hp-bar-track"><div class="hp-bar-fill" style="width:100%;"></div></div>
+          <span class="hp-text">9 / 9 HP</span>
+        </div>
+      </div>
+      <div class="char-actions">
+        <a class="btn-open" href="DnD_Tool_CharacterSheet_Mockup.html">Bogen öffnen</a>
+        <button class="btn-set-active" onclick="setActive(this)">Als aktiv setzen</button>
+      </div>
+    </div>
+
+    <div class="char-card dead" data-status="dead">
+      <div class="portrait">TH</div>
+      <div class="char-info">
+        <div class="name-row">
+          <span class="name">Toren Halgar</span>
+          <span class="status-badge dead">Gestorben</span>
+        </div>
+        <div class="sub">Level 3 Waldläufer · Zwerg — gefallen in Session 7</div>
+        <div class="hp-mini">
+          <div class="hp-bar-track"><div class="hp-bar-fill" style="width:0%;"></div></div>
+          <span class="hp-text">0 / 24 HP</span>
+        </div>
+      </div>
+      <div class="char-actions">
+        <a class="btn-open" href="DnD_Tool_CharacterSheet_Mockup.html">Bogen ansehen</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="new-char-card" onclick="showToast('Würde zur Charakter-Erstellung weiterleiten.')">
+    <span class="glyph">+</span> Neuen Charakter erstellen
+  </div>
+
+  <p class="hint" style="margin-top:20px;">Ein neuer Charakter startet komplett bei null: eigenes Inventar (höchstens Starterausrüstung), keine Kartenfreigaben, keine Shop-Zugänge. Level und Attribute können vom Spielleiter manuell an die Gruppe angeglichen werden. Details siehe Pflichtenheft, Kapitel 8.10.</p>
+</main>
+
+<footer>Mockup — Charakter-Übersicht · nur zur Veranschaulichung, keine echte Funktion</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+function setActive(btn) {
+  const clickedCard = btn.closest('.char-card');
+  document.querySelectorAll('.char-card').forEach(function (card) {
+    if (card.dataset.status === 'dead') return;
+    const badge = card.querySelector('.status-badge');
+    const actionBtn = card.querySelector('.btn-set-active');
+    if (card === clickedCard) {
+      card.dataset.status = 'active';
+      badge.textContent = 'Aktiv';
+      badge.className = 'status-badge active';
+      actionBtn.textContent = 'Bereits aktiv';
+      actionBtn.disabled = true;
+    } else if (card.dataset.status === 'active') {
+      card.dataset.status = 'inactive';
+      badge.textContent = 'Inaktiv';
+      badge.className = 'status-badge inactive';
+      actionBtn.textContent = 'Als aktiv setzen';
+      actionBtn.disabled = false;
+    }
+  });
+  showToast(clickedCard.querySelector('.name').textContent + ' ist jetzt dein aktiver Charakter.');
+}
+</script>
+
+</body>
+</html>

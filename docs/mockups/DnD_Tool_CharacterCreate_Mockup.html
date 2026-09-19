@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DnD Session Manager — Charakter erstellen (Mockup)</title>
+<style>
+  :root {
+    --bg: #F1EDE2;
+    --surface: #E6DFCC;
+    --surface-2: #DCD3B8;
+    --border: #C9BFA0;
+    --primary: #927355;
+    --primary-dark: #6E5540;
+    --text: #1D1A10;
+    --text-muted: #6B5D4A;
+    --secondary: #4A5A42;
+    --error: #8C4A35;
+
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+    --font-data: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; border-bottom: 2px solid var(--primary); background: var(--surface);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .glyph { font-family: var(--font-display); font-size: 22px; color: var(--primary); transform: rotate(-6deg); display: inline-block; }
+  .brand h1 { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; margin: 0; font-weight: normal; }
+  .back-link {
+    font-family: var(--font-body); font-size: 13px; color: var(--primary-dark); text-decoration: none;
+    border: 1px solid var(--border); padding: 6px 13px; border-radius: 16px; background: var(--bg);
+  }
+
+  .stepper {
+    display: flex; justify-content: center; gap: 6px; padding: 18px 20px 4px;
+  }
+  .step-dot {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted);
+    padding: 5px 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; touch-action: manipulation;
+  }
+  .step-dot.active { background: var(--primary); color: var(--bg); border-color: var(--primary); font-weight: bold; }
+  .step-dot.done { border-color: var(--secondary); color: var(--secondary); }
+
+  main { max-width: 760px; margin: 0 auto; padding: 20px 24px 60px; }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  .panel-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 26px 28px;
+  }
+  .panel-card h2 { font-family: var(--font-display); font-size: 19px; font-weight: normal; margin: 0 0 6px; }
+  .panel-card p.hint { font-size: 12.5px; color: var(--text-muted); margin: 0 0 20px; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .field input, .field select, .field textarea {
+    font-family: var(--font-body); font-size: 14px; border: 1px solid var(--border); border-radius: 6px;
+    padding: 9px 11px; background: var(--bg); color: var(--text);
+  }
+  .field textarea { min-height: 70px; resize: vertical; }
+
+  .template-note {
+    font-size: 11.5px; color: var(--text-muted); font-style: italic; margin-top: 16px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+  }
+
+  /* Step 2: abilities */
+  .ability-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .ability-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+  .ability-card label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; margin-bottom: 6px; }
+  .ability-stepper { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .ability-stepper button {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--primary); background: var(--surface);
+    color: var(--primary-dark); font-family: var(--font-data); font-size: 15px; cursor: pointer; touch-action: manipulation;
+  }
+  .ability-stepper .val { font-family: var(--font-data); font-size: 18px; font-weight: bold; min-width: 30px; }
+  .points-remaining {
+    text-align: center; font-size: 12.5px; color: var(--primary-dark); margin-bottom: 14px;
+    background: rgba(146,115,85,0.1); border: 1px solid var(--primary); border-radius: 6px; padding: 8px;
+  }
+
+  /* Step 3: equipment */
+  .equip-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .equip-row {
+    display: flex; align-items: center; justify-content: space-between; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: 13px;
+  }
+  .equip-row .equip-remove { color: var(--error); cursor: pointer; font-size: 12px; }
+  .add-equip-row { display: flex; gap: 8px; }
+  .add-equip-row input { flex: 1; }
+  .add-equip-row button {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg); border: none;
+    border-radius: 6px; padding: 9px 16px; cursor: pointer; touch-action: manipulation;
+  }
+
+  /* Step 4: personality */
+  .personality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .toggle-row {
+    display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px; margin-bottom: 18px;
+  }
+  .toggle-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; }
+  .toggle-row label { font-size: 13.5px; cursor: pointer; }
+
+  .spell-fields { display: none; }
+  .spell-fields.show { display: block; }
+
+  .unsure-note {
+    font-size: 11.5px; color: var(--text-muted); font-style: italic; margin-top: 16px;
+    background: var(--bg); border: 1px dashed var(--border); border-radius: 6px; padding: 10px 12px;
+  }
+
+  /* Nav */
+  .step-nav { display: flex; justify-content: space-between; margin-top: 22px; }
+  .btn-primary {
+    font-family: var(--font-body); background: var(--primary); color: var(--bg); border: none;
+    padding: 11px 22px; border-radius: 6px; font-size: 14px; cursor: pointer; touch-action: manipulation;
+  }
+  .btn-ghost {
+    font-family: var(--font-body); background: transparent; color: var(--primary-dark);
+    border: 1px solid var(--border); padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; touch-action: manipulation;
+  }
+  .btn-ghost.invisible { visibility: hidden; }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 10px 20px 24px; font-style: italic; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--primary); color: var(--bg); padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="glyph">&#9876;</span>
+    <h1>Neuen Charakter erstellen</h1>
+  </div>
+  <a class="back-link" href="#">&larr; Abbrechen</a>
+</header>
+
+<div class="stepper" id="stepper">
+  <div class="step-dot active" data-step="1" onclick="goStep(1)">1 · Grunddaten</div>
+  <div class="step-dot" data-step="2" onclick="goStep(2)">2 · Attribute</div>
+  <div class="step-dot" data-step="3" onclick="goStep(3)">3 · Ausrüstung</div>
+  <div class="step-dot" data-step="4" onclick="goStep(4)">4 · Fähigkeiten</div>
+  <div class="step-dot" data-step="5" onclick="goStep(5)">5 · Magie</div>
+  <div class="step-dot" data-step="6" onclick="goStep(6)">6 · Persönlichkeit</div>
+</div>
+
+<main>
+
+  <!-- STEP 1 -->
+  <div class="step-panel active" id="step1">
+    <div class="panel-card">
+      <h2>Grunddaten</h2>
+      <p class="hint">Basiert auf der offiziellen D&amp;D-5e-Vorlage (FA-02). Für Release 1 die einzige verfügbare Vorlage.</p>
+      <div class="field-grid">
+        <div class="field"><label>Charaktername</label><input type="text" placeholder="z. B. Fenn Aschgrau"></div>
+        <div class="field"><label>Spielername</label><input type="text" value="Severin" disabled></div>
+        <div class="field"><label>Rasse</label><input type="text" placeholder="z. B. Halbling"></div>
+        <div class="field"><label>Klasse</label><input type="text" placeholder="z. B. Schurke"></div>
+        <div class="field"><label>Hintergrund</label><input type="text" placeholder="z. B. Kriminelle:r"></div>
+        <div class="field"><label>Gesinnung</label>
+          <select>
+            <option>Rechtschaffen Gut</option><option>Neutral Gut</option><option>Chaotisch Gut</option>
+            <option>Rechtschaffen Neutral</option><option>Neutral</option><option>Chaotisch Neutral</option>
+            <option>Rechtschaffen Böse</option><option>Neutral Böse</option><option>Chaotisch Böse</option>
+          </select>
+        </div>
+        <div class="field"><label>Startlevel</label><input type="text" value="1"></div>
+        <div class="field"><label>Erfahrungspunkte</label><input type="text" value="0"></div>
+      </div>
+      <div class="template-note">Level und Attribute können vom Spielleiter bei Bedarf manuell an den Rest der Gruppe angeglichen werden, z. B. bei einem Ersatzcharakter nach dem Tod des vorherigen (siehe Pflichtenheft 8.10).</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-panel" id="step2">
+    <div class="panel-card">
+      <h2>Attribute</h2>
+      <p class="hint">Werte frei eintragen, z. B. per Punktekauf oder Würfelmethode, wie ihr das am Tisch handhabt.</p>
+      <div class="points-remaining">Nur zur Orientierung, keine erzwungene Regel: Punktekauf-Summe aktuell <strong id="pointSum">72</strong></div>
+      <div class="ability-grid" id="abilityGrid">
+        <div class="ability-card"><label>Stärke</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Geschick</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Konstitution</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Intelligenz</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Weisheit</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+        <div class="ability-card"><label>Charisma</label><div class="ability-stepper"><button onclick="stepAbility(this,-1)">−</button><span class="val">10</span><button onclick="stepAbility(this,1)">+</button></div></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Trefferpunkte maximal</label><input type="text" placeholder="z. B. 10"></div>
+        <div class="field"><label>Rüstungsklasse</label><input type="text" placeholder="z. B. 12"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-panel" id="step3">
+    <div class="panel-card">
+      <h2>Ausrüstung</h2>
+      <p class="hint">Startausrüstung eintragen. Kein Import aus einem früheren Charakter, jeder neue Charakter beginnt bei null (bewusst so, siehe Pflichtenheft 8.10).</p>
+      <div class="equip-list" id="equipList">
+        <div class="equip-row"><span>Kurzschwert (1×)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        <div class="equip-row"><span>Lederrüstung (1×)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        <div class="equip-row"><span>Abenteurerrucksack (1×)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+      </div>
+      <div class="add-equip-row">
+        <input type="text" id="newEquipInput" placeholder="Gegenstand hinzufügen, z. B. Seil (15m)">
+        <button onclick="addEquip()">+ Hinzufügen</button>
+      </div>
+      <div class="field-grid" style="margin-top:18px;">
+        <div class="field"><label>Startguthaben</label><input type="text" placeholder="z. B. 10 GP"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-panel" id="step4">
+    <div class="panel-card">
+      <h2>Fähigkeiten</h2>
+      <p class="hint">Klassen- und Rassenmerkmale, z. B. "Kriegsgesang" oder "Dunkelsicht". Fürs Erste nur eine einfache Liste zum Nachschlagen, ohne Verbrauch/Cooldown-Logik dahinter.</p>
+      <div class="equip-list" id="featureList">
+        <div class="equip-row"><span>Kampfstil (Verteidigung)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        <div class="equip-row"><span>Kriegsgesang</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+      </div>
+      <div class="add-equip-row">
+        <input type="text" id="newFeatureInput" placeholder="Fähigkeit hinzufügen, z. B. Zäh im Nehmen">
+        <button onclick="addFeature()">+ Hinzufügen</button>
+      </div>
+      <div class="unsure-note">Wie das später genau funktionieren soll (z. B. mit Beschreibungstext, Verbrauch pro Session), ist noch offen und wird mit dem Spielleiter besprochen. Vorerst reicht eine einfache Liste.</div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-panel" id="step5">
+    <div class="panel-card">
+      <h2>Magie</h2>
+      <p class="hint">Nur ausfüllen, falls dein Charakter zaubern kann. Optional, wie bei CHARACTER_SPELLCASTING im Datenmodell.</p>
+      <div class="toggle-row">
+        <input type="checkbox" id="hasMagicToggle" onchange="toggleMagicFields(this.checked)">
+        <label for="hasMagicToggle">Mein Charakter kann zaubern</label>
+      </div>
+      <div class="spell-fields" id="spellFields">
+        <div class="field-grid">
+          <div class="field">
+            <label>Zauberattribut</label>
+            <select id="spellAbilitySelect" onchange="recalcSpellValues()">
+              <option value="3">Intelligenz</option>
+              <option value="4">Weisheit</option>
+              <option value="5" selected>Charisma</option>
+            </select>
+          </div>
+          <div class="field"><label>Übungsbonus</label><input type="text" id="profBonusInput" value="2" oninput="recalcSpellValues()"></div>
+        </div>
+        <div class="ability-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:14px;">
+          <div class="ability-card"><label>Attribut-Modifikator</label><div class="val" id="calcAbilityMod" style="font-size:18px; font-weight:bold;">+0</div></div>
+          <div class="ability-card"><label>Rettungswurf-SG</label><div class="val" id="calcSaveDC" style="font-size:18px; font-weight:bold;">8</div></div>
+          <div class="ability-card"><label>Angriffsbonus</label><div class="val" id="calcAttackBonus" style="font-size:18px; font-weight:bold;">+0</div></div>
+        </div>
+        <div class="unsure-note" style="margin-top:10px;">Automatisch berechnet: Attribut-Modifikator = (Attributswert − 10) ÷ 2, abgerundet. Rettungswurf-SG = 8 + Übungsbonus + Modifikator. Angriffsbonus = Modifikator + Übungsbonus. Wert kommt vom entsprechenden Attribut aus Schritt 2.</div>
+
+        <p class="hint" style="margin-top:20px; margin-bottom:8px;">Zaubertricks (Cantrips) — unbegrenzt nutzbar, müssen nie vorbereitet werden, keine Zauberplätze nötig</p>
+        <div class="equip-list" id="cantripList">
+          <div class="equip-row"><span>Feuerpfeil</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        </div>
+        <div class="add-equip-row">
+          <input type="text" id="newCantripInput" placeholder="Zaubertrick hinzufügen, z. B. Magierhand">
+          <button onclick="addCantrip()">+ Hinzufügen</button>
+        </div>
+
+        <p class="hint" style="margin-top:20px; margin-bottom:8px;">Zauber mit Graden — brauchen Zauberplätze, teils vorbereitet</p>
+        <div class="equip-list" id="spellList">
+          <div class="equip-row"><span>Schild (Grad 1)</span><span class="equip-remove" onclick="this.closest('.equip-row').remove()">✕</span></div>
+        </div>
+        <div class="add-equip-row">
+          <input type="text" id="newSpellInput" placeholder="Zauber hinzufügen, z. B. Magiegeschoss (Grad 1)">
+          <button onclick="addSpell()">+ Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-panel" id="step6">
+    <div class="panel-card">
+      <h2>Persönlichkeit &amp; Hintergrund</h2>
+      <p class="hint">Optional, aber hilft dem DM, deinen Charakter in die Geschichte einzubauen.</p>
+      <div class="personality-grid">
+        <div class="field"><label>Persönlichkeitsmerkmale</label><textarea placeholder="Wie tritt dein Charakter auf?"></textarea></div>
+        <div class="field"><label>Ideale</label><textarea placeholder="Wofür steht dein Charakter?"></textarea></div>
+        <div class="field"><label>Bindungen</label><textarea placeholder="Was hält deinen Charakter an die Welt gebunden?"></textarea></div>
+        <div class="field"><label>Makel</label><textarea placeholder="Welche Schwäche hat dein Charakter?"></textarea></div>
+      </div>
+      <div class="field full" style="margin-top:14px;"><label>Hintergrundgeschichte</label><textarea style="min-height:110px;" placeholder="Woher kommt dein Charakter, was treibt ihn an?"></textarea></div>
+    </div>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn-ghost" id="prevBtn" onclick="prevStep()">&larr; Zurück</button>
+    <button class="btn-primary" id="nextBtn" onclick="nextStep()">Weiter &rarr;</button>
+  </div>
+
+</main>
+
+<footer>Mockup — Charakter-Erstellung · nur zur Veranschaulichung, keine echte Funktion</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 6;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+function goStep(step) {
+  currentStep = step;
+  document.querySelectorAll('.step-panel').forEach(function (p) { p.classList.remove('active'); });
+  document.getElementById('step' + step).classList.add('active');
+  document.querySelectorAll('.step-dot').forEach(function (d) {
+    const s = parseInt(d.dataset.step, 10);
+    d.classList.toggle('active', s === step);
+    d.classList.toggle('done', s < step);
+  });
+  document.getElementById('prevBtn').classList.toggle('invisible', step === 1);
+  document.getElementById('nextBtn').textContent = step === totalSteps ? 'Charakter erstellen \u2713' : 'Weiter \u2192';
+}
+
+function nextStep() {
+  if (currentStep < totalSteps) {
+    goStep(currentStep + 1);
+  } else {
+    showToast('Charakter würde jetzt erstellt und dem Spiel hinzugefügt (Mockup).');
+  }
+}
+
+function prevStep() {
+  if (currentStep > 1) goStep(currentStep - 1);
+}
+
+function stepAbility(btn, delta) {
+  const span = btn.parentElement.querySelector('.val');
+  let n = parseInt(span.textContent, 10) + delta;
+  if (n < 3) n = 3;
+  if (n > 18) n = 18;
+  span.textContent = n;
+  updatePointSum();
+  recalcSpellValues();
+}
+
+function updatePointSum() {
+  const vals = Array.from(document.querySelectorAll('#abilityGrid .val')).map(function (el) { return parseInt(el.textContent, 10); });
+  const sum = vals.reduce(function (a, b) { return a + b; }, 0);
+  document.getElementById('pointSum').textContent = sum;
+}
+
+function addEquip() {
+  const input = document.getElementById('newEquipInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('equipList');
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  row.innerHTML = '<span>' + val + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  list.appendChild(row);
+  input.value = '';
+}
+
+function addFeature() {
+  const input = document.getElementById('newFeatureInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('featureList');
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  row.innerHTML = '<span>' + val + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  list.appendChild(row);
+  input.value = '';
+}
+
+function addCantrip() {
+  const input = document.getElementById('newCantripInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('cantripList');
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  row.innerHTML = '<span>' + val + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  list.appendChild(row);
+  input.value = '';
+}
+
+function addSpell() {
+  const input = document.getElementById('newSpellInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('spellList');
+  const row = document.createElement('div');
+  row.className = 'equip-row';
+  row.innerHTML = '<span>' + val + '</span><span class="equip-remove" onclick="this.closest(\'.equip-row\').remove()">✕</span>';
+  list.appendChild(row);
+  input.value = '';
+}
+
+function toggleMagicFields(checked) {
+  document.getElementById('spellFields').classList.toggle('show', checked);
+  if (checked) recalcSpellValues();
+}
+
+function recalcSpellValues() {
+  const abilityIndex = parseInt(document.getElementById('spellAbilitySelect').value, 10);
+  const abilityEls = document.querySelectorAll('#abilityGrid .val');
+  const score = parseInt(abilityEls[abilityIndex].textContent, 10) || 10;
+  const mod = Math.floor((score - 10) / 2);
+  const prof = parseInt(document.getElementById('profBonusInput').value, 10) || 0;
+  const saveDC = 8 + prof + mod;
+  const attackBonus = mod + prof;
+
+  document.getElementById('calcAbilityMod').textContent = (mod >= 0 ? '+' : '') + mod;
+  document.getElementById('calcSaveDC').textContent = saveDC;
+  document.getElementById('calcAttackBonus').textContent = (attackBonus >= 0 ? '+' : '') + attackBonus;
+}
+
+recalcSpellValues();
+</script>
+
+</body>
+</html>

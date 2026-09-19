@@ -1,0 +1,53 @@
+# Production deploy — used unchanged on the server (`git pull && docker compose
+# -f docker-compose.prod.yml up -d --build`); the only things that differ
+# between here and local dev are in `.env` (gitignored, see .env.example) and
+# in src/frontend/.env.production (tracked, no secrets). Matches the
+# astralex.dev.todo / astralex.dev.todo-api deploy convention on the same
+# server: one fixed high port per service, Caddy reverse-proxies each
+# subdomain to its port (see project_deployment_state memory / the server's
+# /etc/caddy/Caddyfile), no ports published beyond what Caddy needs.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: dndsessionmanager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${DND_DB_PASSWORD}"
+    ports:
+      - "62300:5432"
+    volumes:
+      - dnd-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dndsessionmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./src/backend/DndSessionManager.Api
+      dockerfile: Dockerfile
+    ports:
+      - "61300:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=dndsessionmanager;Username=postgres;Password=${DND_DB_PASSWORD}"
+      Cors__AllowedOrigins__0: "${DND_CORS_ORIGIN}"
+    volumes:
+      - dnd-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "61310:80"
+    depends_on:
+      - backend
+
+volumes:
+  dnd-postgres-data:
+  dnd-uploads:
