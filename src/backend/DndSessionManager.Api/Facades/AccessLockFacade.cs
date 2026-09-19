@@ -17,6 +17,12 @@ public class AccessLockFacade(IUnitOfWork unitOfWork) : IAccessLockFacade
         return new AccessLockStatusDto(existing is not null);
     }
 
+    public async Task<HashSet<string>> GetLockedKeysAsync(Guid gameId, string resourceType)
+    {
+        var locks = await unitOfWork.AccessLocks.GetByGameAndTypeAsync(gameId, resourceType);
+        return locks.Select(l => l.ResourceKey).ToHashSet();
+    }
+
     public async Task<AccessCodeResultDto> SetCodeAsync(Guid gameId, string resourceType, string resourceKey, SetAccessCodeDto input)
     {
         if (string.IsNullOrWhiteSpace(input.NewCode) || input.NewCode.Trim().Length < 4)

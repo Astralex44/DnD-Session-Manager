@@ -16,6 +16,11 @@ public class AccessLockRepository(AppDbContext context) : IAccessLockRepository
         context.AccessLocks.FirstOrDefaultAsync(l =>
             l.GameId == gameId && l.ResourceType == resourceType && l.ResourceKey == resourceKey);
 
+    public async Task<IReadOnlyList<AccessLock>> GetByGameAndTypeAsync(Guid gameId, string resourceType) =>
+        await context.AccessLocks
+            .Where(l => l.GameId == gameId && l.ResourceType == resourceType)
+            .ToListAsync();
+
     public Task AddAsync(AccessLock entity) => context.AccessLocks.AddAsync(entity).AsTask();
     public void Remove(AccessLock entity) => context.AccessLocks.Remove(entity);
 }

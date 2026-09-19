@@ -40,26 +40,36 @@ export function CharacterOverviewPage() {
             <div className="char-info">
               <div className="name-row">
                 <span className="name">{c.name}</span>
-                <span className={`status-badge ${c.status}`}>{c.status}</span>
+                {c.locked
+                  ? <span className="status-badge locked">🔒 protected</span>
+                  : <span className={`status-badge ${c.status}`}>{c.status}</span>}
               </div>
-              <div className="sub">
-                Level {c.level ?? '?'} {c.class} · {c.race}
-                {c.playerName ? ` · ${c.playerName}` : ''}
-              </div>
-              <div className="hp-mini">
-                <div className="hp-bar-track">
-                  <div className="hp-bar-fill" style={{ width: `${hpPercent(c)}%` }} />
+              {c.locked ? (
+                <div className="sub">
+                  {c.playerName ? `${c.playerName} · ` : ''}Open the sheet and enter the code to see details.
                 </div>
-                <span className="hp-text">
-                  {c.hpCurrent} {c.hpMax != null ? `/ ${c.hpMax}` : ''} HP
-                </span>
-              </div>
+              ) : (
+                <>
+                  <div className="sub">
+                    Level {c.level ?? '?'} {c.class} · {c.race}
+                    {c.playerName ? ` · ${c.playerName}` : ''}
+                  </div>
+                  <div className="hp-mini">
+                    <div className="hp-bar-track">
+                      <div className="hp-bar-fill" style={{ width: `${hpPercent(c)}%` }} />
+                    </div>
+                    <span className="hp-text">
+                      {c.hpCurrent} {c.hpMax != null ? `/ ${c.hpMax}` : ''} HP
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
             <div className="char-actions">
               <Link className="btn-open" to={`/character/${c.id}`}>
                 Open Sheet
               </Link>
-              {c.status !== 'dead' && (
+              {!c.locked && c.status !== 'dead' && (
                 <button
                   className="btn-set-active"
                   disabled={c.status === 'active'}

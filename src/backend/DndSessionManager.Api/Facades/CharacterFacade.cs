@@ -5,10 +5,14 @@ using DndSessionManager.Api.Repositories;
 
 namespace DndSessionManager.Api.Facades;
 
-public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcaster) : ICharacterFacade
+public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcaster, IAccessLockFacade accessLockFacade) : ICharacterFacade
 {
-    public async Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId) =>
-        (await unitOfWork.Characters.GetByGameIdAsync(gameId)).Select(ToDto).ToList();
+    public async Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId)
+    {
+        var characters = await unitOfWork.Characters.GetByGameIdAsync(gameId);
+        var lockedKeys = await accessLockFacade.GetLockedKeysAsync(gameId, "Character");
+        return characters.Select(c => ToDto(c, lockedKeys.Contains(c.Id.ToString()))).ToList();
+    }
 
     public async Task<CharacterDetailDto?> GetCharacterDetailAsync(Guid gameId, Guid characterId)
     {
@@ -66,7 +70,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         await unitOfWork.SaveChangesAsync();
         character.ActiveLevelSheetId = levelSheet.Id;
         await unitOfWork.SaveChangesAsync();
-        return ToDto(character);
+        return ToDto(character, locked: false); // brand new — can't have a lock yet
     }
 
     public async Task<CharacterDetailDto?> UpdateCharacterAsync(Guid gameId, Guid characterId, UpdateCharacterDto input)
@@ -129,7 +133,8 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         character.Status = status;
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "characters");
-        return ToDto(character);
+        var locked = (await accessLockFacade.GetStatusAsync(gameId, "Character", characterId.ToString())).Locked;
+        return ToDto(character, locked);
     }
 
     public async Task<bool> DeleteCharacterAsync(Guid gameId, Guid characterId)
@@ -533,8 +538,13 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
     private static SpellDto ToSpellDto(CharacterSpell spell) =>
         new(spell.Id, spell.Level, spell.Name, spell.Prepared, spell.Description, spell.IsHomebrew);
 
-    private static CharacterDto ToDto(Character character) => new(
-        character.Id, character.GameId, character.Name, character.Race, character.Class,
-        character.PlayerName, character.Status, character.HpCurrent, character.ActiveLevelSheet?.HpMax,
-        character.ArmorClass, character.ActiveLevelSheetId, character.ActiveLevelSheet?.Level);
+    private static CharacterDto ToDto(Character character, bool locked) => locked
+        ? new CharacterDto(
+            character.Id, character.GameId, character.Name, "", "",
+            character.PlayerName, "", 0, null,
+            0, character.ActiveLevelSheetId, null, true)
+        : new CharacterDto(
+            character.Id, character.GameId, character.Name, character.Race, character.Class,
+            character.PlayerName, character.Status, character.HpCurrent, character.ActiveLevelSheet?.HpMax,
+            character.ArmorClass, character.ActiveLevelSheetId, character.ActiveLevelSheet?.Level, false);
 }

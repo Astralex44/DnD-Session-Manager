@@ -11,6 +11,10 @@ export interface Character {
   armorClass: number;
   activeLevelSheetId: string | null;
   level: number | null;
+  // When true, every field above except id/gameId/name/playerName/
+  // activeLevelSheetId is blanked out server-side — see AccessLock. Show a
+  // "Protected" state instead of the (empty/zeroed) race/class/HP/level.
+  locked: boolean;
 }
 
 export interface Skill {

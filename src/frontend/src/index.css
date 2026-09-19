@@ -357,6 +357,7 @@ h2 {
 .status-badge.active { background: var(--secondary); color: var(--bg); }
 .status-badge.inactive { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
 .status-badge.dead { background: var(--error); color: var(--bg); }
+.status-badge.locked { background: var(--tertiary); color: var(--bg); text-transform: none; }
 
 .hp-mini { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 .hp-bar-track { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
