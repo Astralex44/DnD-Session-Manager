@@ -7,6 +7,7 @@ import { CharacterCreateWizardPage } from './pages/CharacterCreateWizardPage.tsx
 import { CharacterSheetPage } from './pages/CharacterSheetPage.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { DocumentsManagePage } from './pages/DocumentsManagePage.tsx';
+import { HelpPage } from './pages/HelpPage.tsx';
 import { MonstersManagePage } from './pages/MonstersManagePage.tsx';
 import { NotesPage } from './pages/NotesPage.tsx';
 import { SessionsManagePage } from './pages/SessionsManagePage.tsx';
@@ -44,6 +45,9 @@ function MainLayout() {
           </Link>
           <Link className={`nav-item${location.pathname.startsWith('/manage') ? ' active' : ''}`} to="/manage/documents">
             <span className="glyph">☰</span> Manage
+          </Link>
+          <Link className={`nav-item${location.pathname.startsWith('/help') ? ' active' : ''}`} to="/help">
+            <span className="glyph">❔</span> Help
           </Link>
         </nav>
 
@@ -112,6 +116,7 @@ export function App() {
           <Route path="/character/:id" element={<CharacterSheetPage />} />
           <Route path="/board" element={<BoardPage />} />
           <Route path="/notes" element={<NotesPage />} />
+          <Route path="/help" element={<HelpPage />} />
           <Route path="*" element={<DashboardPage />} />
         </Route>
         <Route path="/manage" element={<ManageLayout />}>
