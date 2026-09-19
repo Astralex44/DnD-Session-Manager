@@ -1,0 +1,5 @@
+# Secrets for docker-compose.prod.yml — copy .env.example to .env on the
+# server and fill in the real values, same convention as the other
+# astralex.dev apps (server just does `git pull && docker compose -f
+# docker-compose.prod.yml up -d --build`).
+.env
