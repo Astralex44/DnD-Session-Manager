@@ -17,7 +17,6 @@ const ALPHA_HOME = '/characters';
 // Player-facing shell: /characters, /character/:id, /notes, /help.
 function MainLayout() {
   const location = useLocation();
-  const isWide = location.pathname.startsWith('/character/') || location.pathname === '/characters/new';
 
   return (
     <>
@@ -42,7 +41,7 @@ function MainLayout() {
           </Link>
         </nav>
 
-        <main className={isWide ? 'wide' : ''}>
+        <main>
           <Outlet />
         </main>
       </div>
