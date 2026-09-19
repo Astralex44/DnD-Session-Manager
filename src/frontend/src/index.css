@@ -121,6 +121,18 @@ a:focus-visible {
   font-style: italic;
   margin-left: 6px;
 }
+.alpha-badge {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--tertiary);
+  color: var(--bg);
+  padding: 2px 8px;
+  border-radius: 10px;
+  cursor: default;
+}
 
 .layout {
   display: flex;

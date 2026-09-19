@@ -25,6 +25,7 @@ function MainLayout() {
         <div className="brand">
           <span className="glyph">⚔</span>
           <h1>DnD Session Manager</h1>
+          <span className="alpha-badge" title="Early test release — see Help for what's covered so far">Alpha</span>
         </div>
       </header>
 
