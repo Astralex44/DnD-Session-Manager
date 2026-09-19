@@ -1,0 +1,38 @@
+name: Deploy
+
+# Fires on any version tag (v1.2.3, v1.2.3-alpha.1, ...). Deploys the exact
+# tagged commit, regardless of which branch it's reachable from — the
+# `release` branch is the human process ("merge to release, then tag from
+# there"), not something this workflow itself checks, so a tag pushed
+# directly still deploys.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DND_DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 159.69.177.173 >> ~/.ssh/known_hosts
+
+      # Checks out the exact tag on the server (not "latest main") so a
+      # deploy is always traceable to one specific tagged commit.
+      - name: Deploy tagged commit on the server
+        run: |
+          ssh -i ~/.ssh/id_ed25519 root@159.69.177.173 '
+            set -euo pipefail
+            cd /opt/astralex/astralex.dev.dnd
+            git fetch --all --tags
+            git checkout "${{ github.ref_name }}"
+            docker compose -f docker-compose.prod.yml up -d --build
+          '
+
+      - name: Clean up
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
