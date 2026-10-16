@@ -1,15 +1,11 @@
-// Alpha-scoped on purpose — only Characters + Notes are in real use right
-// now (see project_realtime_sync_state / board-initiative-dice-timer-state
-// memory: Board and everything live is a separate, later rollout). Expand
-// this page card-by-card as each new area actually goes live, rather than
-// documenting features nobody can use yet.
+// Short how-to for players. The full guides (DM and player) are separate
+// documents; keep this page to the essentials of each area.
 export function HelpPage() {
   return (
     <div className="help-page">
       <h2>Help</h2>
       <p className="hint">
-        This is an early alpha test — character sheets and private notes are the only things in
-        real use so far. Everything below covers that.
+        The essentials of each area. Everything saves to your account, so it's the same on every device.
       </p>
 
       <div className="help-grid">
@@ -90,11 +86,18 @@ export function HelpPage() {
         </div>
 
         <div className="sheet-section box">
-          <h3 className="section-title">Known limitations</h3>
-          <ul>
-            <li>Board, live initiative, shop, and maps aren't part of the test yet.</li>
-            <li>Something looks broken? Tell the DM directly rather than trying to fix it mid-session.</li>
-          </ul>
+          <h3 className="section-title">The Board</h3>
+          <p>
+            <strong>Board</strong> is the live table during a session: your character at a glance, the
+            initiative order, dice, timers, and the maps and shops the DM has shared with you. It updates
+            on its own — no reloading. When the DM shares a map you get a pop-up (<strong>View now</strong>{' '}
+            or <strong>Later</strong>); a shared shop opens straight away.
+          </p>
+        </div>
+
+        <div className="sheet-section box">
+          <h3 className="section-title">Something broken?</h3>
+          <p>Tell the DM directly rather than trying to fix it mid-session.</p>
         </div>
       </div>
     </div>

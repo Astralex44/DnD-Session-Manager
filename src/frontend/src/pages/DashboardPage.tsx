@@ -4,7 +4,7 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useQuotesStore } from '../store/quotesStore.ts';
 import { useSessionsStore } from '../store/sessionsStore.ts';
 import type { Character } from '../types/character.ts';
-import { useGameId } from '../store/authStore.ts';
+import { useGameId, useIsDm } from '../store/authStore.ts';
 
 const RECENT_QUOTE_COUNT = 4;
 const NOTES_PREVIEW_LENGTH = 220;
@@ -27,6 +27,7 @@ function hpPercent(c: Character): number {
 // actually exists — don't build multi-game UI ahead of that.
 export function DashboardPage() {
   const gameId = useGameId();
+  const isDm = useIsDm();
   const { characters, fetchCharacters } = useCharactersStore();
   const { sessions, fetchSessions } = useSessionsStore();
   const { quotes, fetchQuotes } = useQuotesStore();
@@ -53,7 +54,7 @@ export function DashboardPage() {
       <Link className="dashboard-cta" to="/board">Go to Board →</Link>
 
       <div className="sheet-section box">
-        <h3 className="section-title">Characters</h3>
+        <h3 className="section-title">{isDm ? 'Characters' : 'Your Characters'}</h3>
         {characters.length === 0 && <p className="hint" style={{ margin: 0 }}>No characters yet.</p>}
         <div className="dashboard-char-list">
           {characters.map((c) => (
@@ -88,9 +89,11 @@ export function DashboardPage() {
                   : latestSession.notes}
               </p>
             )}
-            <Link className="btn-ghost" style={{ marginTop: 10, display: 'inline-block' }} to="/manage/sessions">
-              All Sessions →
-            </Link>
+            {isDm && (
+              <Link className="btn-ghost" style={{ marginTop: 10, display: 'inline-block' }} to="/manage/sessions">
+                All Sessions →
+              </Link>
+            )}
           </>
         )}
       </div>
@@ -109,9 +112,11 @@ export function DashboardPage() {
             ))}
           </ul>
         )}
-        <Link className="btn-ghost" style={{ marginTop: 10, display: 'inline-block' }} to="/manage/quotes">
-          All Quotes →
-        </Link>
+        {isDm && (
+          <Link className="btn-ghost" style={{ marginTop: 10, display: 'inline-block' }} to="/manage/quotes">
+            All Quotes →
+          </Link>
+        )}
       </div>
     </div>
   );

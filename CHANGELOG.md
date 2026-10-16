@@ -4,6 +4,15 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.3.0-alpha — 2026-10-16
+
+### Added
+- **Everything is switched on.** The **Dashboard** (characters, latest session, recent quotes) is the home page again, and
+  the live **Board** is open to everyone: the DM sees the full cockpit (characters, initiative, dice, timer,
+  monsters, shops, maps), players see their character, the initiative order, dice, and what's shared with them.
+- **Manage (DM only):** the DM's setup area — maps and books, monsters, shops, quotes, sessions, players, and the
+  currency settings. Players management moved in here from the main sidebar.
+
 ## v0.2.1-alpha — 2026-10-16
 
 ### Fixed

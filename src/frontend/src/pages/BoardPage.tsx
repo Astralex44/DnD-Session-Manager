@@ -18,7 +18,11 @@ export function BoardPage() {
   return (
     <div className="board-page">
       <h2>Board</h2>
-      <p className="hint">Live, synced across every viewer — Characters, Initiative, Dice, Timer, Monsters, Shop, and Maps.</p>
+      <p className="hint">
+        {isDm
+          ? 'Live, synced across every viewer — Characters, Initiative, Dice, Timer, Monsters, Shop, and Maps.'
+          : 'Live, synced with the table — your character, the initiative order, dice, and what the DM shares with you.'}
+      </p>
 
       {isDm ? (
         <div className="board-grid">

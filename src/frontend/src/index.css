@@ -1132,3 +1132,6 @@ h2 {
 }
 /* …except the borderless number inside a coin pill, which stays borderless. */
 .coin-pill :is(input:not([type="checkbox"]):not([type="radio"])):disabled { border: 0; background: transparent; }
+
+/* Manage header: "Back to Board" next to the user menu */
+.manage-header-right { display: flex; align-items: center; gap: 16px; }
