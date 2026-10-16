@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
@@ -46,6 +46,27 @@ export function MapPlayerPanel() {
 
   const visible = shared.filter(({ share }) => !share.hidden);
   const hidden = shared.filter(({ share }) => share.hidden);
+
+  // FA-15 — alert the player the moment a map newly becomes shared with
+  // their character. First sighting of a character (or a fresh page load)
+  // seeds the "seen" set silently — only shares that show up *after* that
+  // baseline queue a popup, otherwise reopening the board would re-alert on
+  // every map already shared from earlier sessions.
+  const sharedIdsKey = shared.map(({ doc }) => doc.id).sort().join(',');
+  const seenMapIdsRef = useRef<Map<string, Set<string>>>(new Map());
+  const [mapAlertQueue, setMapAlertQueue] = useState<GameDocument[]>([]);
+
+  useEffect(() => {
+    if (!characterId) return;
+    const currentIds = new Set(sharedIdsKey ? sharedIdsKey.split(',') : []);
+    const seen = seenMapIdsRef.current.get(characterId);
+    if (seen) {
+      const newDocs = shared.filter(({ doc }) => !seen.has(doc.id)).map(({ doc }) => doc);
+      if (newDocs.length > 0) setMapAlertQueue((q) => [...q, ...newDocs]);
+    }
+    seenMapIdsRef.current.set(characterId, currentIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterId, sharedIdsKey]);
 
   function toggleHidden(doc: GameDocument, currentlyHidden: boolean, locked: boolean) {
     if (!characterId) return;
@@ -126,6 +147,19 @@ export function MapPlayerPanel() {
           </>
         )}
       </div>
+
+      {mapAlertQueue.length > 0 && (
+        <div className="dialog-overlay" onClick={() => setMapAlertQueue((q) => q.slice(1))}>
+          <div className="dialog-box" onClick={(e) => e.stopPropagation()}>
+            <h3>Map shared</h3>
+            <p>&ldquo;{mapAlertQueue[0].name}&rdquo; was shared with you. View now?</p>
+            <div className="form-actions">
+              <button className="btn-ghost" onClick={() => setMapAlertQueue((q) => q.slice(1))}>Later</button>
+              <button onClick={() => { setViewing(mapAlertQueue[0]); setMapAlertQueue((q) => q.slice(1)); }}>View now</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {viewing && (
         <div className="dialog-overlay" onClick={() => setViewing(null)}>
