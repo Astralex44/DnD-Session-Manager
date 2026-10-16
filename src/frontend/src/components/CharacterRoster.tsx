@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -14,9 +14,10 @@ function initials(name: string): string {
 // SignalR push — a player editing their own HP on their own Board updates
 // this instantly.
 export function CharacterRoster() {
+  const gameId = useGameId();
   const { characters, fetchCharacters } = useCharactersStore();
 
-  useLiveFetch(DEMO_GAME_ID, 'characters', fetchCharacters);
+  useLiveFetch(gameId, 'characters', fetchCharacters);
 
   return (
     <div className="panel">

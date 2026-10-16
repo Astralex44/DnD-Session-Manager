@@ -118,10 +118,13 @@ var authenticationBuilder = builder.Services.AddAuthentication(options =>
 .AddCookie(options =>
 {
     // Frontend and API live on different subdomains (dnd.astralex.dev /
-    // dnd-api.astralex.dev) in prod, and different localhost ports in dev —
-    // both need a cross-site cookie. SameAsRequest keeps Secure correct in
-    // both http-local-dev and https-prod without two separate configs.
-    options.Cookie.SameSite = SameSiteMode.None;
+    // dnd-api.astralex.dev) in prod and different localhost ports in dev —
+    // both are the *same site* (same registrable domain / same host), so Lax
+    // is enough for the frontend's fetches to carry the cookie. Not None:
+    // browsers reject a SameSite=None cookie without Secure, which silently
+    // broke login over plain-http local dev. SameAsRequest keeps Secure
+    // correct in both http-local-dev and https-prod.
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
     // This is an API, not an MVC app — an unauthenticated [Authorize] request
@@ -288,15 +291,18 @@ app.MapHub<GameHub>("/hubs/game");
 // Development.
 if (app.Environment.IsDevelopment())
 {
-    app.MapGet("/api/auth/dev-login", async (HttpContext http, IAuthFacade authFacade, string discordId, string handle) =>
+    // returnUrl (a frontend path) makes it behave like the real login for the
+    // browser: redirect into the app, or to /not-invited when refused.
+    app.MapGet("/api/auth/dev-login", async (HttpContext http, IAuthFacade authFacade, string discordId, string handle, string? returnUrl) =>
     {
+        var path = returnUrl is not null && returnUrl.StartsWith('/') && !returnUrl.StartsWith("//") ? returnUrl : null;
         var result = await authFacade.SignInAsync(discordId, handle, handle, null);
-        if (result is null) return Results.Forbid();
+        if (result is null) return path is null ? Results.Forbid() : Results.Redirect($"{frontendBaseUrl}/not-invited");
 
         var (user, membership) = result.Value;
         var identity = new ClaimsIdentity(AuthClaims.For(user, membership), CookieAuthenticationDefaults.AuthenticationScheme);
         await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-        return Results.Ok(new { user.Id, Role = membership.Role.ToString() });
+        return path is null ? Results.Ok(new { user.Id, Role = membership.Role.ToString() }) : Results.Redirect(frontendBaseUrl + path);
     });
 }
 

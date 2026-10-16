@@ -357,7 +357,7 @@ h2 {
 .status-badge.active { background: var(--secondary); color: var(--bg); }
 .status-badge.inactive { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
 .status-badge.dead { background: var(--error); color: var(--bg); }
-.status-badge.locked { background: var(--tertiary); color: var(--bg); text-transform: none; }
+.status-badge.unassigned { background: var(--tertiary); color: var(--bg); }
 
 .hp-mini { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 .hp-bar-track { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
@@ -882,12 +882,6 @@ h2 {
 .share-check-row .share-select { width: 140px; }
 
 /* ===== Board (ported from docs/mockups/DnD_Tool_Board_Mockup.html) ===== */
-.board-page .role-toggle { display: flex; gap: 8px; margin-bottom: 18px; }
-.board-page .role-toggle button {
-  font-family: var(--font-body); font-size: 12.5px; background: var(--surface); color: var(--text-muted);
-  border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; cursor: pointer;
-}
-.board-page .role-toggle button.active { background: var(--primary); color: var(--bg); border-color: var(--primary); }
 
 .board-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .board-grid.player { grid-template-columns: repeat(2, 1fr); max-width: 920px; }
@@ -1074,21 +1068,66 @@ h2 {
   .help-grid { columns: 1; }
 }
 
-/* AccessLock — see components/AccessGate.tsx / LockControl.tsx. Temporary,
-   simple stand-in for real auth: a code a player sets themselves. */
-.lock-gate { display: flex; align-items: center; justify-content: center; padding: 60px 20px; }
-.lock-gate-box { text-align: center; max-width: 280px; }
-.lock-gate-icon { font-size: 32px; margin-bottom: 8px; }
-.lock-gate-box h3 { font-family: var(--font-display); font-weight: normal; font-size: 18px; margin: 0 0 6px; }
-.lock-gate-box input:not([type="checkbox"]):not([type="radio"]) { width: 100%; text-align: center; margin-top: 14px; }
-.lock-gate-box button { width: 100%; margin-top: 10px; }
-.lock-gate-error { color: var(--error); font-size: 12px; margin: 8px 0 0; }
-
-.lock-control { position: relative; }
-.lock-control-popover {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: 220px;
-  background: var(--surface); border: 1px solid var(--primary); border-radius: 8px;
-  padding: 12px; box-shadow: 0 8px 22px rgba(29,26,16,0.28);
+/* Login — LoginPage / NotInvitedPage / RequireAuth. Outside the app shell,
+   so a centered card on the page background. */
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
 }
-.lock-control-popover input:not([type="checkbox"]):not([type="radio"]) { width: 100%; margin-bottom: 8px; }
-.lock-control-popover .form-actions { margin-top: 4px; }
+.auth-card { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 14px; }
+.auth-card h2 { margin: 0; }
+.auth-card p { margin: 0; }
+.auth-error { color: var(--error); font-size: 13px; }
+.auth-loading { padding: 40px; color: var(--text-muted); }
+.btn-discord {
+  display: block; text-align: center; text-decoration: none; font-weight: bold;
+  background: var(--primary); color: var(--bg); border-radius: 6px; padding: 11px 14px;
+}
+.btn-discord:hover { background: var(--primary-dark); }
+.dev-login { border-top: 1px dashed var(--border); padding-top: 10px; font-size: 12.5px; color: var(--text-muted); }
+.dev-login summary { cursor: pointer; }
+.dev-login .field { margin-top: 8px; }
+.dev-login-go { display: inline-block; margin-top: 10px; text-decoration: none; }
+
+/* Header user menu */
+.user-menu { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.user-avatar.placeholder { display: inline-block; background: var(--surface-2); border: 1px solid var(--border); }
+.role-badge {
+  font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em;
+  background: var(--primary); color: var(--bg); padding: 2px 8px; border-radius: 10px;
+}
+
+/* Character sheet as seen by someone who isn't its owner (the DM) */
+.readonly-banner {
+  background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--tertiary);
+  border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px;
+}
+.ro-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.character-sheet-page.readonly .prof-dot { cursor: default; }
+.owner-line { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Players page (DM) */
+.member-row, .assign-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.member-row:last-child, .assign-row:last-child { border-bottom: 0; }
+.member-row .row-name, .assign-row .row-name { font-weight: bold; }
+.member-handle { font-size: 12.5px; color: var(--text-muted); flex: 1; }
+.assign-select { width: 260px; flex-shrink: 0; }
+@media (max-width: 700px) {
+  .user-menu .user-name { display: none; }
+  .assign-row { flex-wrap: wrap; }
+  .assign-select { width: 100%; }
+}
+
+
+/* Disabled fields (e.g. a character sheet the DM may only read) must look
+   read-only, not editable. Kept last and at specificity 0,3,1 via :is() so it
+   beats the per-component input rules (.field input, .stat-box input, …) —
+   see the CSS specificity gotcha in the vault's Architecture note. */
+:is(input:not([type="checkbox"]):not([type="radio"]), textarea):disabled {
+  background: var(--surface);
+  color: var(--text-muted);
+  border-style: dashed;
+  cursor: default;
+}
+/* …except the borderless number inside a coin pill, which stays borderless. */
+.coin-pill :is(input:not([type="checkbox"]):not([type="radio"])):disabled { border: 0; background: transparent; }

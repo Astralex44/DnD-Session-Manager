@@ -7,8 +7,8 @@ import { useDocumentsStore } from '../store/documentsStore.ts';
 import { shareState } from '../types/document.ts';
 import type { DocumentType, GameDocument } from '../types/document.ts';
 import type { Character } from '../types/character.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 const NO_TARGET = '__none__';
 
 function isImage(fileUrl: string): boolean {
@@ -26,6 +26,7 @@ interface DocumentSectionProps {
 }
 
 function DocumentSection({ type, title, glyph, accept, hint, documents, characters }: DocumentSectionProps) {
+  const gameId = useGameId();
   const { isLoading, createDocument, updateDocument, removeDocument, setShare, removeShare } = useDocumentsStore();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -41,7 +42,7 @@ function DocumentSection({ type, title, glyph, accept, hint, documents, characte
 
   async function handleCreate() {
     if (!newName.trim() || !newFile) return;
-    const ok = await createDocument(DEMO_GAME_ID, newName.trim(), type, newFile);
+    const ok = await createDocument(gameId, newName.trim(), type, newFile);
     if (ok) {
       setNewName('');
       setNewFile(null);
@@ -57,7 +58,7 @@ function DocumentSection({ type, title, glyph, accept, hint, documents, characte
 
   async function handleSaveEdit(doc: GameDocument) {
     if (!editName.trim()) return;
-    const ok = await updateDocument(DEMO_GAME_ID, doc.id, editName.trim(), editFile);
+    const ok = await updateDocument(gameId, doc.id, editName.trim(), editFile);
     if (ok) setEditingId(null);
   }
 
@@ -127,7 +128,7 @@ function DocumentSection({ type, title, glyph, accept, hint, documents, characte
                   return (
                     <span key={share.id} className={`chip ${chipClass} chip-removable`}>
                       {share.characterName}
-                      <span className="chip-remove" onClick={() => removeShare(DEMO_GAME_ID, doc.id, share.characterId)}>✕</span>
+                      <span className="chip-remove" onClick={() => removeShare(gameId, doc.id, share.characterId)}>✕</span>
                     </span>
                   );
                 })}
@@ -148,7 +149,7 @@ function DocumentSection({ type, title, glyph, accept, hint, documents, characte
                     onClick={() => {
                       const characterId = shareTarget[doc.id];
                       if (!characterId || characterId === NO_TARGET) return;
-                      setShare(DEMO_GAME_ID, doc.id, characterId, false, false);
+                      setShare(gameId, doc.id, characterId, false, false);
                       setShareTarget((s) => ({ ...s, [doc.id]: NO_TARGET }));
                     }}
                   >
@@ -190,7 +191,7 @@ function DocumentSection({ type, title, glyph, accept, hint, documents, characte
           message={`This permanently deletes "${deleteTarget.name}" and its file, including all sharing settings. This can't be undone.`}
           confirmLabel="Delete"
           onConfirm={async () => {
-            await removeDocument(DEMO_GAME_ID, deleteTarget.id);
+            await removeDocument(gameId, deleteTarget.id);
             setDeleteTarget(null);
           }}
           onCancel={() => setDeleteTarget(null)}
@@ -201,13 +202,14 @@ function DocumentSection({ type, title, glyph, accept, hint, documents, characte
 }
 
 export function DocumentsManagePage() {
+  const gameId = useGameId();
   const { documents, error, fetchDocuments } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
 
   useEffect(() => {
-    fetchDocuments(DEMO_GAME_ID);
-    fetchCharacters(DEMO_GAME_ID);
-  }, [fetchDocuments, fetchCharacters]);
+    fetchDocuments(gameId);
+    fetchCharacters(gameId);
+  }, [gameId, fetchDocuments, fetchCharacters]);
 
   const maps = documents.filter((d) => d.type === 'Map');
   const books = documents.filter((d) => d.type === 'Book');

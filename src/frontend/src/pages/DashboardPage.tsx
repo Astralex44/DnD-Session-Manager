@@ -4,8 +4,8 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useQuotesStore } from '../store/quotesStore.ts';
 import { useSessionsStore } from '../store/sessionsStore.ts';
 import type { Character } from '../types/character.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 const RECENT_QUOTE_COUNT = 4;
 const NOTES_PREVIEW_LENGTH = 220;
 
@@ -26,15 +26,16 @@ function hpPercent(c: Character): number {
 // cross-game landing view is explicit future work once a Game entity/switcher
 // actually exists — don't build multi-game UI ahead of that.
 export function DashboardPage() {
+  const gameId = useGameId();
   const { characters, fetchCharacters } = useCharactersStore();
   const { sessions, fetchSessions } = useSessionsStore();
   const { quotes, fetchQuotes } = useQuotesStore();
 
   useEffect(() => {
-    fetchCharacters(DEMO_GAME_ID);
-    fetchSessions(DEMO_GAME_ID);
-    fetchQuotes(DEMO_GAME_ID);
-  }, [fetchCharacters, fetchSessions, fetchQuotes]);
+    fetchCharacters(gameId);
+    fetchSessions(gameId);
+    fetchQuotes(gameId);
+  }, [gameId, fetchCharacters, fetchSessions, fetchQuotes]);
 
   const latestSession = sessions.length > 0
     ? [...sessions].sort((a, b) => b.number - a.number)[0]

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { NumberInput } from './NumberInput.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useTimersStore } from '../store/timersStore.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 function formatRemaining(endsAt: string, now: number): string {
   const remaining = Math.max(0, Math.round((new Date(endsAt).getTime() - now) / 1000));
@@ -15,12 +15,13 @@ function formatRemaining(endsAt: string, now: number): string {
 // DM-only per the mockup — not shown in the player Board view. Live via
 // SignalR push (see lib/realtime.ts / hooks/useLiveFetch.ts).
 export function TimerPanel() {
+  const gameId = useGameId();
   const { timers, fetchTimers, createTimer, removeTimer } = useTimersStore();
   const [label, setLabel] = useState('');
   const [duration, setDuration] = useState(60);
   const [now, setNow] = useState(() => Date.now());
 
-  useLiveFetch(DEMO_GAME_ID, 'timers', fetchTimers);
+  useLiveFetch(gameId, 'timers', fetchTimers);
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -29,7 +30,7 @@ export function TimerPanel() {
 
   async function handleAdd() {
     if (!label.trim()) return;
-    await createTimer(DEMO_GAME_ID, { label: label.trim(), durationSeconds: duration });
+    await createTimer(gameId, { label: label.trim(), durationSeconds: duration });
     setLabel('');
     setDuration(60);
   }
@@ -45,7 +46,7 @@ export function TimerPanel() {
           <div key={timer.id} className="timer-row">
             <span>{timer.label}</span>
             <span className="timer-time">{formatRemaining(timer.endsAt, now)}</span>
-            <button className="row-remove" onClick={() => removeTimer(DEMO_GAME_ID, timer.id)}>✕</button>
+            <button className="row-remove" onClick={() => removeTimer(gameId, timer.id)}>✕</button>
           </div>
         ))}
 

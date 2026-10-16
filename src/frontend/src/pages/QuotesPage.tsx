@@ -3,14 +3,15 @@ import { CustomSelect } from '../components/CustomSelect.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useQuotesStore } from '../store/quotesStore.ts';
 import { useSessionsStore } from '../store/sessionsStore.ts';
+import { useGameId } from '../store/authStore.ts';
 
 // Hardcoded until the Game context / login flow exists.
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 const NO_SESSION = '__none__';
 const NO_CHARACTER = '__none__';
 const ALL_QUOTES = '__all__';
 
 export function QuotesPage() {
+  const gameId = useGameId();
   const { quotes, isLoading, error, fetchQuotes, addQuote, toggleShared, setQuoteSession, setQuoteCharacter, removeQuote } =
     useQuotesStore();
   const { sessions, fetchSessions } = useSessionsStore();
@@ -21,10 +22,10 @@ export function QuotesPage() {
   const [filter, setFilter] = useState(ALL_QUOTES);
 
   useEffect(() => {
-    fetchQuotes(DEMO_GAME_ID);
-    fetchSessions(DEMO_GAME_ID);
-    fetchCharacters(DEMO_GAME_ID);
-  }, [fetchQuotes, fetchSessions, fetchCharacters]);
+    fetchQuotes(gameId);
+    fetchSessions(gameId);
+    fetchCharacters(gameId);
+  }, [gameId, fetchQuotes, fetchSessions, fetchCharacters]);
 
   const sessionOptions = [
     { value: NO_SESSION, label: 'No session' },
@@ -56,7 +57,7 @@ export function QuotesPage() {
   async function handleAdd() {
     const text = newText.trim();
     if (!text) return;
-    await addQuote(DEMO_GAME_ID, {
+    await addQuote(gameId, {
       text,
       sessionId: newSessionId === NO_SESSION ? null : newSessionId,
       characterId: newCharacterId === NO_CHARACTER ? null : newCharacterId,
@@ -105,21 +106,21 @@ export function QuotesPage() {
               <div className="quote-meta-select">
                 <CustomSelect
                   value={q.characterId ?? NO_CHARACTER}
-                  onChange={(v) => setQuoteCharacter(DEMO_GAME_ID, q.id, v === NO_CHARACTER ? null : v)}
+                  onChange={(v) => setQuoteCharacter(gameId, q.id, v === NO_CHARACTER ? null : v)}
                   options={characterOptions}
                 />
               </div>
               <div className="quote-meta-select">
                 <CustomSelect
                   value={q.sessionId ?? NO_SESSION}
-                  onChange={(v) => setQuoteSession(DEMO_GAME_ID, q.id, v === NO_SESSION ? null : v)}
+                  onChange={(v) => setQuoteSession(gameId, q.id, v === NO_SESSION ? null : v)}
                   options={sessionOptions}
                 />
               </div>
-              <button onClick={() => toggleShared(DEMO_GAME_ID, q.id)}>
+              <button onClick={() => toggleShared(gameId, q.id)}>
                 {q.isShared ? 'Shared' : 'Hidden'}
               </button>
-              <button onClick={() => removeQuote(DEMO_GAME_ID, q.id)}>Delete</button>
+              <button onClick={() => removeQuote(gameId, q.id)}>Delete</button>
             </span>
           </li>
         ))}

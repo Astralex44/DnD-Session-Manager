@@ -8,8 +8,8 @@ import { useShopsStore } from '../store/shopStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
 import { shareState } from '../types/shop.ts';
 import type { CreateShopItemPriceInput, ShopItem } from '../types/shop.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 const NO_TARGET = '__none__';
 
 interface SellTarget {
@@ -25,6 +25,7 @@ interface SellTarget {
 // item's configured price but fully overridable for this one sale, reusing
 // the same coin-pill pattern as ShopsManagePage.
 export function ShopDmPanel() {
+  const gameId = useGameId();
   const { shops, fetchShops, purchase, setShare, removeShare } = useShopsStore();
   const { characters, fetchCharacters } = useCharactersStore();
   const { denominations, fetchDenominations } = useCurrencyStore();
@@ -37,12 +38,12 @@ export function ShopDmPanel() {
   const [quantity, setQuantity] = useState(1);
   const [prices, setPrices] = useState<CreateShopItemPriceInput[]>([]);
 
-  useLiveFetch(DEMO_GAME_ID, 'shops', fetchShops);
+  useLiveFetch(gameId, 'shops', fetchShops);
 
   useEffect(() => {
-    fetchCharacters(DEMO_GAME_ID);
-    fetchDenominations(DEMO_GAME_ID);
-  }, [fetchCharacters, fetchDenominations]);
+    fetchCharacters(gameId);
+    fetchDenominations(gameId);
+  }, [gameId, fetchCharacters, fetchDenominations]);
 
   useEffect(() => {
     if (!shopId && shops.length > 0) setShopId(shops[0].id);
@@ -84,7 +85,7 @@ export function ShopDmPanel() {
 
   async function handleSell() {
     if (!sellTarget || !characterId) return;
-    const ok = await purchase(DEMO_GAME_ID, sellTarget.shopId, sellTarget.item.id, {
+    const ok = await purchase(gameId, sellTarget.shopId, sellTarget.item.id, {
       characterId,
       quantity,
       overridePrices: prices,
@@ -117,7 +118,7 @@ export function ShopDmPanel() {
                 return (
                   <span key={share.id} className={`chip ${chipClass} chip-removable`}>
                     {share.characterName}
-                    <span className="chip-remove" onClick={() => removeShare(DEMO_GAME_ID, shop.id, share.characterId)}>✕</span>
+                    <span className="chip-remove" onClick={() => removeShare(gameId, shop.id, share.characterId)}>✕</span>
                   </span>
                 );
               })}
@@ -133,7 +134,7 @@ export function ShopDmPanel() {
                   disabled={!shareTarget || shareTarget === NO_TARGET}
                   onClick={() => {
                     if (!shareTarget || shareTarget === NO_TARGET) return;
-                    setShare(DEMO_GAME_ID, shop.id, shareTarget, { hidden: false, locked: false });
+                    setShare(gameId, shop.id, shareTarget, { hidden: false, locked: false });
                     setShareTarget(NO_TARGET);
                   }}
                 >

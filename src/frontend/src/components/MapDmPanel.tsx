@@ -5,8 +5,8 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useDocumentsStore } from '../store/documentsStore.ts';
 import { shareState } from '../types/document.ts';
 import type { GameDocument } from '../types/document.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 function isImage(fileUrl: string): boolean {
   return /\.(png|jpe?g|webp)$/i.test(fileUrl);
@@ -27,13 +27,14 @@ function dotState(doc: GameDocument, characterCount: number): DotState {
 // Manage too (its own explicit, scoped exception), so DM edits from either
 // page reach the same DocumentShare rows and both stay in sync live.
 export function MapDmPanel() {
+  const gameId = useGameId();
   const { documents, fetchDocuments, setShare, removeShare } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
 
   const [shareTargetId, setShareTargetId] = useState<string | null>(null);
 
-  useLiveFetch(DEMO_GAME_ID, 'documents', fetchDocuments);
-  useLiveFetch(DEMO_GAME_ID, 'characters', fetchCharacters);
+  useLiveFetch(gameId, 'documents', fetchDocuments);
+  useLiveFetch(gameId, 'characters', fetchCharacters);
 
   const maps = documents.filter((d) => d.type === 'Map');
   // Derived from the live list (not a captured snapshot) so the share
@@ -48,9 +49,9 @@ export function MapDmPanel() {
 
   function toggleShare(doc: GameDocument, characterId: string, checked: boolean) {
     if (checked) {
-      setShare(DEMO_GAME_ID, doc.id, characterId, false, false);
+      setShare(gameId, doc.id, characterId, false, false);
     } else {
-      removeShare(DEMO_GAME_ID, doc.id, characterId);
+      removeShare(gameId, doc.id, characterId);
     }
   }
 

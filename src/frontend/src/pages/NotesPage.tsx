@@ -1,65 +1,60 @@
 import { useEffect, useState } from 'react';
-import { AccessGate } from '../components/AccessGate.tsx';
 import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
-import { LockControl } from '../components/LockControl.tsx';
+import { useGameId, useIsDm } from '../store/authStore.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useNotesStore } from '../store/notesStore.ts';
 import { useSessionsStore } from '../store/sessionsStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
 import type { Note } from '../types/note.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
-const DM_OWNER = 'DM';
+const MY_NOTES = '';
 
-// The owner picker itself stays outside AccessGate (choosing who to view
-// doesn't reveal anything), but the actual notes for that owner only mount
-// — and only fetch — once unlocked. `key={owner}` forces a clean remount of
-// NotesOwnerPanel on every switch instead of carrying stale local state
-// (activeNoteId, title, text) over from the previous owner.
+// Your own notebook, always private — nobody else can read it, the DM
+// included. The DM additionally keeps a running notebook on each player
+// character ("Notes on Amber"), which is still only the DM's.
 export function NotesPage() {
+  const gameId = useGameId();
+  const isDm = useIsDm();
   const { characters, fetchCharacters } = useCharactersStore();
-  const [owner, setOwner] = useState(DM_OWNER);
+  const [notebook, setNotebook] = useState(MY_NOTES);
 
   useEffect(() => {
-    fetchCharacters(DEMO_GAME_ID);
-  }, [fetchCharacters]);
+    if (isDm) fetchCharacters(gameId);
+  }, [isDm, gameId, fetchCharacters]);
 
-  const players = [...new Set(characters.map((c) => c.playerName).filter(Boolean))];
-  const ownerOptions = [
-    { value: DM_OWNER, label: 'DM' },
-    ...players.map((p) => ({ value: p, label: p })),
-    // Notes about a character (not a person) — the DM's running notebook on
-    // that PC, not gated to any one session. Reuses the same owner concept:
-    // a character's name is just another bucket key, same as "DM" or a
-    // player's name — no schema change needed for this.
-    ...characters.map((c) => ({ value: c.name, label: c.name, group: 'Characters' })),
+  const notebookOptions = [
+    { value: MY_NOTES, label: 'My notes' },
+    ...characters.map((c) => ({ value: c.id, label: `Notes on ${c.name}`, group: 'Characters' })),
   ];
 
   return (
     <div className="notes-page">
       <h2>Notes</h2>
       <p className="hint">
-        Private — never shared with anyone else at the table. "DM" and player entries are that person's own
-        notebook; a character entry is the DM's running notes on that PC, not tied to any one session.
+        Private — only you can read these, the DM included.
+        {isDm && ' "Notes on …" is your running notebook on that character, not tied to any one session.'}
       </p>
 
-      <div className="notes-toolbar">
-        <div className="field" style={{ width: 200 }}>
-          <label>Viewing notes for</label>
-          <CustomSelect value={owner} onChange={setOwner} options={ownerOptions} />
+      {isDm && (
+        <div className="notes-toolbar">
+          <div className="field" style={{ width: 220 }}>
+            <label>Notebook</label>
+            <CustomSelect value={notebook} onChange={setNotebook} options={notebookOptions} />
+          </div>
         </div>
-      </div>
+      )}
 
-      <AccessGate resourceType="NotesOwner" resourceKey={owner} label="these notes">
-        <NotesOwnerPanel key={owner} owner={owner} />
-      </AccessGate>
+      <NotebookPanel key={notebook} aboutCharacterId={notebook || null} />
     </div>
   );
 }
 
-function NotesOwnerPanel({ owner }: { owner: string }) {
+// key={notebook} on the parent remounts this per notebook, so activeNoteId,
+// title and text never carry over from the previous one.
+function NotebookPanel({ aboutCharacterId }: { aboutCharacterId: string | null }) {
+  const gameId = useGameId();
   const { notes, isLoading, error, fetchNotes, createNote, updateNote, removeNote } = useNotesStore();
   const { sessions, fetchSessions } = useSessionsStore();
   const showToast = useToastStore((s) => s.showToast);
@@ -70,15 +65,20 @@ function NotesOwnerPanel({ owner }: { owner: string }) {
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
 
   useEffect(() => {
-    fetchSessions(DEMO_GAME_ID);
-  }, [fetchSessions]);
+    fetchSessions(gameId);
+  }, [gameId, fetchSessions]);
 
   useEffect(() => {
-    fetchNotes(DEMO_GAME_ID, owner);
-  }, [owner, fetchNotes]);
+    fetchNotes(gameId, aboutCharacterId);
+  }, [gameId, aboutCharacterId, fetchNotes]);
 
+  // Re-pick whenever the active page isn't in the current list — not just
+  // when nothing is picked. Right after switching notebooks the shared store
+  // still holds the previous notebook's pages for a moment, and a page picked
+  // from those would otherwise stay selected (showing nothing) once the new
+  // notebook's pages arrive.
   useEffect(() => {
-    if (activeNoteId === null && notes.length > 0) setActiveNoteId(notes[0].id);
+    if (notes.length > 0 && !notes.some((n) => n.id === activeNoteId)) setActiveNoteId(notes[0].id);
   }, [notes, activeNoteId]);
 
   const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
@@ -97,7 +97,7 @@ function NotesOwnerPanel({ owner }: { owner: string }) {
   }
 
   async function handleNewPage() {
-    const created = await createNote(DEMO_GAME_ID, owner, defaultTitle(), '');
+    const created = await createNote(gameId, aboutCharacterId, defaultTitle(), '');
     if (created) setActiveNoteId(created.id);
   }
 
@@ -105,13 +105,13 @@ function NotesOwnerPanel({ owner }: { owner: string }) {
 
   async function handleSave() {
     if (!activeNote || !isDirty) return;
-    const ok = await updateNote(DEMO_GAME_ID, owner, activeNote.id, title.trim() || 'Untitled', text);
+    const ok = await updateNote(gameId, activeNote.id, title.trim() || 'Untitled', text);
     showToast(ok ? 'Saved.' : 'Failed to save.', ok ? 'success' : 'error');
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await removeNote(DEMO_GAME_ID, owner, deleteTarget.id);
+    await removeNote(gameId, deleteTarget.id);
     if (activeNoteId === deleteTarget.id) setActiveNoteId(null);
     setDeleteTarget(null);
   }
@@ -128,7 +128,6 @@ function NotesOwnerPanel({ owner }: { owner: string }) {
           </div>
         )}
         <button className="btn-ghost" onClick={handleNewPage}>+ New Page</button>
-        <LockControl resourceType="NotesOwner" resourceKey={owner} />
       </div>
 
       {isLoading && <p className="hint">Loading…</p>}

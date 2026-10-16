@@ -6,8 +6,8 @@ import { monstersApi } from '../api/monsters.ts';
 import { useMonstersStore } from '../store/monstersStore.ts';
 import { useSessionMonstersStore } from '../store/sessionMonstersStore.ts';
 import type { SessionMonster } from '../types/sessionMonster.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 const CUSTOM = '';
 
 // DM-only, per docs/mockups' Board-Panels list (MonsterPanel isn't shown in
@@ -17,6 +17,7 @@ const CUSTOM = '';
 // monsters-books-sessions-state memory ("Monster: Vorlage getrennt von
 // Live-Kampfteilnehmer"). Live via SignalR push (see lib/realtime.ts).
 export function MonsterPanel() {
+  const gameId = useGameId();
   const { monsters: templates, fetchMonsters } = useMonstersStore();
   const { monsters, fetchMonsters: fetchSessionMonsters, addMonster, updateHp, removeMonster, clear } = useSessionMonstersStore();
 
@@ -26,10 +27,10 @@ export function MonsterPanel() {
   const [hpDrafts, setHpDrafts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    fetchMonsters(DEMO_GAME_ID);
-  }, [fetchMonsters]);
+    fetchMonsters(gameId);
+  }, [gameId, fetchMonsters]);
 
-  useLiveFetch(DEMO_GAME_ID, 'monsters', fetchSessionMonsters);
+  useLiveFetch(gameId, 'monsters', fetchSessionMonsters);
 
   const templateOptions = [
     { value: CUSTOM, label: 'Custom monster' },
@@ -47,7 +48,7 @@ export function MonsterPanel() {
 
   async function handleAdd() {
     if (!name.trim() && !templateId) return;
-    const ok = await addMonster(DEMO_GAME_ID, {
+    const ok = await addMonster(gameId, {
       monsterId: templateId || undefined,
       name: name.trim() || undefined,
       hpMax,
@@ -66,7 +67,7 @@ export function MonsterPanel() {
   async function handleHpBlur(monster: SessionMonster) {
     const value = hpFor(monster);
     if (value === monster.hpCurrent) return;
-    await updateHp(DEMO_GAME_ID, monster.id, value);
+    await updateHp(gameId, monster.id, value);
   }
 
   return (
@@ -95,7 +96,7 @@ export function MonsterPanel() {
                     </a>
                   )}
                 </div>
-                <button className="row-remove" onClick={() => removeMonster(DEMO_GAME_ID, monster.id)}>✕</button>
+                <button className="row-remove" onClick={() => removeMonster(gameId, monster.id)}>✕</button>
               </div>
               <div className="hp-bar-track"><div className={`hp-bar-fill${hpPercent < 25 ? ' low' : ''}`} style={{ width: `${hpPercent}%` }} /></div>
               <div className="hp-control">
@@ -130,7 +131,7 @@ export function MonsterPanel() {
 
         {monsters.length > 0 && (
           <div className="initiative-toolbar">
-            <button className="btn-ghost" onClick={() => clear(DEMO_GAME_ID)}>Clear Encounter</button>
+            <button className="btn-ghost" onClick={() => clear(gameId)}>Clear Encounter</button>
           </div>
         )}
       </div>

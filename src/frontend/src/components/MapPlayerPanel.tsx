@@ -5,8 +5,8 @@ import { documentsApi } from '../api/documents.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useDocumentsStore } from '../store/documentsStore.ts';
 import type { GameDocument } from '../types/document.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 function isImage(fileUrl: string): boolean {
   return /\.(png|jpe?g|webp)$/i.test(fileUrl);
@@ -19,6 +19,7 @@ function isImage(fileUrl: string): boolean {
 // checkbox writes to (see MapDmPanel), same demo-mode identity convention
 // as everywhere else pre-Login. Live via SignalR push.
 export function MapPlayerPanel() {
+  const gameId = useGameId();
   const { documents, fetchDocuments, setShare } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
 
@@ -26,8 +27,8 @@ export function MapPlayerPanel() {
   const [showHidden, setShowHidden] = useState(false);
   const [viewing, setViewing] = useState<GameDocument | null>(null);
 
-  useLiveFetch(DEMO_GAME_ID, 'documents', fetchDocuments);
-  useLiveFetch(DEMO_GAME_ID, 'characters', fetchCharacters);
+  useLiveFetch(gameId, 'documents', fetchDocuments);
+  useLiveFetch(gameId, 'characters', fetchCharacters);
 
   useEffect(() => {
     if (!characterId && characters.length > 0) setCharacterId(characters[0].id);
@@ -70,12 +71,12 @@ export function MapPlayerPanel() {
 
   function toggleHidden(doc: GameDocument, currentlyHidden: boolean, locked: boolean) {
     if (!characterId) return;
-    setShare(DEMO_GAME_ID, doc.id, characterId, !currentlyHidden, locked);
+    setShare(gameId, doc.id, characterId, !currentlyHidden, locked);
   }
 
   function toggleLocked(doc: GameDocument, hidden: boolean, currentlyLocked: boolean) {
     if (!characterId) return;
-    setShare(DEMO_GAME_ID, doc.id, characterId, hidden, !currentlyLocked);
+    setShare(gameId, doc.id, characterId, hidden, !currentlyLocked);
   }
 
   return (

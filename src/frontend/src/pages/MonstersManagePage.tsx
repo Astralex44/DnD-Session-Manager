@@ -3,10 +3,11 @@ import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
 import { useMonstersStore } from '../store/monstersStore.ts';
 import type { Monster } from '../types/monster.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 export function MonstersManagePage() {
+  const gameId = useGameId();
   const { monsters, isLoading, error, fetchMonsters, createMonster, updateMonster, removeMonster } = useMonstersStore();
 
   const [modalTarget, setModalTarget] = useState<Monster | 'new' | null>(null);
@@ -16,8 +17,8 @@ export function MonstersManagePage() {
   const [deleteTarget, setDeleteTarget] = useState<Monster | null>(null);
 
   useEffect(() => {
-    fetchMonsters(DEMO_GAME_ID);
-  }, [fetchMonsters]);
+    fetchMonsters(gameId);
+  }, [gameId, fetchMonsters]);
 
   function openAddModal() {
     setName('');
@@ -40,14 +41,14 @@ export function MonstersManagePage() {
   async function handleSave() {
     if (!modalTarget || !name.trim()) return;
     const ok = modalTarget === 'new'
-      ? file && (await createMonster(DEMO_GAME_ID, name.trim(), hp, file))
-      : await updateMonster(DEMO_GAME_ID, modalTarget.id, name.trim(), hp, file);
+      ? file && (await createMonster(gameId, name.trim(), hp, file))
+      : await updateMonster(gameId, modalTarget.id, name.trim(), hp, file);
     if (ok) closeModal();
   }
 
   function handleHpBlur(monster: Monster, value: number) {
     if (value === monster.defaultHp) return;
-    updateMonster(DEMO_GAME_ID, monster.id, monster.name, value, null);
+    updateMonster(gameId, monster.id, monster.name, value, null);
   }
 
   return (
@@ -134,7 +135,7 @@ export function MonstersManagePage() {
           message={`This permanently deletes "${deleteTarget.name}" and its stat block PDF. This can't be undone.`}
           confirmLabel="Delete Monster"
           onConfirm={async () => {
-            await removeMonster(DEMO_GAME_ID, deleteTarget.id);
+            await removeMonster(gameId, deleteTarget.id);
             setDeleteTarget(null);
           }}
           onCancel={() => setDeleteTarget(null)}

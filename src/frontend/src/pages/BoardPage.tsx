@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { CharacterLivePanel } from '../components/CharacterLivePanel.tsx';
 import { CharacterRoster } from '../components/CharacterRoster.tsx';
 import { DiceRoller } from '../components/DiceRoller.tsx';
@@ -9,26 +8,19 @@ import { MonsterPanel } from '../components/MonsterPanel.tsx';
 import { ShopDmPanel } from '../components/ShopDmPanel.tsx';
 import { ShopPlayerPanel } from '../components/ShopPlayerPanel.tsx';
 import { TimerPanel } from '../components/TimerPanel.tsx';
+import { useIsDm } from '../store/authStore.ts';
 
-type Role = 'dm' | 'player';
-
-// No auth yet, so this is the same demo-mode stand-in used everywhere else
-// in the app (character/owner pickers) — a manual toggle previews both
-// views, matching how the static mockup itself demos DM vs. player.
+// Same route for both roles (Pflichtenheft 8.2); which panel set renders
+// comes from the logged-in role, and the server enforces it either way.
 export function BoardPage() {
-  const [role, setRole] = useState<Role>('dm');
+  const isDm = useIsDm();
 
   return (
     <div className="board-page">
       <h2>Board</h2>
       <p className="hint">Live, synced across every viewer — Characters, Initiative, Dice, Timer, Monsters, Shop, and Maps.</p>
 
-      <div className="role-toggle">
-        <button className={role === 'dm' ? 'active' : ''} onClick={() => setRole('dm')}>DM View</button>
-        <button className={role === 'player' ? 'active' : ''} onClick={() => setRole('player')}>Player View</button>
-      </div>
-
-      {role === 'dm' ? (
+      {isDm ? (
         <div className="board-grid">
           <CharacterRoster />
           <InitiativePanel editable />

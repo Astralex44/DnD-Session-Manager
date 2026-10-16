@@ -20,7 +20,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    credentials: 'include', // sends the JWT cookie once auth is wired up
+    credentials: 'include', // sends the login cookie
   });
 
   if (!response.ok) {
@@ -36,9 +36,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// Optional extra headers per call — used to attach X-Access-Code for
-// AccessLock-protected resources (see lib/accessLock.ts) without every
-// caller needing to build its own fetch options.
+// Optional extra headers per call, for the odd request that needs one.
 export const apiClient = {
   get: <T>(path: string, headers?: HeadersInit) => request<T>(path, { method: 'GET', headers }),
   post: <T>(path: string, body: unknown, headers?: HeadersInit) =>

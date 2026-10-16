@@ -5,8 +5,8 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
 import { shareState } from '../types/shop.ts';
 import type { Shop } from '../types/shop.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 // Read-only — a player can look at prices on a shop the DM shared with their
 // character, but only the DM completes a sale (see ShopDmPanel and
@@ -14,17 +14,18 @@ const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 // "locked" ones still show (locked just means the DM won't take more offers).
 // Live via SignalR push — a share toggled by the DM appears here instantly.
 export function ShopPlayerPanel() {
+  const gameId = useGameId();
   const { shops, fetchShops } = useShopsStore();
   const { characters, fetchCharacters } = useCharactersStore();
 
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [viewingShop, setViewingShop] = useState<Shop | null>(null);
 
-  useLiveFetch(DEMO_GAME_ID, 'shops', fetchShops);
+  useLiveFetch(gameId, 'shops', fetchShops);
 
   useEffect(() => {
-    fetchCharacters(DEMO_GAME_ID);
-  }, [fetchCharacters]);
+    fetchCharacters(gameId);
+  }, [gameId, fetchCharacters]);
 
   useEffect(() => {
     if (!characterId && characters.length > 0) setCharacterId(characters[0].id);

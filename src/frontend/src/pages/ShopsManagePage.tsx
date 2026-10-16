@@ -6,8 +6,8 @@ import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
 import { shareState } from '../types/shop.ts';
 import type { CreateShopItemInput, Shop, ShopItem, ShopSaleMode } from '../types/shop.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 const SALE_MODE_OPTIONS: { value: ShopSaleMode; label: string }[] = [
   { value: 'SharedStock', label: 'Shared Stock' },
@@ -29,6 +29,7 @@ interface ItemModalTarget {
 }
 
 export function ShopsManagePage() {
+  const gameId = useGameId();
   const {
     shops, isLoading, error,
     fetchShops, createShop, updateShop, removeShop, addItem, updateItem, removeItem,
@@ -48,13 +49,13 @@ export function ShopsManagePage() {
   const [itemForm, setItemForm] = useState<CreateShopItemInput>(EMPTY_ITEM_FORM);
 
   useEffect(() => {
-    fetchShops(DEMO_GAME_ID);
-    fetchDenominations(DEMO_GAME_ID);
-  }, [fetchShops, fetchDenominations]);
+    fetchShops(gameId);
+    fetchDenominations(gameId);
+  }, [gameId, fetchShops, fetchDenominations]);
 
   async function handleCreate() {
     if (!newName.trim()) return;
-    const ok = await createShop(DEMO_GAME_ID, { name: newName.trim(), description: newDescription });
+    const ok = await createShop(gameId, { name: newName.trim(), description: newDescription });
     if (ok) {
       setNewName('');
       setNewDescription('');
@@ -70,7 +71,7 @@ export function ShopsManagePage() {
 
   async function handleSaveEdit(shop: Shop) {
     if (!editName.trim()) return;
-    const ok = await updateShop(DEMO_GAME_ID, shop.id, { name: editName.trim(), description: editDescription });
+    const ok = await updateShop(gameId, shop.id, { name: editName.trim(), description: editDescription });
     if (ok) setEditingId(null);
   }
 
@@ -110,14 +111,14 @@ export function ShopsManagePage() {
   async function handleSaveItem() {
     if (!itemModal || !itemForm.name.trim() || itemForm.prices.length === 0) return;
     const ok = itemModal.item
-      ? await updateItem(DEMO_GAME_ID, itemModal.shopId, itemModal.item.id, itemForm)
-      : await addItem(DEMO_GAME_ID, itemModal.shopId, itemForm);
+      ? await updateItem(gameId, itemModal.shopId, itemModal.item.id, itemForm)
+      : await addItem(gameId, itemModal.shopId, itemForm);
     if (ok) closeItemModal();
   }
 
   async function handleDeleteItem() {
     if (!itemModal?.item) return;
-    await removeItem(DEMO_GAME_ID, itemModal.shopId, itemModal.item.id);
+    await removeItem(gameId, itemModal.shopId, itemModal.item.id);
     closeItemModal();
   }
 
@@ -331,7 +332,7 @@ export function ShopsManagePage() {
           message={`This permanently deletes "${deleteTarget.name}", its items, and its sharing settings. This can't be undone.`}
           confirmLabel="Delete Shop"
           onConfirm={async () => {
-            await removeShop(DEMO_GAME_ID, deleteTarget.id);
+            await removeShop(gameId, deleteTarget.id);
             setDeleteTarget(null);
           }}
           onCancel={() => setDeleteTarget(null)}

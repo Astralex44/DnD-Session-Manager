@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useSessionsStore } from '../store/sessionsStore.ts';
 import type { Session, UpsertSessionInput } from '../types/session.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 const EMPTY_FORM: UpsertSessionInput = { title: '', scheduledAt: null, notes: '' };
 
@@ -32,6 +32,7 @@ function formatScheduled(iso: string | null): string {
 }
 
 export function SessionsManagePage() {
+  const gameId = useGameId();
   const { sessions, isLoading, error, fetchSessions, createSession, updateSession, removeSession } = useSessionsStore();
 
   const [modalTarget, setModalTarget] = useState<Session | 'new' | null>(null);
@@ -39,8 +40,8 @@ export function SessionsManagePage() {
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
 
   useEffect(() => {
-    fetchSessions(DEMO_GAME_ID);
-  }, [fetchSessions]);
+    fetchSessions(gameId);
+  }, [gameId, fetchSessions]);
 
   function openAddModal() {
     setForm(EMPTY_FORM);
@@ -59,8 +60,8 @@ export function SessionsManagePage() {
   async function handleSave() {
     if (!modalTarget) return;
     const ok = modalTarget === 'new'
-      ? await createSession(DEMO_GAME_ID, form)
-      : await updateSession(DEMO_GAME_ID, modalTarget.id, form);
+      ? await createSession(gameId, form)
+      : await updateSession(gameId, modalTarget.id, form);
     if (ok) closeModal();
   }
 
@@ -152,7 +153,7 @@ export function SessionsManagePage() {
           message={`This permanently deletes "Session ${deleteTarget.number}${deleteTarget.title ? ` — ${deleteTarget.title}` : ''}" and its notes. This can't be undone.`}
           confirmLabel="Delete Session"
           onConfirm={async () => {
-            await removeSession(DEMO_GAME_ID, deleteTarget.id);
+            await removeSession(gameId, deleteTarget.id);
             setDeleteTarget(null);
           }}
           onCancel={() => setDeleteTarget(null)}

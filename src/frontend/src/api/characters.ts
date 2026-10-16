@@ -1,5 +1,4 @@
 import { API_BASE_URL, apiClient } from './client.ts';
-import { accessCodeHeaders, getStoredCode } from '../lib/accessLock.ts';
 import type {
   Attack,
   Character,
@@ -28,27 +27,27 @@ export const charactersApi = {
   list: (gameId: string) => apiClient.get<Character[]>(`/games/${gameId}/characters`),
 
   get: (gameId: string, characterId: string) =>
-    apiClient.get<CharacterDetail>(`/games/${gameId}/characters/${characterId}`, accessCodeHeaders('Character', characterId)),
+    apiClient.get<CharacterDetail>(`/games/${gameId}/characters/${characterId}`),
 
   create: (gameId: string, input: CreateCharacterInput) =>
     apiClient.post<Character>(`/games/${gameId}/characters`, input),
 
   update: (gameId: string, characterId: string, input: UpdateCharacterInput) =>
-    apiClient.patch<CharacterDetail>(`/games/${gameId}/characters/${characterId}`, input, accessCodeHeaders('Character', characterId)),
+    apiClient.patch<CharacterDetail>(`/games/${gameId}/characters/${characterId}`, input),
 
   setStatus: (gameId: string, characterId: string, status: string) =>
     apiClient.patch<Character>(`/games/${gameId}/characters/${characterId}/status`, { status }),
 
   remove: (gameId: string, characterId: string) =>
-    apiClient.delete<void>(`/games/${gameId}/characters/${characterId}`, accessCodeHeaders('Character', characterId)),
+    apiClient.delete<void>(`/games/${gameId}/characters/${characterId}`),
 
-  // Plain <a href> download, can't attach a header — the code (when set)
-  // rides along as a query param instead, which the backend also accepts.
-  pdfUrl: (gameId: string, characterId: string) => {
-    const code = getStoredCode('Character', characterId);
-    const suffix = code ? `?code=${encodeURIComponent(code)}` : '';
-    return `${API_BASE_URL}/games/${gameId}/characters/${characterId}/pdf${suffix}`;
-  },
+  // DM only: hand a character to a member's account (null unassigns).
+  setOwner: (gameId: string, characterId: string, userId: string | null) =>
+    apiClient.put<Character>(`/games/${gameId}/characters/${characterId}/owner`, { userId }),
+
+  // Plain <a href> download — the login cookie rides along on its own.
+  pdfUrl: (gameId: string, characterId: string) =>
+    `${API_BASE_URL}/games/${gameId}/characters/${characterId}/pdf`,
 
   setSkillProficiency: (gameId: string, characterId: string, skillId: string, proficient: boolean) =>
     apiClient.patch<Skill>(`/games/${gameId}/characters/${characterId}/skills/${skillId}`, { proficient }),

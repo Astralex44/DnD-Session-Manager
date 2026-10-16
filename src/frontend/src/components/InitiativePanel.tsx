@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { NumberInput } from './NumberInput.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useInitiativeStore } from '../store/initiativeStore.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 interface InitiativePanelProps {
   editable: boolean;
@@ -14,16 +14,17 @@ interface InitiativePanelProps {
 // anyone else advances the turn, adds an entry, etc. A slow poll stays as a
 // fallback if the push connection is ever down.
 export function InitiativePanel({ editable }: InitiativePanelProps) {
+  const gameId = useGameId();
   const { initiative, fetchInitiative, addEntry, removeEntry, nextTurn, clear } = useInitiativeStore();
   const [name, setName] = useState('');
   const [value, setValue] = useState(10);
   const [isMonster, setIsMonster] = useState(false);
 
-  useLiveFetch(DEMO_GAME_ID, 'initiative', fetchInitiative);
+  useLiveFetch(gameId, 'initiative', fetchInitiative);
 
   async function handleAdd() {
     if (!name.trim()) return;
-    await addEntry(DEMO_GAME_ID, { name: name.trim(), value, isMonster });
+    await addEntry(gameId, { name: name.trim(), value, isMonster });
     setName('');
     setValue(10);
     setIsMonster(false);
@@ -42,7 +43,7 @@ export function InitiativePanel({ editable }: InitiativePanelProps) {
             <span className={`name${entry.isMonster ? ' monster' : ''}`}>{entry.name}</span>
             <span className="val">{entry.value}</span>
             {editable && (
-              <button className="row-remove" onClick={() => removeEntry(DEMO_GAME_ID, entry.id)}>✕</button>
+              <button className="row-remove" onClick={() => removeEntry(gameId, entry.id)}>✕</button>
             )}
           </div>
         ))}
@@ -62,8 +63,8 @@ export function InitiativePanel({ editable }: InitiativePanelProps) {
             </div>
             <button className="add-btn" style={{ marginTop: 8 }} onClick={handleAdd}>+ Entry</button>
             <div className="initiative-toolbar">
-              <button className="btn-ghost" onClick={() => clear(DEMO_GAME_ID)}>Clear</button>
-              <button onClick={() => nextTurn(DEMO_GAME_ID)}>Next Turn</button>
+              <button className="btn-ghost" onClick={() => clear(gameId)}>Clear</button>
+              <button onClick={() => nextTurn(gameId)}>Next Turn</button>
             </div>
           </>
         )}

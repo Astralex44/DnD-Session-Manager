@@ -11,10 +11,10 @@ export interface Character {
   armorClass: number;
   activeLevelSheetId: string | null;
   level: number | null;
-  // When true, every field above except id/gameId/name/playerName/
-  // activeLevelSheetId is blanked out server-side — see AccessLock. Show a
-  // "Protected" state instead of the (empty/zeroed) race/class/HP/level.
-  locked: boolean;
+  // The account this character belongs to — null for a character from before
+  // login existed, until the DM assigns it on the Players page.
+  ownerUserId: string | null;
+  ownerUsername: string | null;
 }
 
 export interface Skill {
@@ -144,6 +144,8 @@ export interface CharacterDetail {
   saves: Save[];
   attacks: Attack[];
   items: Item[];
+  ownerUserId: string | null;
+  ownerUsername: string | null;
 }
 
 export interface CreateCharacterInput {

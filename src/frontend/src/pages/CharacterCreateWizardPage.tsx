@@ -6,8 +6,8 @@ import { NumberInput } from '../components/NumberInput.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { ABILITIES, SKILL_NAMES } from '../types/character.ts';
 import type { CreateAttackInput, CreateItemInput } from '../types/character.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 const ALIGNMENTS = [
   'Lawful Good', 'Neutral Good', 'Chaotic Good',
@@ -44,6 +44,7 @@ interface SpellDraft {
 const STEPS = ['Basics', 'Abilities', 'Skills & Saves', 'Equipment', 'Features', 'Attacks', 'Magic', 'Personality'];
 
 export function CharacterCreateWizardPage() {
+  const gameId = useGameId();
   const navigate = useNavigate();
   const {
     createCharacter, fetchCharacter, setSkillProficiency, setSaveProficiency, addItem, addAttack,
@@ -137,7 +138,7 @@ export function CharacterCreateWizardPage() {
     setSubmitting(true);
     setErrorMsg(null);
     try {
-      const created = await createCharacter(DEMO_GAME_ID, {
+      const created = await createCharacter(gameId, {
         name, race, class: charClass, playerName, background, alignment, experiencePoints,
         level, hpMax, armorClass, speed: 30,
         strength: abilities.Strength, dexterity: abilities.Dexterity, constitution: abilities.Constitution,
@@ -146,25 +147,25 @@ export function CharacterCreateWizardPage() {
       });
       if (!created) throw new Error('Character creation failed.');
 
-      await fetchCharacter(DEMO_GAME_ID, created.id);
+      await fetchCharacter(gameId, created.id);
       const detail = useCharactersStore.getState().current;
       if (!detail) throw new Error('Could not load the newly created character.');
 
       for (const save of detail.saves) {
-        if (saveProf[save.ability]) await setSaveProficiency(DEMO_GAME_ID, created.id, save.id, true);
+        if (saveProf[save.ability]) await setSaveProficiency(gameId, created.id, save.id, true);
       }
       for (const skill of detail.skills) {
-        if (skillProf[skill.skillName]) await setSkillProficiency(DEMO_GAME_ID, created.id, skill.id, true);
+        if (skillProf[skill.skillName]) await setSkillProficiency(gameId, created.id, skill.id, true);
       }
       for (const item of items) {
-        await addItem(DEMO_GAME_ID, created.id, item);
+        await addItem(gameId, created.id, item);
       }
       for (const attack of attacks) {
-        await addAttack(DEMO_GAME_ID, created.id, attack);
+        await addAttack(gameId, created.id, attack);
       }
 
       const latest = useCharactersStore.getState().current ?? detail;
-      await updateCharacter(DEMO_GAME_ID, created.id, {
+      await updateCharacter(gameId, created.id, {
         ...latest,
         featuresTraits: features.join('\n'),
         personalityTraits, ideals, bonds, flaws, backstory,
@@ -175,16 +176,16 @@ export function CharacterCreateWizardPage() {
 
       if (hasMagic && detail.activeLevelSheetId) {
         const sheetId = detail.activeLevelSheetId;
-        await upsertSpellcasting(DEMO_GAME_ID, created.id, sheetId, {
+        await upsertSpellcasting(gameId, created.id, sheetId, {
           class: charClass, ability: spellAbility, spellSaveDc, spellAttackBonus,
         });
         for (const c of cantrips) {
-          await addSpell(DEMO_GAME_ID, created.id, sheetId, {
+          await addSpell(gameId, created.id, sheetId, {
             level: 0, name: c.name, prepared: false, isHomebrew: c.isHomebrew, description: c.description || null, url: c.url || null,
           });
         }
         for (const s of spells) {
-          await addSpell(DEMO_GAME_ID, created.id, sheetId, {
+          await addSpell(gameId, created.id, sheetId, {
             level: s.level, name: s.name, prepared: false, isHomebrew: s.isHomebrew, description: s.description || null, url: s.url || null,
           });
         }

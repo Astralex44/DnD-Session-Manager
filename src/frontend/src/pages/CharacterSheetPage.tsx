@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { charactersApi } from '../api/characters.ts';
-import { AccessGate } from '../components/AccessGate.tsx';
 import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
-import { LockControl } from '../components/LockControl.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
@@ -21,8 +19,8 @@ import type {
   UpdateCharacterInput,
   UpsertSpellcastingInput,
 } from '../types/character.ts';
+import { useGameId, useMe } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 const SKILL_ABILITY: Record<string, string> = {
   Acrobatics: 'Dexterity',
@@ -55,21 +53,14 @@ function proficiencyBonusForLevel(level: number): number {
 // real wallet has been fetched, which would otherwise re-trigger it forever.
 const EMPTY_WALLET: CharacterCurrency[] = [];
 
-// AccessLock-gated at the top level (see components/AccessGate.tsx) — the
-// content component below never mounts, so never fetches, until the code
-// (if this sheet has one set) is verified.
 export function CharacterSheetPage() {
   const { id } = useParams<{ id: string }>();
-  const characterId = id ?? '';
-
-  return (
-    <AccessGate resourceType="Character" resourceKey={characterId} label="this character sheet">
-      <CharacterSheetContent characterId={characterId} />
-    </AccessGate>
-  );
+  return <CharacterSheetContent key={id} characterId={id ?? ''} />;
 }
 
 function CharacterSheetContent({ characterId }: { characterId: string }) {
+  const gameId = useGameId();
+  const me = useMe();
   const navigate = useNavigate();
   const {
     current, isLoading, error,
@@ -99,13 +90,13 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const [showSpellcastingForm, setShowSpellcastingForm] = useState(false);
 
   useEffect(() => {
-    if (characterId) fetchCharacter(DEMO_GAME_ID, characterId);
-  }, [characterId, fetchCharacter]);
+    if (characterId) fetchCharacter(gameId, characterId);
+  }, [gameId, characterId, fetchCharacter]);
 
   useEffect(() => {
-    fetchDenominations(DEMO_GAME_ID);
-    if (characterId) fetchWallet(DEMO_GAME_ID, characterId);
-  }, [characterId, fetchDenominations, fetchWallet]);
+    fetchDenominations(gameId);
+    if (characterId) fetchWallet(gameId, characterId);
+  }, [gameId, characterId, fetchDenominations, fetchWallet]);
 
   useEffect(() => {
     if (current) setForm(toUpdateCharacterInput(current));
@@ -127,6 +118,14 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
 
   const sheet = current.activeLevelSheet;
 
+  // Mirrors the server's CharacterAccess rules: the owner edits everything;
+  // the DM reads every character and may only adjust what bringing a
+  // replacement character up to the group needs — ability scores, HP
+  // maximum, level sheets and spell slots. Everything else renders disabled
+  // rather than failing with a 403 on blur.
+  const isOwner = current.ownerUserId === me.userId;
+  const canAdjust = isOwner || me.role === 'Dm';
+
   function updateField<K extends keyof UpdateCharacterInput>(key: K, value: UpdateCharacterInput[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
   }
@@ -145,12 +144,12 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   // untouched fields never triggers a request.
   async function handleSave() {
     if (!isFormDirty(form) && !isWalletDirty()) return;
-    let ok = form ? await updateCharacter(DEMO_GAME_ID, characterId, form) : true;
+    let ok = form ? await updateCharacter(gameId, characterId, form) : true;
     for (const denomination of denominations) {
       const draftValue = walletDraft[denomination.id] ?? 0;
       const savedValue = wallet.find((w) => w.denominationId === denomination.id)?.quantity ?? 0;
       if (draftValue !== savedValue) {
-        ok = (await setWalletEntry(DEMO_GAME_ID, characterId, denomination.id, draftValue)) && ok;
+        ok = (await setWalletEntry(gameId, characterId, denomination.id, draftValue)) && ok;
       }
     }
     showToast(ok ? 'Saved.' : 'Failed to save.', ok ? 'success' : 'error');
@@ -163,20 +162,20 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
     const updated = { ...form, [key]: value };
     setForm(updated);
     if (!isFormDirty(updated)) return;
-    updateCharacter(DEMO_GAME_ID, characterId, updated).then((ok) => {
+    updateCharacter(gameId, characterId, updated).then((ok) => {
       showToast(ok ? 'Saved.' : 'Failed to save.', ok ? 'success' : 'error');
     });
   }
 
   async function handleDelete() {
-    const ok = await deleteCharacter(DEMO_GAME_ID, characterId);
+    const ok = await deleteCharacter(gameId, characterId);
     setShowDeleteConfirm(false);
     if (ok) navigate('/characters');
   }
 
   async function handleDeleteLevel() {
     if (!sheet) return;
-    const result = await removeLevelSheet(DEMO_GAME_ID, characterId, sheet.id);
+    const result = await removeLevelSheet(gameId, characterId, sheet.id);
     setShowDeleteLevelConfirm(false);
     showToast(result.success ? 'Level deleted.' : (result.error ?? 'Failed to delete level.'), result.success ? 'success' : 'error');
   }
@@ -198,7 +197,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
     if (levelUpForm && form) {
       const conMod = modifier(form.constitution);
       const hpToAdd = conMod + levelUpForm.proficiencyBonus + hitDieRoll;
-      await createLevelSheet(DEMO_GAME_ID, characterId, { ...levelUpForm, hpToAdd });
+      await createLevelSheet(gameId, characterId, { ...levelUpForm, hpToAdd });
       setShowLevelUp(false);
     }
   }
@@ -212,32 +211,32 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
 
   async function handleSaveSpellcasting() {
     if (spellcastingForm && sheet) {
-      await upsertSpellcasting(DEMO_GAME_ID, characterId, sheet.id, spellcastingForm);
+      await upsertSpellcasting(gameId, characterId, sheet.id, spellcastingForm);
       setShowSpellcastingForm(false);
     }
   }
 
   async function handleAddAttackRow() {
     if (!newAttack.name.trim()) return;
-    await addAttack(DEMO_GAME_ID, characterId, newAttack);
+    await addAttack(gameId, characterId, newAttack);
     setNewAttack({ name: '', atkBonus: '', damageType: '' });
   }
 
   async function handleAddItemRow() {
     if (!newItem.name.trim()) return;
-    await addItem(DEMO_GAME_ID, characterId, newItem);
+    await addItem(gameId, characterId, newItem);
     setNewItem({ category: '', name: '', quantity: 1, weight: 0, description: '' });
   }
 
   async function handleAddSpellRow() {
     if (!newSpell.name.trim() || !sheet) return;
-    await addSpell(DEMO_GAME_ID, characterId, sheet.id, newSpell);
+    await addSpell(gameId, characterId, sheet.id, newSpell);
     setNewSpell({ level: 0, name: '', prepared: false, description: '', url: '', isHomebrew: false });
   }
 
   function handleHpMaxBlur(value: number) {
     if (!sheet || value === sheet.hpMax) return;
-    updateHpMax(DEMO_GAME_ID, characterId, sheet.id, value);
+    updateHpMax(gameId, characterId, sheet.id, value);
   }
 
   function onEnter(fn: () => void) {
@@ -250,7 +249,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   }
 
   return (
-    <div className="character-sheet-page">
+    <div className={`character-sheet-page${isOwner ? '' : ' readonly'}`}>
       <div className="sheet-header">
         <div>
           <h2>{current.name}</h2>
@@ -264,16 +263,15 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
             <div className="level-sheet-picker no-print">
               <CustomSelect
                 value={current.activeLevelSheetId}
-                onChange={(v) => setActiveLevelSheet(DEMO_GAME_ID, characterId, v)}
+                onChange={(v) => setActiveLevelSheet(gameId, characterId, v)}
                 options={current.levelSheets.map((s) => ({ value: s.id, label: `Level ${s.level} (HP ${s.hpMax})` }))}
               />
             </div>
           )}
-          <LockControl resourceType="Character" resourceKey={characterId} />
-          <button className="btn-ghost no-print" onClick={startLevelUp}>+ Level Up</button>
+          {canAdjust && <button className="btn-ghost no-print" onClick={startLevelUp}>+ Level Up</button>}
           <a
             className="btn-ghost no-print"
-            href={charactersApi.pdfUrl(DEMO_GAME_ID, characterId)}
+            href={charactersApi.pdfUrl(gameId, characterId)}
             target="_blank"
             rel="noreferrer"
           >
@@ -284,9 +282,17 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
       </div>
 
       {error && <div className="error-banner">{error}</div>}
+      {!isOwner && (
+        <div className="readonly-banner no-print">
+          {current.ownerUsername ? `${current.ownerUsername}'s character` : 'Not assigned to a player yet'} — read-only
+          for you as DM, except ability scores, HP maximum, level sheets and spell slots (for bringing a
+          replacement character up to the group).
+        </div>
+      )}
 
       <div className="sheet-section box" onBlur={handleSave}>
         <h3 className="section-title">Basics</h3>
+        <fieldset className="ro-fieldset" disabled={!isOwner}>
         <div className="basics-grid">
           <div className="field"><label>Name</label><input value={form.name} onChange={(e) => updateField('name', e.target.value)} /></div>
           <div className="field"><label>Race</label><input value={form.race} onChange={(e) => updateField('race', e.target.value)} /></div>
@@ -305,7 +311,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           </div>
           <div className="field">
             <label>Inspiration</label>
-            <span className={`prof-dot${form.inspiration ? ' on' : ''}`} onClick={() => updateFieldAndSave('inspiration', !form.inspiration)} />
+            <span className={`prof-dot${form.inspiration ? ' on' : ''}`} onClick={() => isOwner && updateFieldAndSave('inspiration', !form.inspiration)} />
           </div>
         </div>
         <div style={{ marginTop: 14 }}>
@@ -332,15 +338,16 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
             </>
           )}
         </div>
+        </fieldset>
       </div>
 
       <div className="sheet-section box" onBlur={handleSave}>
         <h3 className="section-title">Combat</h3>
         <div className="combat-row">
-          <div className="stat-box"><label>Armor Class</label><NumberInput value={form.armorClass} onChange={(v) => updateField('armorClass', v)} /></div>
-          <div className="stat-box"><label>Initiative</label><NumberInput value={form.initiative} onChange={(v) => updateField('initiative', v)} /></div>
-          <div className="stat-box"><label>Speed</label><NumberInput value={form.speed} onChange={(v) => updateField('speed', v)} /></div>
-          <div className="stat-box"><label>Passive Perception</label><NumberInput value={form.passivePerception} onChange={(v) => updateField('passivePerception', v)} /></div>
+          <div className="stat-box"><label>Armor Class</label><NumberInput disabled={!isOwner} value={form.armorClass} onChange={(v) => updateField('armorClass', v)} /></div>
+          <div className="stat-box"><label>Initiative</label><NumberInput disabled={!isOwner} value={form.initiative} onChange={(v) => updateField('initiative', v)} /></div>
+          <div className="stat-box"><label>Speed</label><NumberInput disabled={!isOwner} value={form.speed} onChange={(v) => updateField('speed', v)} /></div>
+          <div className="stat-box"><label>Passive Perception</label><NumberInput disabled={!isOwner} value={form.passivePerception} onChange={(v) => updateField('passivePerception', v)} /></div>
         </div>
 
         <div className="hp-block">
@@ -350,23 +357,23 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
               key={`${sheet?.id}-${sheet?.hpMax}`}
               type="number"
               defaultValue={sheet?.hpMax ?? 0}
-              disabled={!sheet}
+              disabled={!sheet || !canAdjust}
               onBlur={(e) => handleHpMaxBlur(Number(e.target.value))}
             />
           </div>
-          <NumberInput className="hp-current-input" value={form.hpCurrent} onChange={(v) => updateField('hpCurrent', v)} />
+          <NumberInput className="hp-current-input" disabled={!isOwner} value={form.hpCurrent} onChange={(v) => updateField('hpCurrent', v)} />
           <label>Current Hit Points</label>
         </div>
 
         <div className="hp-block temp">
-          <NumberInput className="hp-current-input" value={form.hpTemporary} onChange={(v) => updateField('hpTemporary', v)} />
+          <NumberInput className="hp-current-input" disabled={!isOwner} value={form.hpTemporary} onChange={(v) => updateField('hpTemporary', v)} />
           <label>Temporary Hit Points</label>
         </div>
 
         <div className="combat-bottom-row">
           <div className="hit-dice-box">
             <span className="hd-total-label">Total</span>
-            <input value={form.hitDiceTotal} onChange={(e) => updateField('hitDiceTotal', e.target.value)} />
+            <input disabled={!isOwner} value={form.hitDiceTotal} onChange={(e) => updateField('hitDiceTotal', e.target.value)} />
             <label>Hit Dice</label>
           </div>
           <div className="death-saves-box">
@@ -377,7 +384,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                   <span
                     key={i}
                     className={`prof-dot${form.deathSaveSuccesses > i ? ' on' : ''}`}
-                    onClick={() => updateFieldAndSave('deathSaveSuccesses', form.deathSaveSuccesses > i ? i : i + 1)}
+                    onClick={() => isOwner && updateFieldAndSave('deathSaveSuccesses', form.deathSaveSuccesses > i ? i : i + 1)}
                   />
                 ))}
               </div>
@@ -387,7 +394,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                   <span
                     key={i}
                     className={`prof-dot fail${form.deathSaveFailures > i ? ' on' : ''}`}
-                    onClick={() => updateFieldAndSave('deathSaveFailures', form.deathSaveFailures > i ? i : i + 1)}
+                    onClick={() => isOwner && updateFieldAndSave('deathSaveFailures', form.deathSaveFailures > i ? i : i + 1)}
                   />
                 ))}
               </div>
@@ -406,32 +413,32 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           <div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Strength}</span>
-              <NumberInput className="ab-score-input" value={form.strength} onChange={(v) => updateField('strength', v)} />
+              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.strength} onChange={(v) => updateField('strength', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.strength))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Dexterity}</span>
-              <NumberInput className="ab-score-input" value={form.dexterity} onChange={(v) => updateField('dexterity', v)} />
+              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.dexterity} onChange={(v) => updateField('dexterity', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.dexterity))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Constitution}</span>
-              <NumberInput className="ab-score-input" value={form.constitution} onChange={(v) => updateField('constitution', v)} />
+              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.constitution} onChange={(v) => updateField('constitution', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.constitution))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Intelligence}</span>
-              <NumberInput className="ab-score-input" value={form.intelligence} onChange={(v) => updateField('intelligence', v)} />
+              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.intelligence} onChange={(v) => updateField('intelligence', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.intelligence))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Wisdom}</span>
-              <NumberInput className="ab-score-input" value={form.wisdom} onChange={(v) => updateField('wisdom', v)} />
+              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.wisdom} onChange={(v) => updateField('wisdom', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.wisdom))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Charisma}</span>
-              <NumberInput className="ab-score-input" value={form.charisma} onChange={(v) => updateField('charisma', v)} />
+              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.charisma} onChange={(v) => updateField('charisma', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.charisma))}</span>
             </div>
           </div>
@@ -445,7 +452,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                 <div key={save.id} className="list-row">
                   <span
                     className={`prof-dot${save.proficient ? ' on' : ''}`}
-                    onClick={() => setSaveProficiency(DEMO_GAME_ID, characterId, save.id, !save.proficient)}
+                    onClick={() => isOwner && setSaveProficiency(gameId, characterId, save.id, !save.proficient)}
                   />
                   <span className="row-name">{save.ability}</span>
                   <span className="row-mod">{fmtMod(mod)}</span>
@@ -464,7 +471,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                 <div key={skill.id} className="list-row">
                   <span
                     className={`prof-dot${skill.proficient ? ' on' : ''}`}
-                    onClick={() => setSkillProficiency(DEMO_GAME_ID, characterId, skill.id, !skill.proficient)}
+                    onClick={() => isOwner && setSkillProficiency(gameId, characterId, skill.id, !skill.proficient)}
                   />
                   <span className="row-name">{skill.skillName}</span>
                   <span className="row-mod">{fmtMod(mod)}</span>
@@ -509,6 +516,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
 
       <div className="sheet-section box">
         <h3 className="section-title">Attacks</h3>
+        <fieldset className="ro-fieldset" disabled={!isOwner}>
         <table className="attack-table">
           <colgroup>
             <col />
@@ -523,41 +531,43 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                 <td>
                   <input
                     defaultValue={a.name}
-                    onBlur={(e) => e.target.value !== a.name && updateAttack(DEMO_GAME_ID, characterId, a.id, { name: e.target.value, atkBonus: a.atkBonus, damageType: a.damageType })}
+                    onBlur={(e) => e.target.value !== a.name && updateAttack(gameId, characterId, a.id, { name: e.target.value, atkBonus: a.atkBonus, damageType: a.damageType })}
                   />
                 </td>
                 <td>
                   <input
                     defaultValue={a.atkBonus}
-                    onBlur={(e) => e.target.value !== a.atkBonus && updateAttack(DEMO_GAME_ID, characterId, a.id, { name: a.name, atkBonus: e.target.value, damageType: a.damageType })}
+                    onBlur={(e) => e.target.value !== a.atkBonus && updateAttack(gameId, characterId, a.id, { name: a.name, atkBonus: e.target.value, damageType: a.damageType })}
                   />
                 </td>
                 <td>
                   <input
                     defaultValue={a.damageType}
-                    onBlur={(e) => e.target.value !== a.damageType && updateAttack(DEMO_GAME_ID, characterId, a.id, { name: a.name, atkBonus: a.atkBonus, damageType: e.target.value })}
+                    onBlur={(e) => e.target.value !== a.damageType && updateAttack(gameId, characterId, a.id, { name: a.name, atkBonus: a.atkBonus, damageType: e.target.value })}
                   />
                 </td>
-                <td><button className="row-remove" onClick={() => removeAttack(DEMO_GAME_ID, characterId, a.id)}>✕</button></td>
+                <td><button className="row-remove" onClick={() => removeAttack(gameId, characterId, a.id)}>✕</button></td>
               </tr>
             ))}
-            <tr className="attack-add-row">
+            {isOwner && <tr className="attack-add-row">
               <td><input placeholder="Name" value={newAttack.name} onChange={(e) => setNewAttack({ ...newAttack, name: e.target.value })} onKeyDown={onEnter(() => void handleAddAttackRow())} /></td>
               <td><input placeholder="Atk Bonus" value={newAttack.atkBonus} onChange={(e) => setNewAttack({ ...newAttack, atkBonus: e.target.value })} onKeyDown={onEnter(() => void handleAddAttackRow())} /></td>
               <td><input placeholder="Damage" value={newAttack.damageType} onChange={(e) => setNewAttack({ ...newAttack, damageType: e.target.value })} onKeyDown={onEnter(() => void handleAddAttackRow())} /></td>
               <td><button className="row-remove" onClick={handleAddAttackRow}>+</button></td>
-            </tr>
+            </tr>}
           </tbody>
         </table>
+        </fieldset>
       </div>
 
       <div className="sheet-section box">
         <h3 className="section-title">Equipment</h3>
+        <fieldset className="ro-fieldset" disabled={!isOwner}>
         <div className="item-list">
           {current.items.map((item) => {
             const qty = itemQtyDrafts[item.id] ?? item.quantity;
             const commitItem = (patch: Partial<CreateItemInput>) =>
-              updateItem(DEMO_GAME_ID, characterId, item.id, {
+              updateItem(gameId, characterId, item.id, {
                 category: item.category, name: item.name, quantity: item.quantity, weight: item.weight,
                 description: item.description, ...patch,
               });
@@ -577,17 +587,18 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                   className="item-category" placeholder="Category" defaultValue={item.category}
                   onBlur={(e) => e.target.value !== item.category && commitItem({ category: e.target.value })}
                 />
-                <button className="row-remove" onClick={() => removeItem(DEMO_GAME_ID, characterId, item.id)}>✕</button>
+                <button className="row-remove" onClick={() => removeItem(gameId, characterId, item.id)}>✕</button>
               </div>
             );
           })}
         </div>
-        <div className="add-row">
+        {isOwner && <div className="add-row">
           <input placeholder="Name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={onEnter(() => void handleAddItemRow())} />
           <input placeholder="Category" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} onKeyDown={onEnter(() => void handleAddItemRow())} />
           <NumberInput className="item-qty" min={1} value={newItem.quantity} onChange={(v) => setNewItem({ ...newItem, quantity: v })} onKeyDown={onEnter(() => void handleAddItemRow())} />
           <button onClick={handleAddItemRow}>+ Add</button>
-        </div>
+        </div>}
+        </fieldset>
       </div>
 
       {sheet && (
@@ -602,9 +613,11 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           ) : (
             <p className="hint">No spellcasting set for this level sheet.</p>
           )}
-          <button className="add-btn" onClick={startSpellcastingForm}>
-            {sheet.spellcasting ? 'Edit Spellcasting' : '+ Add Spellcasting'}
-          </button>
+          {isOwner && (
+            <button className="add-btn" onClick={startSpellcastingForm}>
+              {sheet.spellcasting ? 'Edit Spellcasting' : '+ Add Spellcasting'}
+            </button>
+          )}
 
           {showSpellcastingForm && spellcastingForm && (
             <div className="level-up-form">
@@ -632,7 +645,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
               <div className="spell-row">
                 <span
                   className={`prof-dot${spell.prepared ? ' on' : ''}`}
-                  onClick={() => setSpellPrepared(DEMO_GAME_ID, characterId, sheet.id, spell.id, !spell.prepared)}
+                  onClick={() => isOwner && setSpellPrepared(gameId, characterId, sheet.id, spell.id, !spell.prepared)}
                 />
                 <span
                   className={`spell-name${spell.isHomebrew ? ' homebrew' : ''}`}
@@ -640,7 +653,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                 >
                   Lv{spell.level} {spell.name}
                 </span>
-                <button className="row-remove" onClick={() => removeSpell(DEMO_GAME_ID, characterId, sheet.id, spell.id)}>✕</button>
+                {isOwner && <button className="row-remove" onClick={() => removeSpell(gameId, characterId, sheet.id, spell.id)}>✕</button>}
               </div>
               {openSpellId === spell.id && (spell.description || spell.url) && (
                 <div className="spell-desc">
@@ -650,6 +663,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
               )}
             </div>
           ))}
+          {isOwner && <>
           <div className="add-row">
             <NumberInput min={0} max={9} style={{ maxWidth: 60 }} value={newSpell.level} onChange={(v) => setNewSpell({ ...newSpell, level: v })} onKeyDown={onEnter(() => void handleAddSpellRow())} />
             <input placeholder="Spell name" value={newSpell.name} onChange={(e) => setNewSpell({ ...newSpell, name: e.target.value })} onKeyDown={onEnter(() => void handleAddSpellRow())} />
@@ -667,6 +681,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
             <label>URL</label>
             <input placeholder="https://..." value={newSpell.url ?? ''} onChange={(e) => setNewSpell({ ...newSpell, url: e.target.value })} />
           </div>
+          </>}
 
           <p className="subhead">Spell Slots</p>
           <div className="calc-row">
@@ -678,15 +693,15 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                   <label>Level {level}</label>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                     <NumberInput
-                      min={0} className="spell-slot-input"
+                      min={0} className="spell-slot-input" disabled={!canAdjust}
                       value={slot?.expended ?? 0}
-                      onChange={(v) => upsertSpellSlot(DEMO_GAME_ID, characterId, sheet.id, { level, total: slot?.total ?? 0, expended: v })}
+                      onChange={(v) => upsertSpellSlot(gameId, characterId, sheet.id, { level, total: slot?.total ?? 0, expended: v })}
                     />
                     /
                     <NumberInput
-                      min={0} className="spell-slot-input"
+                      min={0} className="spell-slot-input" disabled={!canAdjust}
                       value={slot?.total ?? 0}
-                      onChange={(v) => upsertSpellSlot(DEMO_GAME_ID, characterId, sheet.id, { level, total: v, expended: slot?.expended ?? 0 })}
+                      onChange={(v) => upsertSpellSlot(gameId, characterId, sheet.id, { level, total: v, expended: slot?.expended ?? 0 })}
                     />
                   </div>
                 </div>
@@ -698,6 +713,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
 
       <div className="sheet-section box print-page-start" onBlur={handleSave}>
         <h3 className="section-title">Personality &amp; Backstory</h3>
+        <fieldset className="ro-fieldset" disabled={!isOwner}>
         <div className="personality-grid">
           <div className="field"><label>Personality Traits</label><AutoResizeTextarea value={form.personalityTraits} onChange={(e) => updateField('personalityTraits', e.target.value)} /></div>
           <div className="field"><label>Ideals</label><AutoResizeTextarea value={form.ideals} onChange={(e) => updateField('ideals', e.target.value)} /></div>
@@ -741,9 +757,10 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           <label>Treasure</label>
           <AutoResizeTextarea value={form.treasure} onChange={(e) => updateField('treasure', e.target.value)} placeholder="Notable valuables — not tracked as inventory" />
         </div>
+        </fieldset>
       </div>
 
-      <div className="sheet-section box danger-zone no-print">
+      {isOwner && <div className="sheet-section box danger-zone no-print">
         <h3 className="section-title">Danger Zone</h3>
         <div className="danger-zone-row">
           <p className="hint" style={{ margin: 0 }}>
@@ -766,7 +783,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           </p>
           <button className="btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete Character</button>
         </div>
-      </div>
+      </div>}
 
       {showDeleteLevelConfirm && sheet && (
         <ConfirmDialog

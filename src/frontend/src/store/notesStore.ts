@@ -8,10 +8,12 @@ interface NotesState {
   isLoading: boolean;
   error: string | null;
 
-  fetchNotes: (gameId: string, owner: string) => Promise<void>;
-  createNote: (gameId: string, owner: string, title: string, text: string) => Promise<Note | null>;
-  updateNote: (gameId: string, owner: string, noteId: string, title: string, text: string) => Promise<boolean>;
-  removeNote: (gameId: string, owner: string, noteId: string) => Promise<void>;
+  // aboutCharacterId: null = your own notebook; a character id = the DM's
+  // notebook on that character.
+  fetchNotes: (gameId: string, aboutCharacterId: string | null) => Promise<void>;
+  createNote: (gameId: string, aboutCharacterId: string | null, title: string, text: string) => Promise<Note | null>;
+  updateNote: (gameId: string, noteId: string, title: string, text: string) => Promise<boolean>;
+  removeNote: (gameId: string, noteId: string) => Promise<void>;
 }
 
 export const useNotesStore = create<NotesState>((set, get) => ({
@@ -19,19 +21,19 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchNotes: async (gameId, owner) => {
+  fetchNotes: async (gameId, aboutCharacterId) => {
     set({ isLoading: true, error: null });
     try {
-      const notes = await notesApi.list(gameId, owner);
+      const notes = await notesApi.list(gameId, aboutCharacterId);
       set({ notes, isLoading: false });
     } catch (err) {
       set({ error: describeError(err), isLoading: false });
     }
   },
 
-  createNote: async (gameId, owner, title, text) => {
+  createNote: async (gameId, aboutCharacterId, title, text) => {
     try {
-      const created = await notesApi.create(gameId, owner, title, text);
+      const created = await notesApi.create(gameId, aboutCharacterId, title, text);
       set({ notes: [created, ...get().notes] });
       return created;
     } catch (err) {
@@ -40,9 +42,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }
   },
 
-  updateNote: async (gameId, owner, noteId, title, text) => {
+  updateNote: async (gameId, noteId, title, text) => {
     try {
-      const updated = await notesApi.update(gameId, owner, noteId, title, text);
+      const updated = await notesApi.update(gameId, noteId, title, text);
       set({ notes: get().notes.map((n) => (n.id === noteId ? updated : n)) });
       return true;
     } catch (err) {
@@ -51,9 +53,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }
   },
 
-  removeNote: async (gameId, owner, noteId) => {
+  removeNote: async (gameId, noteId) => {
     try {
-      await notesApi.remove(gameId, owner, noteId);
+      await notesApi.remove(gameId, noteId);
       set({ notes: get().notes.filter((n) => n.id !== noteId) });
     } catch (err) {
       set({ error: describeError(err) });

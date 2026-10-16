@@ -8,15 +8,30 @@ export function HelpPage() {
     <div className="help-page">
       <h2>Help</h2>
       <p className="hint">
-        This is an early alpha test — tonight, character sheets and private notes are the only
-        things in real use. Everything below covers that.
+        This is an early alpha test — character sheets and private notes are the only things in
+        real use so far. Everything below covers that.
       </p>
 
       <div className="help-grid">
         <div className="sheet-section box">
+          <h3 className="section-title">Logging in</h3>
+          <p>
+            You log in with <strong>Discord</strong>. The game is invite-only: the DM adds your
+            Discord <strong>username</strong> (the unique one without spaces, not your display
+            name) on their Players page, and you're in from your first login on.
+          </p>
+          <p>
+            Your characters and notes belong to your account. Nobody else can edit your
+            character, and nobody, the DM included, can read your notes.
+          </p>
+        </div>
+
+        <div className="sheet-section box">
           <h3 className="section-title">Finding your character</h3>
           <p>
-            Go to <strong>Characters</strong> in the sidebar. If you don't have one yet, click{' '}
+            Go to <strong>Characters</strong> in the sidebar — you see your own characters there.
+            A character from before login existed shows up once the DM has assigned it to your
+            account. If you don't have one yet, click{' '}
             <strong>+ Create New Character</strong> and fill in the wizard — race, class, ability
             scores, starting HP, and so on.
           </p>
@@ -75,21 +90,9 @@ export function HelpPage() {
         </div>
 
         <div className="sheet-section box">
-          <h3 className="section-title">Protecting your sheet with a code</h3>
-          <p>
-            There's still no real login (see below), but you can set a short code on your own
-            character sheet or notes: click <strong>🔓 Set a code</strong> at the top of the
-            sheet, or next to a notes page. Once set, that sheet or notebook stays locked behind
-            the code for anyone — including you — until it's entered again. Pick something you
-            won't forget; there's no "forgot code" recovery yet, ask the DM if you do.
-          </p>
-        </div>
-
-        <div className="sheet-section box">
-          <h3 className="section-title">Known limitations tonight</h3>
+          <h3 className="section-title">Known limitations</h3>
           <ul>
-            <li>Still no real login — the code above is a temporary stand-in. Please only protect and edit your own character.</li>
-            <li>Board, live initiative, shop, and maps aren't part of tonight's test.</li>
+            <li>Board, live initiative, shop, and maps aren't part of the test yet.</li>
             <li>Something looks broken? Tell the DM directly rather than trying to fix it mid-session.</li>
           </ul>
         </div>

@@ -3,10 +3,11 @@ import { ColorSwatchPicker } from '../components/ColorSwatchPicker.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import type { CurrencyDenomination } from '../types/currency.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 export function SettingsPage() {
+  const gameId = useGameId();
   const {
     denominations, isLoading, error,
     fetchDenominations, createDenomination, updateDenomination, removeDenomination, reorderDenominations,
@@ -15,28 +16,28 @@ export function SettingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<CurrencyDenomination | null>(null);
 
   useEffect(() => {
-    fetchDenominations(DEMO_GAME_ID);
-  }, [fetchDenominations]);
+    fetchDenominations(gameId);
+  }, [gameId, fetchDenominations]);
 
   const sorted = [...denominations].sort((a, b) => a.sortOrder - b.sortOrder);
 
   async function handleAdd() {
-    await createDenomination(DEMO_GAME_ID, { name: 'New Currency', abbreviation: 'NEW', color: '#927355', value: 1 });
+    await createDenomination(gameId, { name: 'New Currency', abbreviation: 'NEW', color: '#927355', value: 1 });
   }
 
   function handleFieldSave(d: CurrencyDenomination, field: 'name' | 'abbreviation' | 'color', value: string) {
     if (value === d[field]) return;
-    updateDenomination(DEMO_GAME_ID, d.id, { name: d.name, abbreviation: d.abbreviation, color: d.color, value: d.value, [field]: value });
+    updateDenomination(gameId, d.id, { name: d.name, abbreviation: d.abbreviation, color: d.color, value: d.value, [field]: value });
   }
 
   function handleColorSave(d: CurrencyDenomination, color: string) {
     if (color === d.color) return;
-    updateDenomination(DEMO_GAME_ID, d.id, { name: d.name, abbreviation: d.abbreviation, color, value: d.value });
+    updateDenomination(gameId, d.id, { name: d.name, abbreviation: d.abbreviation, color, value: d.value });
   }
 
   function handleValueSave(d: CurrencyDenomination, value: number) {
     if (value === d.value) return;
-    updateDenomination(DEMO_GAME_ID, d.id, { name: d.name, abbreviation: d.abbreviation, color: d.color, value });
+    updateDenomination(gameId, d.id, { name: d.name, abbreviation: d.abbreviation, color: d.color, value });
   }
 
   function handleMove(index: number, direction: -1 | 1) {
@@ -44,7 +45,7 @@ export function SettingsPage() {
     if (target < 0 || target >= sorted.length) return;
     const reordered = [...sorted];
     [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-    reorderDenominations(DEMO_GAME_ID, reordered.map((d) => d.id));
+    reorderDenominations(gameId, reordered.map((d) => d.id));
   }
 
   return (
@@ -122,7 +123,7 @@ export function SettingsPage() {
           message={`This permanently deletes "${deleteTarget.name}" — any shop prices and character wallets using it lose that denomination. This can't be undone.`}
           confirmLabel="Delete Currency"
           onConfirm={async () => {
-            await removeDenomination(DEMO_GAME_ID, deleteTarget.id);
+            await removeDenomination(gameId, deleteTarget.id);
             setDeleteTarget(null);
           }}
           onCancel={() => setDeleteTarget(null)}

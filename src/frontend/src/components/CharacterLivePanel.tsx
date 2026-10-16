@@ -9,8 +9,8 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
 import type { CharacterCurrency } from '../types/currency.ts';
+import { useGameId } from '../store/authStore.ts';
 
-const DEMO_GAME_ID = '00000000-0000-0000-0000-000000000001';
 const EMPTY_WALLET: CharacterCurrency[] = [];
 const FALLBACK_POLL_MS = 20000;
 
@@ -20,6 +20,7 @@ const FALLBACK_POLL_MS = 20000;
 // real character sheet rather than being re-implemented a second time —
 // the "Open Full Sheet" link covers that.
 export function CharacterLivePanel() {
+  const gameId = useGameId();
   const { characters, current, fetchCharacters, fetchCharacter, updateCharacter } = useCharactersStore();
   const { denominations, wallets, fetchDenominations, fetchWallet } = useCurrencyStore();
   const showToast = useToastStore((s) => s.showToast);
@@ -27,11 +28,11 @@ export function CharacterLivePanel() {
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [hpCurrent, setHpCurrent] = useState(0);
 
-  useLiveFetch(DEMO_GAME_ID, 'characters', fetchCharacters);
+  useLiveFetch(gameId, 'characters', fetchCharacters);
 
   useEffect(() => {
-    fetchDenominations(DEMO_GAME_ID);
-  }, [fetchDenominations]);
+    fetchDenominations(gameId);
+  }, [gameId, fetchDenominations]);
 
   useEffect(() => {
     if (!characterId && characters.length > 0) setCharacterId(characters[0].id);
@@ -44,19 +45,19 @@ export function CharacterLivePanel() {
   useEffect(() => {
     if (!characterId) return;
     const refetch = () => {
-      fetchCharacter(DEMO_GAME_ID, characterId);
-      fetchWallet(DEMO_GAME_ID, characterId);
+      fetchCharacter(gameId, characterId);
+      fetchWallet(gameId, characterId);
     };
     refetch();
-    const unsubCharacters = onGameEvent(DEMO_GAME_ID, 'characters', refetch);
-    const unsubShops = onGameEvent(DEMO_GAME_ID, 'shops', refetch);
+    const unsubCharacters = onGameEvent(gameId, 'characters', refetch);
+    const unsubShops = onGameEvent(gameId, 'shops', refetch);
     const interval = setInterval(refetch, FALLBACK_POLL_MS);
     return () => {
       unsubCharacters();
       unsubShops();
       clearInterval(interval);
     };
-  }, [characterId, fetchCharacter, fetchWallet]);
+  }, [gameId, characterId, fetchCharacter, fetchWallet]);
 
   useEffect(() => {
     setHpCurrent(current?.hpCurrent ?? 0);
@@ -67,7 +68,7 @@ export function CharacterLivePanel() {
 
   async function handleHpBlur() {
     if (!current || hpCurrent === current.hpCurrent) return;
-    const ok = await updateCharacter(DEMO_GAME_ID, current.id, { ...toUpdateCharacterInput(current), hpCurrent });
+    const ok = await updateCharacter(gameId, current.id, { ...toUpdateCharacterInput(current), hpCurrent });
     showToast(ok ? 'Saved.' : 'Failed to save.', ok ? 'success' : 'error');
   }
 
