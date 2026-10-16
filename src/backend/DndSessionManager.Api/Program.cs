@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
@@ -249,7 +250,25 @@ builder.Services.AddCors(options =>
               .AllowCredentials());
 });
 
+// In production Caddy terminates TLS and proxies plain http to this
+// container, so without these headers the app thinks every request is http:
+// the Discord redirect_uri came out as http://… (which Discord rejects — it
+// must match the registered https URL exactly) and the auth cookie wasn't
+// marked Secure. Caddy sends X-Forwarded-Proto/-For by default. Its address
+// as seen from inside Docker isn't fixed, so no known-proxy list; a client
+// spoofing the header can only change the scheme of its own request.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// First in the pipeline, so everything after it (auth, OAuth redirect_uri,
+// cookie Secure flag) sees the original https scheme.
+app.UseForwardedHeaders();
 
 // Apply the tracked EF Core schema before serving requests. This makes a new
 // Compose database usable immediately and is a no-op after migrations exist.

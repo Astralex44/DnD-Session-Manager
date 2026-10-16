@@ -4,6 +4,15 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.2.0-alpha — 2026-10-16
+
+First release in the new version scheme: minor for features, patch for fixes (`v0.2.1-alpha`, `v0.3.0-alpha`, …).
+Together with v0.1.0-alpha.9 below, this is the login release.
+
+### Fixed
+- Logging in with Discord on the live site. v0.1.0-alpha.9 sent Discord an `http://` return address, which
+  Discord rejects, so nobody could log in.
+
 ## v0.1.0-alpha.9 — 2026-10-16
 
 ### Added
