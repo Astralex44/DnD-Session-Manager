@@ -11,26 +11,24 @@ namespace DndSessionManager.Api.Controllers;
 [ApiController]
 [Route("api/games/{gameId:guid}/characters")]
 [Authorize(Policy = GamePolicies.Member)]
-public class CharactersController(ICharacterFacade characterFacade, ICurrencyFacade currencyFacade, IAccessLockFacade accessLockFacade) : ControllerBase
+public class CharactersController(ICharacterFacade characterFacade, ICurrencyFacade currencyFacade) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CharacterDto>>> GetAll(Guid gameId) =>
-        Ok(await characterFacade.GetCharactersForGameAsync(gameId));
+        Ok(await characterFacade.GetCharactersForGameAsync(gameId, HttpContext.GetGameCaller()));
 
+    [CharacterAccess(CharacterAccess.Read)]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CharacterDetailDto>> GetById(Guid gameId, Guid id)
     {
-        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
-
         var character = await characterFacade.GetCharacterDetailAsync(gameId, id);
         return character is null ? NotFound() : Ok(character);
     }
 
+    [CharacterAccess(CharacterAccess.Read)]
     [HttpGet("{id:guid}/pdf")]
     public async Task<IActionResult> GetPdf(Guid gameId, Guid id)
     {
-        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
-
         var character = await characterFacade.GetCharacterDetailAsync(gameId, id);
         if (character is null) return NotFound();
 
@@ -42,41 +40,37 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     [HttpPost]
     public async Task<ActionResult<CharacterDto>> Create(Guid gameId, [FromBody] CreateCharacterDto input)
     {
-        var character = await characterFacade.CreateCharacterAsync(gameId, input);
+        var character = await characterFacade.CreateCharacterAsync(gameId, input, HttpContext.GetGameCaller().UserId);
         return CreatedAtAction(nameof(GetById), new { gameId, id = character.Id }, character);
     }
 
+    [CharacterAccess(CharacterAccess.OwnerOrDm)]
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CharacterDetailDto>> Update(Guid gameId, Guid id, [FromBody] UpdateCharacterDto input)
     {
-        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
-
         var character = await characterFacade.UpdateCharacterAsync(gameId, id, input);
         return character is null ? NotFound() : Ok(character);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid gameId, Guid id)
     {
-        if (!await HasAccessAsync(gameId, id)) return StatusCode(403);
-
         return await characterFacade.DeleteCharacterAsync(gameId, id) ? NoContent() : NotFound();
     }
 
-    // Only these few high-value actions (view/edit/export/delete the sheet
-    // itself) check the code — see AccessLock: a temporary, simple stand-in
-    // for real auth, not exhaustive protection of every sub-resource
-    // (attacks/items/spells/level-up stay open for now, deliberately, given
-    // the scope of this — the UI can't reach them without GetById anyway).
-    // GetPdf is a plain <a href> download, which can't attach a custom
-    // header, so it also accepts the code as a ?code= query param.
-    private Task<bool> HasAccessAsync(Guid gameId, Guid characterId)
+    // DM assigns a character to a member's account (pre-login characters
+    // start unowned). No CharacterAccess here: the DM may do it for any
+    // character, owned or not.
+    [Authorize(Policy = GamePolicies.Dm)]
+    [HttpPut("{id:guid}/owner")]
+    public async Task<ActionResult<CharacterDto>> SetOwner(Guid gameId, Guid id, [FromBody] SetCharacterOwnerDto input)
     {
-        string? code = Request.Headers["X-Access-Code"];
-        if (string.IsNullOrEmpty(code)) code = Request.Query["code"];
-        return accessLockFacade.VerifyCodeAsync(gameId, "Character", characterId.ToString(), code);
+        var character = await characterFacade.SetOwnerAsync(gameId, id, input.UserId, HttpContext.GetGameCaller());
+        return character is null ? NotFound() : Ok(character);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}/status")]
     public async Task<ActionResult<CharacterDto>> SetStatus(Guid gameId, Guid id, [FromBody] UpdateStatusDto input)
     {
@@ -84,6 +78,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return character is null ? NotFound() : Ok(character);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}/skills/{skillId:guid}")]
     public async Task<ActionResult<SkillDto>> SetSkillProficiency(Guid gameId, Guid id, Guid skillId, [FromBody] UpdateProficiencyDto input)
     {
@@ -91,6 +86,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return skill is null ? NotFound() : Ok(skill);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}/saves/{saveId:guid}")]
     public async Task<ActionResult<SaveDto>> SetSaveProficiency(Guid gameId, Guid id, Guid saveId, [FromBody] UpdateProficiencyDto input)
     {
@@ -98,6 +94,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return save is null ? NotFound() : Ok(save);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPost("{id:guid}/attacks")]
     public async Task<ActionResult<AttackDto>> AddAttack(Guid gameId, Guid id, [FromBody] CreateAttackDto input)
     {
@@ -105,6 +102,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return attack is null ? NotFound() : Ok(attack);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPut("{id:guid}/attacks/{attackId:guid}")]
     public async Task<ActionResult<AttackDto>> UpdateAttack(Guid gameId, Guid id, Guid attackId, [FromBody] CreateAttackDto input)
     {
@@ -112,10 +110,12 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return attack is null ? NotFound() : Ok(attack);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpDelete("{id:guid}/attacks/{attackId:guid}")]
     public async Task<IActionResult> RemoveAttack(Guid gameId, Guid id, Guid attackId) =>
         await characterFacade.RemoveAttackAsync(gameId, id, attackId) ? NoContent() : NotFound();
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPost("{id:guid}/items")]
     public async Task<ActionResult<ItemDto>> AddItem(Guid gameId, Guid id, [FromBody] CreateItemDto input)
     {
@@ -123,6 +123,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return item is null ? NotFound() : Ok(item);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPut("{id:guid}/items/{itemId:guid}")]
     public async Task<ActionResult<ItemDto>> UpdateItem(Guid gameId, Guid id, Guid itemId, [FromBody] CreateItemDto input)
     {
@@ -130,10 +131,12 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return item is null ? NotFound() : Ok(item);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpDelete("{id:guid}/items/{itemId:guid}")]
     public async Task<IActionResult> RemoveItem(Guid gameId, Guid id, Guid itemId) =>
         await characterFacade.RemoveItemAsync(gameId, id, itemId) ? NoContent() : NotFound();
 
+    [CharacterAccess(CharacterAccess.OwnerOrDm)]
     [HttpPost("{id:guid}/level-sheets")]
     public async Task<ActionResult<LevelSheetDetailDto>> CreateLevelSheet(Guid gameId, Guid id, [FromBody] CreateLevelSheetDto input)
     {
@@ -141,6 +144,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return levelSheet is null ? NotFound() : Ok(levelSheet);
     }
 
+    [CharacterAccess(CharacterAccess.OwnerOrDm)]
     [HttpPatch("{id:guid}/active-level-sheet")]
     public async Task<ActionResult<CharacterDetailDto>> SetActiveLevelSheet(Guid gameId, Guid id, [FromBody] SetActiveLevelSheetDto input)
     {
@@ -148,6 +152,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return character is null ? NotFound() : Ok(character);
     }
 
+    [CharacterAccess(CharacterAccess.OwnerOrDm)]
     [HttpPatch("{id:guid}/level-sheets/{levelSheetId:guid}/hp-max")]
     public async Task<ActionResult<LevelSheetDetailDto>> UpdateHpMax(Guid gameId, Guid id, Guid levelSheetId, [FromBody] UpdateHpMaxDto input)
     {
@@ -155,6 +160,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return levelSheet is null ? NotFound() : Ok(levelSheet);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpDelete("{id:guid}/level-sheets/{levelSheetId:guid}")]
     public async Task<ActionResult<RemoveLevelSheetResultDto>> RemoveLevelSheet(Guid gameId, Guid id, Guid levelSheetId)
     {
@@ -163,6 +169,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPut("{id:guid}/level-sheets/{levelSheetId:guid}/spellcasting")]
     public async Task<ActionResult<SpellcastingDto>> UpsertSpellcasting(Guid gameId, Guid id, Guid levelSheetId, [FromBody] UpsertSpellcastingDto input)
     {
@@ -170,6 +177,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return spellcasting is null ? NotFound() : Ok(spellcasting);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPost("{id:guid}/level-sheets/{levelSheetId:guid}/spells")]
     public async Task<ActionResult<SpellDto>> AddSpell(Guid gameId, Guid id, Guid levelSheetId, [FromBody] CreateSpellDto input)
     {
@@ -177,6 +185,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return spell is null ? NotFound() : Ok(spell);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}/level-sheets/{levelSheetId:guid}/spells/{spellId:guid}")]
     public async Task<ActionResult<SpellDto>> SetSpellPrepared(Guid gameId, Guid id, Guid levelSheetId, Guid spellId, [FromBody] UpdateProficiencyDto input)
     {
@@ -184,10 +193,12 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return spell is null ? NotFound() : Ok(spell);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpDelete("{id:guid}/level-sheets/{levelSheetId:guid}/spells/{spellId:guid}")]
     public async Task<IActionResult> RemoveSpell(Guid gameId, Guid id, Guid levelSheetId, Guid spellId) =>
         await characterFacade.RemoveSpellAsync(gameId, id, levelSheetId, spellId) ? NoContent() : NotFound();
 
+    [CharacterAccess(CharacterAccess.OwnerOrDm)]
     [HttpPut("{id:guid}/level-sheets/{levelSheetId:guid}/spell-slots")]
     public async Task<ActionResult<SpellSlotDto>> UpsertSpellSlot(Guid gameId, Guid id, Guid levelSheetId, [FromBody] UpsertSpellSlotDto input)
     {
@@ -195,10 +206,12 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return slot is null ? NotFound() : Ok(slot);
     }
 
+    [CharacterAccess(CharacterAccess.OwnerOrDm)]
     [HttpDelete("{id:guid}/level-sheets/{levelSheetId:guid}/spell-slots/{slotId:guid}")]
     public async Task<IActionResult> RemoveSpellSlot(Guid gameId, Guid id, Guid levelSheetId, Guid slotId) =>
         await characterFacade.RemoveSpellSlotAsync(gameId, id, levelSheetId, slotId) ? NoContent() : NotFound();
 
+    [CharacterAccess(CharacterAccess.Read)]
     [HttpGet("{id:guid}/currency")]
     public async Task<ActionResult<IReadOnlyList<CharacterCurrencyDto>>> GetWallet(Guid gameId, Guid id)
     {
@@ -206,6 +219,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return wallet is null ? NotFound() : Ok(wallet);
     }
 
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPut("{id:guid}/currency/{denominationId:guid}")]
     public async Task<ActionResult<CharacterCurrencyDto>> SetWalletEntry(Guid gameId, Guid id, Guid denominationId, [FromBody] SetCharacterCurrencyDto input)
     {

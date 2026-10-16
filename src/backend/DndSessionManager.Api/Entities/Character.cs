@@ -10,6 +10,12 @@ public class Character
     public string Background { get; set; } = string.Empty;
     public string Alignment { get; set; } = string.Empty;
     public string PlayerName { get; set; } = string.Empty;
+
+    // The account this character belongs to. Its owner edits it; the DM reads
+    // it (and may adjust level/attributes, see CharacterAccessAttribute). Null
+    // for characters from before login existed until the DM assigns them —
+    // those are visible to the DM only.
+    public Guid? OwnerUserId { get; set; }
     public int ExperiencePoints { get; set; }
     public int Strength { get; set; } = 10;
     public int Dexterity { get; set; } = 10;
@@ -47,6 +53,7 @@ public class Character
     public string Status { get; set; } = "active";
     public Guid? ActiveLevelSheetId { get; set; }
     public Game? Game { get; set; }
+    public User? Owner { get; set; }
     public CharacterLevelSheet? ActiveLevelSheet { get; set; }
     public ICollection<CharacterLevelSheet> LevelSheets { get; set; } = new List<CharacterLevelSheet>();
     public ICollection<CharacterSkill> Skills { get; set; } = new List<CharacterSkill>();

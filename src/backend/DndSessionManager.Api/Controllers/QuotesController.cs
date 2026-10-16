@@ -21,7 +21,7 @@ public class QuotesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<QuoteDto>>> GetAll(Guid gameId)
     {
-        var quotes = await _quoteFacade.GetQuotesForGameAsync(gameId);
+        var quotes = await _quoteFacade.GetQuotesForGameAsync(gameId, HttpContext.GetGameCaller());
         return Ok(quotes);
     }
 

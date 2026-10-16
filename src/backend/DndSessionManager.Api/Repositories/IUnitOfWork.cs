@@ -28,7 +28,6 @@ public interface IUnitOfWork
     IInitiativeStateRepository InitiativeStates { get; }
     IGameTimerRepository GameTimers { get; }
     ISessionMonsterRepository SessionMonsters { get; }
-    IAccessLockRepository AccessLocks { get; }
     IUserRepository Users { get; }
     IGameMemberRepository GameMembers { get; }
     IGameInviteRepository GameInvites { get; }

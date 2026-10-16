@@ -1,10 +1,7 @@
 namespace DndSessionManager.Api.Dtos;
 
-// Race/Class/Status/HpCurrent/HpMax/ArmorClass/Level are blanked out (see
-// CharacterFacade.ToDto) when Locked is true — Name/PlayerName stay so the
-// overview list can still be navigated, but the AccessLock's whole point is
-// that a locked character's actual info isn't visible without the code, not
-// just that it can't be *edited*.
+// OwnerUserId/OwnerUsername tell the DM whose character this is (null until
+// the DM assigns a pre-login character to an account).
 public record CharacterDto(
     Guid Id,
     Guid GameId,
@@ -18,4 +15,5 @@ public record CharacterDto(
     int ArmorClass,
     Guid? ActiveLevelSheetId,
     int? Level,
-    bool Locked);
+    Guid? OwnerUserId,
+    string? OwnerUsername);

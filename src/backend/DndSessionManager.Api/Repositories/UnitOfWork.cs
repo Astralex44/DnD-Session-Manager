@@ -34,7 +34,6 @@ public class UnitOfWork : IUnitOfWork
         IInitiativeStateRepository initiativeStates,
         IGameTimerRepository gameTimers,
         ISessionMonsterRepository sessionMonsters,
-        IAccessLockRepository accessLocks,
         IUserRepository users,
         IGameMemberRepository gameMembers,
         IGameInviteRepository gameInvites)
@@ -66,7 +65,6 @@ public class UnitOfWork : IUnitOfWork
         InitiativeStates = initiativeStates;
         GameTimers = gameTimers;
         SessionMonsters = sessionMonsters;
-        AccessLocks = accessLocks;
         Users = users;
         GameMembers = gameMembers;
         GameInvites = gameInvites;
@@ -98,7 +96,6 @@ public class UnitOfWork : IUnitOfWork
     public IInitiativeStateRepository InitiativeStates { get; }
     public IGameTimerRepository GameTimers { get; }
     public ISessionMonsterRepository SessionMonsters { get; }
-    public IAccessLockRepository AccessLocks { get; }
     public IUserRepository Users { get; }
     public IGameMemberRepository GameMembers { get; }
     public IGameInviteRepository GameInvites { get; }

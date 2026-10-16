@@ -1,12 +1,15 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 
 namespace DndSessionManager.Api.Facades;
 
 public interface ICharacterFacade
 {
-    Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId);
+    Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId, GameCaller caller);
+    Task<(bool Exists, Guid? OwnerUserId)> GetOwnerAsync(Guid gameId, Guid characterId);
+    Task<CharacterDto?> SetOwnerAsync(Guid gameId, Guid characterId, Guid? ownerUserId, GameCaller dm);
     Task<CharacterDetailDto?> GetCharacterDetailAsync(Guid gameId, Guid characterId);
-    Task<CharacterDto> CreateCharacterAsync(Guid gameId, CreateCharacterDto input);
+    Task<CharacterDto> CreateCharacterAsync(Guid gameId, CreateCharacterDto input, Guid ownerUserId);
     Task<CharacterDetailDto?> UpdateCharacterAsync(Guid gameId, Guid characterId, UpdateCharacterDto input);
     Task<CharacterDto?> SetCharacterStatusAsync(Guid gameId, Guid characterId, string status);
     Task<bool> DeleteCharacterAsync(Guid gameId, Guid characterId);

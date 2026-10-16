@@ -1,3 +1,4 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Repositories;
@@ -6,8 +7,11 @@ namespace DndSessionManager.Api.Facades;
 
 public class SessionFacade(IUnitOfWork unitOfWork) : ISessionFacade
 {
-    public async Task<IReadOnlyList<SessionDto>> GetSessionsForGameAsync(Guid gameId) =>
-        (await unitOfWork.Sessions.GetByGameIdAsync(gameId)).Select(ToDto).ToList();
+    public async Task<IReadOnlyList<SessionDto>> GetSessionsForGameAsync(Guid gameId, GameCaller caller) =>
+        (await unitOfWork.Sessions.GetByGameIdAsync(gameId))
+            .Select(ToDto)
+            .Select(dto => caller.IsDm ? dto : dto with { Notes = string.Empty })
+            .ToList();
 
     public async Task<SessionDto> CreateSessionAsync(Guid gameId, UpsertSessionDto input)
     {

@@ -1,3 +1,4 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Hubs;
@@ -8,20 +9,31 @@ namespace DndSessionManager.Api.Facades;
 
 public class DocumentFacade(IUnitOfWork unitOfWork, IDocumentFileStorage fileStorage, IGameEventsBroadcaster broadcaster) : IDocumentFacade
 {
-    public async Task<IReadOnlyList<DocumentDto>> GetDocumentsForGameAsync(Guid gameId)
+    public async Task<IReadOnlyList<DocumentDto>> GetDocumentsForGameAsync(Guid gameId, GameCaller caller)
     {
         var documents = await unitOfWork.Documents.GetByGameIdAsync(gameId);
-        var characterNames = await CharacterNamesForGameAsync(gameId);
-        return documents.Select(doc => ToDto(doc, characterNames)).ToList();
+        var characters = await unitOfWork.Characters.GetByGameIdAsync(gameId);
+        var characterNames = characters.ToDictionary(c => c.Id, c => c.Name);
+        if (caller.IsDm) return documents.Select(doc => ToDto(doc, characterNames)).ToList();
+
+        var own = OwnCharacterIds(characters, caller);
+        return documents
+            .Where(doc => doc.Shares.Any(share => own.Contains(share.CharacterId)))
+            .Select(doc => ToDto(doc, characterNames, own))
+            .ToList();
     }
 
-    public async Task<DocumentDto?> GetDocumentAsync(Guid gameId, Guid documentId)
+    public async Task<DocumentDto?> GetDocumentAsync(Guid gameId, Guid documentId, GameCaller caller)
     {
         var document = await GetOwnedDocumentAsync(gameId, documentId);
         if (document is null) return null;
 
-        var characterNames = await CharacterNamesForGameAsync(gameId);
-        return ToDto(document, characterNames);
+        var characters = await unitOfWork.Characters.GetByGameIdAsync(gameId);
+        var characterNames = characters.ToDictionary(c => c.Id, c => c.Name);
+        if (caller.IsDm) return ToDto(document, characterNames);
+
+        var own = OwnCharacterIds(characters, caller);
+        return document.Shares.Any(share => own.Contains(share.CharacterId)) ? ToDto(document, characterNames, own) : null;
     }
 
     public async Task<DocumentDto> CreateDocumentAsync(Guid gameId, CreateDocumentDto input)
@@ -77,27 +89,49 @@ public class DocumentFacade(IUnitOfWork unitOfWork, IDocumentFileStorage fileSto
         return true;
     }
 
-    public async Task<DocumentShareDto?> SetShareAsync(Guid gameId, Guid documentId, Guid characterId, UpsertDocumentShareDto input)
+    public async Task<(DocumentShareDto? Share, bool Forbidden)> SetShareAsync(
+        Guid gameId, Guid documentId, Guid characterId, UpsertDocumentShareDto input, GameCaller caller)
     {
         var document = await GetOwnedDocumentAsync(gameId, documentId);
-        if (document is null) return null;
+        if (document is null) return (null, false);
 
         var character = await unitOfWork.Characters.GetByIdAsync(characterId);
-        if (character is null || character.GameId != gameId) return null;
+        if (character is null || character.GameId != gameId) return (null, false);
 
         var share = await unitOfWork.DocumentShares.GetByDocumentAndCharacterAsync(documentId, characterId);
+        var hidden = input.Hidden;
+        var locked = input.Locked;
+        if (!caller.IsDm)
+        {
+            var own = OwnCharacterIds(await unitOfWork.Characters.GetByGameIdAsync(gameId), caller);
+            if (own.Contains(characterId))
+            {
+                // Declutter your own copy — you can't share a document to yourself.
+                if (share is null) return (null, true);
+            }
+            else
+            {
+                // Handing it on: only from a character that holds it, only as a
+                // fresh share, and the recipient's own Hide/Lock is theirs alone.
+                var holdsIt = document.Shares.Any(s => own.Contains(s.CharacterId));
+                if (!holdsIt || share is not null) return (null, true);
+                hidden = false;
+                locked = false;
+            }
+        }
+
         if (share is null)
         {
             share = new DocumentShare { Id = Guid.NewGuid(), DocumentId = documentId, CharacterId = characterId };
             await unitOfWork.DocumentShares.AddAsync(share);
         }
 
-        share.Hidden = input.Hidden;
-        share.Locked = input.Locked;
+        share.Hidden = hidden;
+        share.Locked = locked;
 
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "documents");
-        return new DocumentShareDto(share.Id, share.CharacterId, character.Name, share.Hidden, share.Locked);
+        return (new DocumentShareDto(share.Id, share.CharacterId, character.Name, share.Hidden, share.Locked), false);
     }
 
     public async Task<bool> RemoveShareAsync(Guid gameId, Guid documentId, Guid characterId)
@@ -125,9 +159,14 @@ public class DocumentFacade(IUnitOfWork unitOfWork, IDocumentFileStorage fileSto
     private static DocumentType ParseDocumentType(string value) =>
         Enum.TryParse<DocumentType>(value, true, out var type) ? type : DocumentType.Map;
 
-    private static DocumentDto ToDto(Document document, IReadOnlyDictionary<Guid, string> characterNames) => new(
+    private static HashSet<Guid> OwnCharacterIds(IEnumerable<Character> characters, GameCaller caller) =>
+        characters.Where(c => c.OwnerUserId == caller.UserId).Select(c => c.Id).ToHashSet();
+
+    // onlyCharacters: a player's view — share rows of other characters are
+    // left out (who else has a map is the DM's business).
+    private static DocumentDto ToDto(Document document, IReadOnlyDictionary<Guid, string> characterNames, IReadOnlySet<Guid>? onlyCharacters = null) => new(
         document.Id, document.GameId, document.Type.ToString(), document.Name, document.FileUrl, document.OriginalFileName, document.UploadedAt,
-        document.Shares.Select(share => new DocumentShareDto(
+        document.Shares.Where(share => onlyCharacters is null || onlyCharacters.Contains(share.CharacterId)).Select(share => new DocumentShareDto(
             share.Id, share.CharacterId, characterNames.GetValueOrDefault(share.CharacterId, "Unknown"),
             share.Hidden, share.Locked)).ToList());
 }

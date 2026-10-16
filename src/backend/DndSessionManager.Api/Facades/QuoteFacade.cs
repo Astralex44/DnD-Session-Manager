@@ -1,3 +1,4 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Repositories;
@@ -16,10 +17,10 @@ public class QuoteFacade : IQuoteFacade
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IReadOnlyList<QuoteDto>> GetQuotesForGameAsync(Guid gameId)
+    public async Task<IReadOnlyList<QuoteDto>> GetQuotesForGameAsync(Guid gameId, GameCaller caller)
     {
         var quotes = await _unitOfWork.Quotes.GetByGameIdAsync(gameId);
-        return quotes.Select(q => ToDto(q)).ToList();
+        return quotes.Where(q => caller.IsDm || q.IsShared).Select(q => ToDto(q)).ToList();
     }
 
     public async Task<QuoteDto> CreateQuoteAsync(Guid gameId, CreateQuoteDto input)

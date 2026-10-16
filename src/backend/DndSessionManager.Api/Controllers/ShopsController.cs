@@ -13,12 +13,12 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ShopDto>>> GetAll(Guid gameId) =>
-        Ok(await shopFacade.GetShopsForGameAsync(gameId));
+        Ok(await shopFacade.GetShopsForGameAsync(gameId, HttpContext.GetGameCaller()));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ShopDto>> GetById(Guid gameId, Guid id)
     {
-        var shop = await shopFacade.GetShopAsync(gameId, id);
+        var shop = await shopFacade.GetShopAsync(gameId, id, HttpContext.GetGameCaller());
         return shop is null ? NotFound() : Ok(shop);
     }
 
@@ -46,10 +46,12 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
     [HttpPut("{id:guid}/shares/{characterId:guid}")]
     public async Task<ActionResult<ShopShareDto>> SetShare(Guid gameId, Guid id, Guid characterId, [FromBody] UpsertShopShareDto input)
     {
-        var share = await shopFacade.SetShareAsync(gameId, id, characterId, input);
+        var (share, forbidden) = await shopFacade.SetShareAsync(gameId, id, characterId, input, HttpContext.GetGameCaller());
+        if (forbidden) return Forbid();
         return share is null ? NotFound() : Ok(share);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}/shares/{characterId:guid}")]
     public async Task<IActionResult> RemoveShare(Guid gameId, Guid id, Guid characterId) =>
         await shopFacade.RemoveShareAsync(gameId, id, characterId) ? NoContent() : NotFound();
@@ -78,7 +80,8 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
     [HttpPost("{id:guid}/items/{itemId:guid}/purchases")]
     public async Task<ActionResult<PurchaseDto>> Purchase(Guid gameId, Guid id, Guid itemId, [FromBody] CreatePurchaseDto input)
     {
-        var result = await shopFacade.PurchaseAsync(gameId, id, itemId, input);
+        var (result, forbidden) = await shopFacade.PurchaseAsync(gameId, id, itemId, input, HttpContext.GetGameCaller());
+        if (forbidden) return Forbid();
         if (result is null) return NotFound();
         return result.Success ? Ok(result.Purchase) : BadRequest(new { error = result.Error });
     }

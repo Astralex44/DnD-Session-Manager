@@ -1,3 +1,4 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Hubs;
@@ -7,20 +8,31 @@ namespace DndSessionManager.Api.Facades;
 
 public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcaster) : IShopFacade
 {
-    public async Task<IReadOnlyList<ShopDto>> GetShopsForGameAsync(Guid gameId)
+    public async Task<IReadOnlyList<ShopDto>> GetShopsForGameAsync(Guid gameId, GameCaller caller)
     {
         var shops = await unitOfWork.Shops.GetByGameIdAsync(gameId);
-        var characterNames = await CharacterNamesForGameAsync(gameId);
-        return shops.Select(shop => ToDto(shop, characterNames)).ToList();
+        var characters = await unitOfWork.Characters.GetByGameIdAsync(gameId);
+        var characterNames = characters.ToDictionary(c => c.Id, c => c.Name);
+        if (caller.IsDm) return shops.Select(shop => ToDto(shop, characterNames)).ToList();
+
+        var own = OwnCharacterIds(characters, caller);
+        return shops
+            .Where(shop => shop.Shares.Any(share => own.Contains(share.CharacterId)))
+            .Select(shop => ToDto(shop, characterNames, own))
+            .ToList();
     }
 
-    public async Task<ShopDto?> GetShopAsync(Guid gameId, Guid shopId)
+    public async Task<ShopDto?> GetShopAsync(Guid gameId, Guid shopId, GameCaller caller)
     {
         var shop = await GetOwnedShopAsync(gameId, shopId);
         if (shop is null) return null;
 
-        var characterNames = await CharacterNamesForGameAsync(gameId);
-        return ToDto(shop, characterNames);
+        var characters = await unitOfWork.Characters.GetByGameIdAsync(gameId);
+        var characterNames = characters.ToDictionary(c => c.Id, c => c.Name);
+        if (caller.IsDm) return ToDto(shop, characterNames);
+
+        var own = OwnCharacterIds(characters, caller);
+        return shop.Shares.Any(share => own.Contains(share.CharacterId)) ? ToDto(shop, characterNames, own) : null;
     }
 
     public async Task<ShopDto> CreateShopAsync(Guid gameId, CreateShopDto input)
@@ -57,14 +69,17 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
         return true;
     }
 
-    public async Task<ShopShareDto?> SetShareAsync(Guid gameId, Guid shopId, Guid characterId, UpsertShopShareDto input)
+    public async Task<(ShopShareDto? Share, bool Forbidden)> SetShareAsync(
+        Guid gameId, Guid shopId, Guid characterId, UpsertShopShareDto input, GameCaller caller)
     {
-        if (await GetOwnedShopAsync(gameId, shopId) is null) return null;
+        if (await GetOwnedShopAsync(gameId, shopId) is null) return (null, false);
 
         var character = await unitOfWork.Characters.GetByIdAsync(characterId);
-        if (character is null || character.GameId != gameId) return null;
+        if (character is null || character.GameId != gameId) return (null, false);
 
         var share = await unitOfWork.ShopShares.GetByShopAndCharacterAsync(shopId, characterId);
+        if (!caller.IsDm && (character.OwnerUserId != caller.UserId || share is null)) return (null, true);
+
         if (share is null)
         {
             share = new ShopShare { Id = Guid.NewGuid(), ShopId = shopId, CharacterId = characterId };
@@ -76,7 +91,7 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
 
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "shops");
-        return new ShopShareDto(share.Id, share.CharacterId, character.Name, share.Hidden, share.Locked);
+        return (new ShopShareDto(share.Id, share.CharacterId, character.Name, share.Hidden, share.Locked), false);
     }
 
     public async Task<bool> RemoveShareAsync(Guid gameId, Guid shopId, Guid characterId)
@@ -167,14 +182,31 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
     // price component must be paid in full in its own denomination, nothing is
     // converted or substituted, and the whole check-and-debit happens in one
     // SaveChangesAsync call so it commits atomically.
-    public async Task<PurchaseResultDto?> PurchaseAsync(Guid gameId, Guid shopId, Guid itemId, CreatePurchaseDto input)
+    public async Task<(PurchaseResultDto? Result, bool Forbidden)> PurchaseAsync(
+        Guid gameId, Guid shopId, Guid itemId, CreatePurchaseDto input, GameCaller caller)
     {
-        if (await GetOwnedShopAsync(gameId, shopId) is null) return null;
+        var shop = await GetOwnedShopAsync(gameId, shopId);
+        if (shop is null) return (null, false);
         var item = await unitOfWork.ShopItems.GetByIdAsync(itemId);
-        if (item is null || item.ShopId != shopId) return null;
+        if (item is null || item.ShopId != shopId) return (null, false);
 
         var character = await unitOfWork.Characters.GetByIdAsync(input.CharacterId);
-        if (character is null || character.GameId != gameId) return null;
+        if (character is null || character.GameId != gameId) return (null, false);
+
+        if (!caller.IsDm)
+        {
+            var ownsCharacter = character.OwnerUserId == caller.UserId;
+            var sharedWithCharacter = shop.Shares.Any(share => share.CharacterId == character.Id);
+            var negotiatedPrice = input.OverridePrices is { Count: > 0 };
+            if (!ownsCharacter || !sharedWithCharacter || negotiatedPrice) return (null, true);
+        }
+
+        return (await PurchaseCheckedAsync(gameId, item, character, input), false);
+    }
+
+    private async Task<PurchaseResultDto> PurchaseCheckedAsync(Guid gameId, ShopItem item, Character character, CreatePurchaseDto input)
+    {
+        var itemId = item.Id;
 
         if (item.SaleMode == ShopSaleMode.SharedStock)
         {
@@ -276,10 +308,14 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
     private async Task<Dictionary<Guid, string>> CharacterNamesForGameAsync(Guid gameId) =>
         (await unitOfWork.Characters.GetByGameIdAsync(gameId)).ToDictionary(c => c.Id, c => c.Name);
 
-    private static ShopDto ToDto(Shop shop, IReadOnlyDictionary<Guid, string> characterNames) => new(
+    private static HashSet<Guid> OwnCharacterIds(IEnumerable<Character> characters, GameCaller caller) =>
+        characters.Where(c => c.OwnerUserId == caller.UserId).Select(c => c.Id).ToHashSet();
+
+    // onlyCharacters: a player's view — other characters' share rows left out.
+    private static ShopDto ToDto(Shop shop, IReadOnlyDictionary<Guid, string> characterNames, IReadOnlySet<Guid>? onlyCharacters = null) => new(
         shop.Id, shop.GameId, shop.Name, shop.Description,
         shop.Items.Select(ToItemDto).ToList(),
-        shop.Shares.Select(share => new ShopShareDto(
+        shop.Shares.Where(share => onlyCharacters is null || onlyCharacters.Contains(share.CharacterId)).Select(share => new ShopShareDto(
             share.Id, share.CharacterId, characterNames.GetValueOrDefault(share.CharacterId, "Unknown"),
             share.Hidden, share.Locked)).ToList());
 

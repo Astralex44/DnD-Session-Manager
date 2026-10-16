@@ -30,13 +30,15 @@ public class GameRoleHandler(IGameAccess gameAccess, IHttpContextAccessor httpCo
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, GameRoleRequirement requirement)
     {
-        var routeGameId = httpContextAccessor.HttpContext?.GetRouteValue("gameId")?.ToString();
-        if (!Guid.TryParse(routeGameId, out var gameId)) return;
+        var httpContext = httpContextAccessor.HttpContext;
+        var routeGameId = httpContext?.GetRouteValue("gameId")?.ToString();
+        if (httpContext is null || !Guid.TryParse(routeGameId, out var gameId)) return;
 
         var role = await gameAccess.GetRoleAsync(context.User, gameId);
         if (role is null) return;
         if (requirement.DmOnly && role != GameMemberRole.Dm) return;
 
+        httpContext.SetGameCaller(new GameCaller(GameAccess.GetUserId(context.User)!.Value, role.Value));
         context.Succeed(requirement);
     }
 }

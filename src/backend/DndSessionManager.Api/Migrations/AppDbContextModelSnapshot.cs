@@ -22,44 +22,6 @@ namespace DndSessionManager.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("DndSessionManager.Api.Entities.AccessLock", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CodeHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CodeSalt")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ResourceKey")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("ResourceType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GameId", "ResourceType", "ResourceKey")
-                        .IsUnique();
-
-                    b.ToTable("AccessLocks");
-                });
-
             modelBuilder.Entity("DndSessionManager.Api.Entities.Character", b =>
                 {
                     b.Property<Guid>("Id")
@@ -182,6 +144,9 @@ namespace DndSessionManager.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("PassivePerception")
                         .HasColumnType("integer");
 
@@ -230,6 +195,8 @@ namespace DndSessionManager.Api.Migrations
                     b.HasIndex("ActiveLevelSheetId");
 
                     b.HasIndex("GameId");
+
+                    b.HasIndex("OwnerUserId");
 
                     b.ToTable("Characters");
                 });
@@ -790,6 +757,9 @@ namespace DndSessionManager.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AboutCharacterId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -800,6 +770,9 @@ namespace DndSessionManager.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Text")
                         .IsRequired()
@@ -815,7 +788,13 @@ namespace DndSessionManager.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AboutCharacterId");
+
+                    b.HasIndex("OwnerUserId");
+
                     b.HasIndex("GameId", "OwnerName");
+
+                    b.HasIndex("GameId", "OwnerUserId");
 
                     b.ToTable("Notes");
                 });
@@ -1121,17 +1100,6 @@ namespace DndSessionManager.Api.Migrations
                     b.ToTable("DataProtectionKeys");
                 });
 
-            modelBuilder.Entity("DndSessionManager.Api.Entities.AccessLock", b =>
-                {
-                    b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
-                        .WithMany()
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Game");
-                });
-
             modelBuilder.Entity("DndSessionManager.Api.Entities.Character", b =>
                 {
                     b.HasOne("DndSessionManager.Api.Entities.CharacterLevelSheet", "ActiveLevelSheet")
@@ -1145,9 +1113,16 @@ namespace DndSessionManager.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DndSessionManager.Api.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("ActiveLevelSheet");
 
                     b.Navigation("Game");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.CharacterAttack", b =>
@@ -1374,13 +1349,27 @@ namespace DndSessionManager.Api.Migrations
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.Note", b =>
                 {
+                    b.HasOne("DndSessionManager.Api.Entities.Character", "AboutCharacter")
+                        .WithMany()
+                        .HasForeignKey("AboutCharacterId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DndSessionManager.Api.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("AboutCharacter");
+
                     b.Navigation("Game");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.Purchase", b =>

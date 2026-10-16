@@ -8,17 +8,19 @@ namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/sessions")]
-[Authorize(Policy = GamePolicies.Dm)]
+[Authorize(Policy = GamePolicies.Member)]
 public class SessionsController(ISessionFacade sessionFacade) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SessionDto>>> GetAll(Guid gameId) =>
-        Ok(await sessionFacade.GetSessionsForGameAsync(gameId));
+        Ok(await sessionFacade.GetSessionsForGameAsync(gameId, HttpContext.GetGameCaller()));
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost]
     public async Task<ActionResult<SessionDto>> Create(Guid gameId, [FromBody] UpsertSessionDto input) =>
         Ok(await sessionFacade.CreateSessionAsync(gameId, input));
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<SessionDto>> Update(Guid gameId, Guid id, [FromBody] UpsertSessionDto input)
     {
@@ -26,6 +28,7 @@ public class SessionsController(ISessionFacade sessionFacade) : ControllerBase
         return session is null ? NotFound() : Ok(session);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid gameId, Guid id) =>
         await sessionFacade.DeleteSessionAsync(gameId, id) ? NoContent() : NotFound();

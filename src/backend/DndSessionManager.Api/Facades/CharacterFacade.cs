@@ -1,3 +1,4 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Hubs;
@@ -5,13 +6,45 @@ using DndSessionManager.Api.Repositories;
 
 namespace DndSessionManager.Api.Facades;
 
-public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcaster, IAccessLockFacade accessLockFacade) : ICharacterFacade
+public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcaster, INoteFacade noteFacade) : ICharacterFacade
 {
-    public async Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId)
+    // A player gets only their own characters (FA-02); the DM gets all of them.
+    public async Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId, GameCaller caller)
     {
         var characters = await unitOfWork.Characters.GetByGameIdAsync(gameId);
-        var lockedKeys = await accessLockFacade.GetLockedKeysAsync(gameId, "Character");
-        return characters.Select(c => ToDto(c, lockedKeys.Contains(c.Id.ToString()))).ToList();
+        return characters
+            .Where(c => caller.IsDm || c.OwnerUserId == caller.UserId)
+            .Select(ToDto)
+            .ToList();
+    }
+
+    public async Task<(bool Exists, Guid? OwnerUserId)> GetOwnerAsync(Guid gameId, Guid characterId)
+    {
+        var character = await GetOwnedCharacterAsync(gameId, characterId);
+        return character is null ? (false, null) : (true, character.OwnerUserId);
+    }
+
+    // Assigning a pre-login character also hands its owner the old notes
+    // filed under the character's player name, and the DM the old notes
+    // filed under the character's own name (the DM's notebook on that PC).
+    public async Task<CharacterDto?> SetOwnerAsync(Guid gameId, Guid characterId, Guid? ownerUserId, GameCaller dm)
+    {
+        var character = await GetOwnedCharacterAsync(gameId, characterId);
+        if (character is null) return null;
+
+        if (ownerUserId is { } userId)
+        {
+            if (await unitOfWork.GameMembers.GetByGameAndUserAsync(gameId, userId) is null) return null;
+            await noteFacade.AdoptLegacyNotesAsync(gameId, character.PlayerName, userId, aboutCharacterId: null);
+            await noteFacade.AdoptLegacyNotesAsync(gameId, character.Name, dm.UserId, character.Id);
+        }
+
+        character.OwnerUserId = ownerUserId;
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "characters");
+
+        var reloaded = await unitOfWork.Characters.GetByIdAsync(characterId);
+        return ToDto(reloaded!);
     }
 
     public async Task<CharacterDetailDto?> GetCharacterDetailAsync(Guid gameId, Guid characterId)
@@ -20,7 +53,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         return character is null ? null : await ToDetailDtoAsync(character);
     }
 
-    public async Task<CharacterDto> CreateCharacterAsync(Guid gameId, CreateCharacterDto input)
+    public async Task<CharacterDto> CreateCharacterAsync(Guid gameId, CreateCharacterDto input, Guid ownerUserId)
     {
         var levelSheet = new CharacterLevelSheet
         {
@@ -38,6 +71,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
             Race = input.Race.Trim(),
             Class = input.Class.Trim(),
             PlayerName = input.PlayerName.Trim(),
+            OwnerUserId = ownerUserId,
             Background = input.Background,
             Alignment = input.Alignment,
             ExperiencePoints = input.ExperiencePoints,
@@ -70,7 +104,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         await unitOfWork.SaveChangesAsync();
         character.ActiveLevelSheetId = levelSheet.Id;
         await unitOfWork.SaveChangesAsync();
-        return ToDto(character, locked: false); // brand new — can't have a lock yet
+        return ToDto(character);
     }
 
     public async Task<CharacterDetailDto?> UpdateCharacterAsync(Guid gameId, Guid characterId, UpdateCharacterDto input)
@@ -133,8 +167,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         character.Status = status;
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "characters");
-        var locked = (await accessLockFacade.GetStatusAsync(gameId, "Character", characterId.ToString())).Locked;
-        return ToDto(character, locked);
+        return ToDto(character);
     }
 
     public async Task<bool> DeleteCharacterAsync(Guid gameId, Guid characterId)
@@ -527,7 +560,9 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
             character.Saves.OrderBy(s => Array.IndexOf(CharacterSheetConstants.Abilities, s.Ability))
                 .Select(s => new SaveDto(s.Id, s.Ability, s.Proficient)).ToList(),
             character.Attacks.Select(a => new AttackDto(a.Id, a.Name, a.AtkBonus, a.DamageType)).ToList(),
-            character.Items.Select(i => new ItemDto(i.Id, i.Category, i.Name, i.Quantity, i.Weight, i.Description)).ToList());
+            character.Items.Select(i => new ItemDto(i.Id, i.Category, i.Name, i.Quantity, i.Weight, i.Description)).ToList(),
+            character.OwnerUserId,
+            character.Owner?.Username);
     }
 
     private static LevelSheetDetailDto ToLevelSheetDetailDto(CharacterLevelSheet sheet) => new(
@@ -540,13 +575,9 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
     private static SpellDto ToSpellDto(CharacterSpell spell) =>
         new(spell.Id, spell.Level, spell.Name, spell.Prepared, spell.Description, spell.Url, spell.IsHomebrew);
 
-    private static CharacterDto ToDto(Character character, bool locked) => locked
-        ? new CharacterDto(
-            character.Id, character.GameId, character.Name, "", "",
-            character.PlayerName, "", 0, null,
-            0, character.ActiveLevelSheetId, null, true)
-        : new CharacterDto(
-            character.Id, character.GameId, character.Name, character.Race, character.Class,
-            character.PlayerName, character.Status, character.HpCurrent, character.ActiveLevelSheet?.HpMax,
-            character.ArmorClass, character.ActiveLevelSheetId, character.ActiveLevelSheet?.Level, false);
+    private static CharacterDto ToDto(Character character) => new(
+        character.Id, character.GameId, character.Name, character.Race, character.Class,
+        character.PlayerName, character.Status, character.HpCurrent, character.ActiveLevelSheet?.HpMax,
+        character.ArmorClass, character.ActiveLevelSheetId, character.ActiveLevelSheet?.Level,
+        character.OwnerUserId, character.Owner?.Username);
 }

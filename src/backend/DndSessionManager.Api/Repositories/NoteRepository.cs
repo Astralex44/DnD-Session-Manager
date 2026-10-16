@@ -12,10 +12,15 @@ public class NoteRepository(AppDbContext context) : INoteRepository
     public async Task<IReadOnlyList<Note>> GetAllAsync() =>
         await context.Notes.ToListAsync();
 
-    public async Task<IReadOnlyList<Note>> GetByGameAndOwnerAsync(Guid gameId, string ownerName) =>
+    public async Task<IReadOnlyList<Note>> GetByOwnerAsync(Guid gameId, Guid ownerUserId, Guid? aboutCharacterId) =>
         await context.Notes
-            .Where(note => note.GameId == gameId && note.OwnerName == ownerName)
+            .Where(note => note.GameId == gameId && note.OwnerUserId == ownerUserId && note.AboutCharacterId == aboutCharacterId)
             .OrderByDescending(note => note.UpdatedAt)
+            .ToListAsync();
+
+    public async Task<IReadOnlyList<Note>> GetUnclaimedByOwnerNameAsync(Guid gameId, string ownerName) =>
+        await context.Notes
+            .Where(note => note.GameId == gameId && note.OwnerUserId == null && note.OwnerName == ownerName)
             .ToListAsync();
 
     public Task AddAsync(Note entity) => context.Notes.AddAsync(entity).AsTask();

@@ -50,4 +50,6 @@ public record CharacterDetailDto(
     IReadOnlyList<SkillDto> Skills,
     IReadOnlyList<SaveDto> Saves,
     IReadOnlyList<AttackDto> Attacks,
-    IReadOnlyList<ItemDto> Items);
+    IReadOnlyList<ItemDto> Items,
+    Guid? OwnerUserId,
+    string? OwnerUsername);

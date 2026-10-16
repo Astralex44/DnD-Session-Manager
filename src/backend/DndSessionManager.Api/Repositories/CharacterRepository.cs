@@ -7,6 +7,7 @@ namespace DndSessionManager.Api.Repositories;
 public class CharacterRepository(AppDbContext context) : ICharacterRepository
 {
     public Task<Character?> GetByIdAsync(Guid id) => context.Characters
+        .Include(character => character.Owner)
         .Include(character => character.ActiveLevelSheet)
         .Include(character => character.Skills)
         .Include(character => character.Saves)
@@ -20,6 +21,7 @@ public class CharacterRepository(AppDbContext context) : ICharacterRepository
 
     public async Task<IReadOnlyList<Character>> GetByGameIdAsync(Guid gameId) => await context.Characters
         .Where(character => character.GameId == gameId)
+        .Include(character => character.Owner)
         .Include(character => character.ActiveLevelSheet)
         .OrderBy(character => character.Name).ToListAsync();
 

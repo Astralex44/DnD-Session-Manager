@@ -13,12 +13,12 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<DocumentDto>>> GetAll(Guid gameId) =>
-        Ok(await documentFacade.GetDocumentsForGameAsync(gameId));
+        Ok(await documentFacade.GetDocumentsForGameAsync(gameId, HttpContext.GetGameCaller()));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<DocumentDto>> GetById(Guid gameId, Guid id)
     {
-        var document = await documentFacade.GetDocumentAsync(gameId, id);
+        var document = await documentFacade.GetDocumentAsync(gameId, id, HttpContext.GetGameCaller());
         return document is null ? NotFound() : Ok(document);
     }
 
@@ -46,10 +46,12 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
     [HttpPut("{id:guid}/shares/{characterId:guid}")]
     public async Task<ActionResult<DocumentShareDto>> SetShare(Guid gameId, Guid id, Guid characterId, [FromBody] UpsertDocumentShareDto input)
     {
-        var share = await documentFacade.SetShareAsync(gameId, id, characterId, input);
+        var (share, forbidden) = await documentFacade.SetShareAsync(gameId, id, characterId, input, HttpContext.GetGameCaller());
+        if (forbidden) return Forbid();
         return share is null ? NotFound() : Ok(share);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}/shares/{characterId:guid}")]
     public async Task<IActionResult> RemoveShare(Guid gameId, Guid id, Guid characterId) =>
         await documentFacade.RemoveShareAsync(gameId, id, characterId) ? NoContent() : NotFound();

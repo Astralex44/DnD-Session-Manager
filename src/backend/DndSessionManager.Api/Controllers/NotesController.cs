@@ -6,46 +6,36 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
+// Always the caller's own notes — whose notebook is decided by the login, not
+// by anything in the URL. ?aboutCharacterId= picks the DM's notebook on one
+// player character (DM only; 403 for anyone else).
 [ApiController]
 [Route("api/games/{gameId:guid}/notes")]
 [Authorize(Policy = GamePolicies.Member)]
-public class NotesController(INoteFacade noteFacade, IAccessLockFacade accessLockFacade) : ControllerBase
+public class NotesController(INoteFacade noteFacade) : ControllerBase
 {
-    [HttpGet("{owner}")]
-    public async Task<ActionResult<IReadOnlyList<NoteDto>>> GetAll(Guid gameId, string owner)
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<NoteDto>>> GetAll(Guid gameId, [FromQuery] Guid? aboutCharacterId)
     {
-        if (!await HasAccessAsync(gameId, owner)) return StatusCode(403);
-
-        return Ok(await noteFacade.GetNotesForOwnerAsync(gameId, owner));
+        var notes = await noteFacade.GetNotesAsync(gameId, HttpContext.GetGameCaller(), aboutCharacterId);
+        return notes is null ? Forbid() : Ok(notes);
     }
 
-    [HttpPost("{owner}")]
-    public async Task<ActionResult<NoteDto>> Create(Guid gameId, string owner, [FromBody] UpsertNoteDto input)
+    [HttpPost]
+    public async Task<ActionResult<NoteDto>> Create(Guid gameId, [FromQuery] Guid? aboutCharacterId, [FromBody] UpsertNoteDto input)
     {
-        if (!await HasAccessAsync(gameId, owner)) return StatusCode(403);
-
-        return Ok(await noteFacade.CreateNoteAsync(gameId, owner, input));
+        var note = await noteFacade.CreateNoteAsync(gameId, HttpContext.GetGameCaller(), aboutCharacterId, input);
+        return note is null ? Forbid() : Ok(note);
     }
 
-    [HttpPut("{owner}/{noteId:guid}")]
-    public async Task<ActionResult<NoteDto>> Update(Guid gameId, string owner, Guid noteId, [FromBody] UpsertNoteDto input)
+    [HttpPut("{noteId:guid}")]
+    public async Task<ActionResult<NoteDto>> Update(Guid gameId, Guid noteId, [FromBody] UpsertNoteDto input)
     {
-        if (!await HasAccessAsync(gameId, owner)) return StatusCode(403);
-
-        var note = await noteFacade.UpdateNoteAsync(gameId, owner, noteId, input);
+        var note = await noteFacade.UpdateNoteAsync(gameId, HttpContext.GetGameCaller(), noteId, input);
         return note is null ? NotFound() : Ok(note);
     }
 
-    [HttpDelete("{owner}/{noteId:guid}")]
-    public async Task<IActionResult> Delete(Guid gameId, string owner, Guid noteId)
-    {
-        if (!await HasAccessAsync(gameId, owner)) return StatusCode(403);
-
-        return await noteFacade.DeleteNoteAsync(gameId, owner, noteId) ? NoContent() : NotFound();
-    }
-
-    // See CharactersController.HasAccessAsync — same temporary, simple lock
-    // mechanism, keyed by the owner bucket name instead of a character id.
-    private Task<bool> HasAccessAsync(Guid gameId, string owner) =>
-        accessLockFacade.VerifyCodeAsync(gameId, "NotesOwner", owner, Request.Headers["X-Access-Code"]);
+    [HttpDelete("{noteId:guid}")]
+    public async Task<IActionResult> Delete(Guid gameId, Guid noteId) =>
+        await noteFacade.DeleteNoteAsync(gameId, HttpContext.GetGameCaller(), noteId) ? NoContent() : NotFound();
 }

@@ -37,7 +37,6 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<InitiativeState> InitiativeStates => Set<InitiativeState>();
     public DbSet<GameTimer> GameTimers => Set<GameTimer>();
     public DbSet<SessionMonster> SessionMonsters => Set<SessionMonster>();
-    public DbSet<AccessLock> AccessLocks => Set<AccessLock>();
     public DbSet<User> Users => Set<User>();
     public DbSet<GameMember> GameMembers => Set<GameMember>();
     public DbSet<GameInvite> GameInvites => Set<GameInvite>();
@@ -89,6 +88,10 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             entity.Property(character => character.Class).IsRequired().HasMaxLength(100);
             entity.Property(character => character.PlayerName).HasMaxLength(200);
             entity.Property(character => character.Status).IsRequired().HasMaxLength(30);
+            entity.HasOne(character => character.Owner)
+                  .WithMany()
+                  .HasForeignKey(character => character.OwnerUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(character => character.Game)
                   .WithMany()
                   .HasForeignKey(character => character.GameId)
@@ -300,6 +303,15 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             entity.Property(note => note.Title).IsRequired().HasMaxLength(200);
             // Not unique — a person can have many pages now, not just one.
             entity.HasIndex(note => new { note.GameId, note.OwnerName });
+            entity.HasIndex(note => new { note.GameId, note.OwnerUserId });
+            entity.HasOne(note => note.Owner)
+                  .WithMany()
+                  .HasForeignKey(note => note.OwnerUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(note => note.AboutCharacter)
+                  .WithMany()
+                  .HasForeignKey(note => note.AboutCharacterId)
+                  .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(note => note.Game)
                   .WithMany()
                   .HasForeignKey(note => note.GameId)
@@ -344,19 +356,6 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
                   .WithMany()
                   .HasForeignKey(m => m.MonsterId)
                   .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<AccessLock>(entity =>
-        {
-            entity.Property(l => l.ResourceType).IsRequired().HasMaxLength(50);
-            entity.Property(l => l.ResourceKey).IsRequired().HasMaxLength(200);
-            entity.Property(l => l.CodeHash).IsRequired();
-            entity.Property(l => l.CodeSalt).IsRequired();
-            entity.HasIndex(l => new { l.GameId, l.ResourceType, l.ResourceKey }).IsUnique();
-            entity.HasOne(l => l.Game)
-                  .WithMany()
-                  .HasForeignKey(l => l.GameId)
-                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<User>(entity =>

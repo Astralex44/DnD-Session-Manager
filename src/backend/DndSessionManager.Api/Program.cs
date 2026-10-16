@@ -55,7 +55,6 @@ builder.Services.AddScoped<IInitiativeEntryRepository, InitiativeEntryRepository
 builder.Services.AddScoped<IInitiativeStateRepository, InitiativeStateRepository>();
 builder.Services.AddScoped<IGameTimerRepository, GameTimerRepository>();
 builder.Services.AddScoped<ISessionMonsterRepository, SessionMonsterRepository>();
-builder.Services.AddScoped<IAccessLockRepository, AccessLockRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGameMemberRepository, GameMemberRepository>();
 builder.Services.AddScoped<IGameInviteRepository, GameInviteRepository>();
@@ -73,7 +72,6 @@ builder.Services.AddScoped<INoteFacade, NoteFacade>();
 builder.Services.AddScoped<IInitiativeFacade, InitiativeFacade>();
 builder.Services.AddScoped<IGameTimerFacade, GameTimerFacade>();
 builder.Services.AddScoped<ISessionMonsterFacade, SessionMonsterFacade>();
-builder.Services.AddScoped<IAccessLockFacade, AccessLockFacade>();
 builder.Services.AddScoped<IAuthFacade, AuthFacade>();
 builder.Services.AddScoped<IGameAccessListFacade, GameAccessListFacade>();
 builder.Services.AddScoped<IGameAccess, GameAccess>();

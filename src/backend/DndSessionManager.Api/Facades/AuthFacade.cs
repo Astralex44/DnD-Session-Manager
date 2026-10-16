@@ -10,7 +10,7 @@ namespace DndSessionManager.Api.Facades;
 //   2. Already a member → in, with whatever role they have.
 //   3. Discord handle matches a GameInvite → becomes a Player, invite used up.
 //   4. Anything else → null. Nothing is stored about strangers.
-public class AuthFacade(IUnitOfWork unitOfWork, IConfiguration configuration) : IAuthFacade
+public class AuthFacade(IUnitOfWork unitOfWork, IConfiguration configuration, INoteFacade noteFacade) : IAuthFacade
 {
     public async Task<(User User, GameMember Membership)?> SignInAsync(
         string discordId, string discordHandle, string displayName, string? avatarUrl)
@@ -57,6 +57,10 @@ public class AuthFacade(IUnitOfWork unitOfWork, IConfiguration configuration) : 
         {
             membership.Role = GameMemberRole.Dm;
         }
+
+        // The DM's pre-login notebook ("DM" bucket) becomes this account's.
+        if (membership.Role == GameMemberRole.Dm)
+            await noteFacade.AdoptLegacyNotesAsync(DemoGame.Id, "DM", user.Id, aboutCharacterId: null);
 
         // Used up either way — a leftover invite for someone already in the
         // game would just show up as a stale "pending" entry on the DM's list.
