@@ -4,6 +4,8 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.1.0-alpha.9 — 2026-10-16
+
 ### Added
 - **Log in with Discord.** The game is invite-only: the DM invites players by Discord username on the new
   **Players** page, and anyone not invited sees a "not invited yet" page instead of the app.
