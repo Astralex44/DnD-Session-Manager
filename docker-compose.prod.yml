@@ -33,6 +33,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=dndsessionmanager;Username=postgres;Password=${DND_DB_PASSWORD}"
       Cors__AllowedOrigins__0: "${DND_CORS_ORIGIN}"
+      Authentication__Discord__ClientId: "${DND_DISCORD_CLIENT_ID}"
+      Authentication__Discord__ClientSecret: "${DND_DISCORD_CLIENT_SECRET}"
     volumes:
       - dnd-uploads:/app/uploads
     depends_on:

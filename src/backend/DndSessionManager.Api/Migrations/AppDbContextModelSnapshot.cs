@@ -614,6 +614,36 @@ namespace DndSessionManager.Api.Migrations
                     b.ToTable("Games");
                 });
 
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GameId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("GameMembers");
+                });
+
             modelBuilder.Entity("DndSessionManager.Api.Entities.GameTimer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1012,6 +1042,55 @@ namespace DndSessionManager.Api.Migrations
                     b.ToTable("ShopShares");
                 });
 
+            modelBuilder.Entity("DndSessionManager.Api.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiscordId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiscordId")
+                        .IsUnique();
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("DndSessionManager.Api.Entities.AccessLock", b =>
                 {
                     b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
@@ -1187,6 +1266,25 @@ namespace DndSessionManager.Api.Migrations
                     b.Navigation("Character");
 
                     b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameMember", b =>
+                {
+                    b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
+                        .WithMany("Members")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DndSessionManager.Api.Entities.User", "User")
+                        .WithMany("Memberships")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.GameTimer", b =>
@@ -1408,6 +1506,8 @@ namespace DndSessionManager.Api.Migrations
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.Game", b =>
                 {
+                    b.Navigation("Members");
+
                     b.Navigation("Quotes");
                 });
 
@@ -1421,6 +1521,11 @@ namespace DndSessionManager.Api.Migrations
             modelBuilder.Entity("DndSessionManager.Api.Entities.ShopItem", b =>
                 {
                     b.Navigation("Prices");
+                });
+
+            modelBuilder.Entity("DndSessionManager.Api.Entities.User", b =>
+                {
+                    b.Navigation("Memberships");
                 });
 #pragma warning restore 612, 618
         }

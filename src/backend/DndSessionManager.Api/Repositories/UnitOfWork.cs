@@ -34,7 +34,9 @@ public class UnitOfWork : IUnitOfWork
         IInitiativeStateRepository initiativeStates,
         IGameTimerRepository gameTimers,
         ISessionMonsterRepository sessionMonsters,
-        IAccessLockRepository accessLocks)
+        IAccessLockRepository accessLocks,
+        IUserRepository users,
+        IGameMemberRepository gameMembers)
     {
         _context = context;
         Quotes = quotes;
@@ -64,6 +66,8 @@ public class UnitOfWork : IUnitOfWork
         GameTimers = gameTimers;
         SessionMonsters = sessionMonsters;
         AccessLocks = accessLocks;
+        Users = users;
+        GameMembers = gameMembers;
     }
 
     public IQuoteRepository Quotes { get; }
@@ -93,6 +97,8 @@ public class UnitOfWork : IUnitOfWork
     public IGameTimerRepository GameTimers { get; }
     public ISessionMonsterRepository SessionMonsters { get; }
     public IAccessLockRepository AccessLocks { get; }
+    public IUserRepository Users { get; }
+    public IGameMemberRepository GameMembers { get; }
 
     public async Task<int> SaveChangesAsync() =>
         await _context.SaveChangesAsync();

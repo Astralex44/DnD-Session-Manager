@@ -29,6 +29,8 @@ public interface IUnitOfWork
     IGameTimerRepository GameTimers { get; }
     ISessionMonsterRepository SessionMonsters { get; }
     IAccessLockRepository AccessLocks { get; }
+    IUserRepository Users { get; }
+    IGameMemberRepository GameMembers { get; }
 
     // As more vertical slices get built, their repositories get added here
     // too. A facade that touches multiple repositories (e.g. ShopFacade.Purchase,

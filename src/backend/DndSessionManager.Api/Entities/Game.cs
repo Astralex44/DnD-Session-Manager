@@ -9,4 +9,5 @@ public class Game
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Quote> Quotes { get; set; } = new List<Quote>();
+    public ICollection<GameMember> Members { get; set; } = new List<GameMember>();
 }

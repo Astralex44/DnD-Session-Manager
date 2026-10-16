@@ -1,9 +1,10 @@
 using DndSessionManager.Api.Entities;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DndSessionManager.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : DbContext, IDataProtectionKeyContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
@@ -37,6 +38,13 @@ public class AppDbContext : DbContext
     public DbSet<GameTimer> GameTimers => Set<GameTimer>();
     public DbSet<SessionMonster> SessionMonsters => Set<SessionMonster>();
     public DbSet<AccessLock> AccessLocks => Set<AccessLock>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<GameMember> GameMembers => Set<GameMember>();
+
+    // Key ring for the auth cookie's encryption (see Program.cs). Lives in
+    // Postgres so it survives container rebuilds — otherwise every deploy
+    // would silently log every player out.
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     // As more entities from the ERD get their own vertical slice, they get
     // added here (DbSet<Character>, DbSet<Document>, ...) and configured below.
@@ -347,6 +355,27 @@ public class AppDbContext : DbContext
             entity.HasOne(l => l.Game)
                   .WithMany()
                   .HasForeignKey(l => l.GameId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(u => u.DiscordId).IsRequired().HasMaxLength(50);
+            entity.Property(u => u.Username).IsRequired().HasMaxLength(100);
+            entity.HasIndex(u => u.DiscordId).IsUnique();
+        });
+
+        modelBuilder.Entity<GameMember>(entity =>
+        {
+            entity.Property(m => m.Role).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(m => new { m.GameId, m.UserId }).IsUnique();
+            entity.HasOne(m => m.Game)
+                  .WithMany(g => g.Members)
+                  .HasForeignKey(m => m.GameId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(m => m.User)
+                  .WithMany(u => u.Memberships)
+                  .HasForeignKey(m => m.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -1,9 +1,15 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
 using DndSessionManager.Api.Data;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Facades;
 using DndSessionManager.Api.Hubs;
 using DndSessionManager.Api.Repositories;
 using DndSessionManager.Api.Storage;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
 
@@ -47,6 +53,8 @@ builder.Services.AddScoped<IInitiativeStateRepository, InitiativeStateRepository
 builder.Services.AddScoped<IGameTimerRepository, GameTimerRepository>();
 builder.Services.AddScoped<ISessionMonsterRepository, SessionMonsterRepository>();
 builder.Services.AddScoped<IAccessLockRepository, AccessLockRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IGameMemberRepository, GameMemberRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Facades — business logic layer, one per entity/feature area.
@@ -62,9 +70,108 @@ builder.Services.AddScoped<IInitiativeFacade, InitiativeFacade>();
 builder.Services.AddScoped<IGameTimerFacade, GameTimerFacade>();
 builder.Services.AddScoped<ISessionMonsterFacade, SessionMonsterFacade>();
 builder.Services.AddScoped<IAccessLockFacade, AccessLockFacade>();
+builder.Services.AddScoped<IAuthFacade, AuthFacade>();
 builder.Services.AddSingleton<IDocumentFileStorage, DocumentFileStorage>();
 builder.Services.AddSingleton<IMonsterFileStorage, MonsterFileStorage>();
 builder.Services.AddSingleton<IGameEventsBroadcaster, GameEventsBroadcaster>();
+
+// The auth cookie is encrypted with Data Protection keys. By default those
+// live inside the container and die with it, so every deploy would log
+// everyone out — persist them in Postgres instead. Fixed application name so
+// a rebuilt container recognizes the same key ring.
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AppDbContext>()
+    .SetApplicationName("DndSessionManager");
+
+// Release 1 auth (see the repo's Entscheidungs-Log — Discord OAuth only,
+// Google/multi-provider deferred until after v1 ships). Cookie holds our own
+// session; the Discord OAuth handshake only runs once, at login, to resolve
+// who the person is (AuthFacade.FindOrCreateUserAsync).
+//
+// Discord scheme is only registered once real credentials exist. ASP.NET
+// Core's auth middleware eagerly validates every registered scheme's options
+// on *every* request (it has to check each remote handler's CallbackPath),
+// so an OAuth scheme with an empty ClientId throws on every single request
+// in the app, not just at login — this isn't optional, it's what keeps the
+// rest of the API alive before Severin has a Discord app registered.
+var discordClientId = builder.Configuration["Authentication:Discord:ClientId"];
+var discordClientSecret = builder.Configuration["Authentication:Discord:ClientSecret"];
+var discordConfigured = !string.IsNullOrEmpty(discordClientId) && !string.IsNullOrEmpty(discordClientSecret);
+
+var authenticationBuilder = builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    if (discordConfigured) options.DefaultChallengeScheme = "Discord";
+})
+.AddCookie(options =>
+{
+    // Frontend and API live on different subdomains (dnd.astralex.dev /
+    // dnd-api.astralex.dev) in prod, and different localhost ports in dev —
+    // both need a cross-site cookie. SameAsRequest keeps Secure correct in
+    // both http-local-dev and https-prod without two separate configs.
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+    // This is an API, not an MVC app — an unauthenticated [Authorize] request
+    // should get a plain 401/403, never the default redirect-to-a-login-page
+    // behavior the cookie handler assumes by default.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+if (discordConfigured)
+{
+    authenticationBuilder.AddOAuth("Discord", options =>
+    {
+        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.ClientId = discordClientId!;
+        options.ClientSecret = discordClientSecret!;
+        options.CallbackPath = "/api/auth/discord/callback";
+        options.AuthorizationEndpoint = "https://discord.com/api/oauth2/authorize";
+        options.TokenEndpoint = "https://discord.com/api/oauth2/token";
+        options.UserInformationEndpoint = "https://discord.com/api/users/@me";
+        options.Scope.Add("identify");
+
+        options.Events = new OAuthEvents
+        {
+            OnCreatingTicket = async context =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, options.UserInformationEndpoint);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+                var response = await context.Backchannel.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+                response.EnsureSuccessStatusCode();
+                var profile = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+                var discordId = profile.GetProperty("id").GetString()!;
+                var username = profile.TryGetProperty("global_name", out var globalName) && globalName.ValueKind == JsonValueKind.String
+                    ? globalName.GetString()!
+                    : profile.GetProperty("username").GetString()!;
+                var avatarUrl = profile.TryGetProperty("avatar", out var avatar) && avatar.ValueKind == JsonValueKind.String
+                    ? $"https://cdn.discordapp.com/avatars/{discordId}/{avatar.GetString()}.png"
+                    : null;
+
+                var authFacade = context.HttpContext.RequestServices.GetRequiredService<IAuthFacade>();
+                var (user, membership) = await authFacade.FindOrCreateUserAsync(discordId, username, avatarUrl);
+
+                context.Identity!.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                context.Identity!.AddClaim(new Claim(ClaimTypes.Name, user.Username));
+                context.Identity!.AddClaim(new Claim("discord_id", discordId));
+                context.Identity!.AddClaim(new Claim("role", membership.Role.ToString()));
+            },
+        };
+    });
+}
+builder.Services.AddAuthorization();
 
 // Allows localhost, any private-LAN origin (not just one hardcoded IP — other
 // players' phones/laptops on the same WiFi can reach the API when the
@@ -113,12 +220,11 @@ using (var scope = app.Services.CreateScope())
 
     // QuotesPage uses this fixed game until the game selection flow exists.
     // Seed it only for local development so the foreign key remains valid.
-    var demoGameId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    if (app.Environment.IsDevelopment() && !dbContext.Games.Any(game => game.Id == demoGameId))
+    if (app.Environment.IsDevelopment() && !dbContext.Games.Any(game => game.Id == DemoGame.Id))
     {
         dbContext.Games.Add(new Game
         {
-            Id = demoGameId,
+            Id = DemoGame.Id,
             Name = "Demo Game",
             CreatedAt = DateTime.UtcNow,
         });
@@ -133,6 +239,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Frontend");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<GameHub>("/hubs/game");
