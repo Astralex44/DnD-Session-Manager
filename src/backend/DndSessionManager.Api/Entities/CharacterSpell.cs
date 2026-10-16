@@ -8,6 +8,7 @@ public class CharacterSpell
     public string Name { get; set; } = string.Empty;
     public bool Prepared { get; set; }
     public string? Description { get; set; }
+    public string? Url { get; set; }
     public bool IsHomebrew { get; set; }
     public CharacterLevelSheet? LevelSheet { get; set; }
 }

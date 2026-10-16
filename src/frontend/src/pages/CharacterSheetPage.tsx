@@ -90,7 +90,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const [newAttack, setNewAttack] = useState<CreateAttackInput>({ name: '', atkBonus: '', damageType: '' });
   const [newItem, setNewItem] = useState<CreateItemInput>({ category: '', name: '', quantity: 1, weight: 0, description: '' });
   const [itemQtyDrafts, setItemQtyDrafts] = useState<Record<string, number>>({});
-  const [newSpell, setNewSpell] = useState<CreateSpellInput>({ level: 0, name: '', prepared: false, description: '', isHomebrew: false });
+  const [newSpell, setNewSpell] = useState<CreateSpellInput>({ level: 0, name: '', prepared: false, description: '', url: '', isHomebrew: false });
   const [openSpellId, setOpenSpellId] = useState<string | null>(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpForm, setLevelUpForm] = useState<CreateLevelSheetInput | null>(null);
@@ -232,7 +232,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   async function handleAddSpellRow() {
     if (!newSpell.name.trim() || !sheet) return;
     await addSpell(DEMO_GAME_ID, characterId, sheet.id, newSpell);
-    setNewSpell({ level: 0, name: '', prepared: false, description: '', isHomebrew: false });
+    setNewSpell({ level: 0, name: '', prepared: false, description: '', url: '', isHomebrew: false });
   }
 
   function handleHpMaxBlur(value: number) {
@@ -636,14 +636,17 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                 />
                 <span
                   className={`spell-name${spell.isHomebrew ? ' homebrew' : ''}`}
-                  onClick={() => spell.isHomebrew && setOpenSpellId(openSpellId === spell.id ? null : spell.id)}
+                  onClick={() => (spell.description || spell.url) && setOpenSpellId(openSpellId === spell.id ? null : spell.id)}
                 >
                   Lv{spell.level} {spell.name}
                 </span>
                 <button className="row-remove" onClick={() => removeSpell(DEMO_GAME_ID, characterId, sheet.id, spell.id)}>✕</button>
               </div>
-              {spell.isHomebrew && openSpellId === spell.id && (
-                <div className="spell-desc">{spell.description || 'No description.'}</div>
+              {openSpellId === spell.id && (spell.description || spell.url) && (
+                <div className="spell-desc">
+                  {spell.description && <div>{spell.description}</div>}
+                  {spell.url && <a href={spell.url} target="_blank" rel="noreferrer">{spell.url}</a>}
+                </div>
               )}
             </div>
           ))}
@@ -656,12 +659,14 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
             </label>
             <button onClick={handleAddSpellRow}>+ Add</button>
           </div>
-          {newSpell.isHomebrew && (
-            <div className="field full" style={{ marginTop: 8 }}>
-              <label>Homebrew Description</label>
-              <textarea value={newSpell.description ?? ''} onChange={(e) => setNewSpell({ ...newSpell, description: e.target.value })} />
-            </div>
-          )}
+          <div className="field full" style={{ marginTop: 8 }}>
+            <label>Description</label>
+            <textarea value={newSpell.description ?? ''} onChange={(e) => setNewSpell({ ...newSpell, description: e.target.value })} />
+          </div>
+          <div className="field full">
+            <label>URL</label>
+            <input placeholder="https://..." value={newSpell.url ?? ''} onChange={(e) => setNewSpell({ ...newSpell, url: e.target.value })} />
+          </div>
 
           <p className="subhead">Spell Slots</p>
           <div className="calc-row">

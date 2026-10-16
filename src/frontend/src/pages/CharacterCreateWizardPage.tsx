@@ -38,6 +38,7 @@ interface SpellDraft {
   level: number;
   isHomebrew: boolean;
   description: string;
+  url: string;
 }
 
 const STEPS = ['Basics', 'Abilities', 'Skills & Saves', 'Equipment', 'Features', 'Attacks', 'Magic', 'Personality'];
@@ -94,11 +95,13 @@ export function CharacterCreateWizardPage() {
   const [newCantrip, setNewCantrip] = useState('');
   const [newCantripHomebrew, setNewCantripHomebrew] = useState(false);
   const [newCantripDesc, setNewCantripDesc] = useState('');
+  const [newCantripUrl, setNewCantripUrl] = useState('');
   const [spells, setSpells] = useState<SpellDraft[]>([]);
   const [newSpell, setNewSpell] = useState('');
   const [newSpellLevel, setNewSpellLevel] = useState(1);
   const [newSpellHomebrew, setNewSpellHomebrew] = useState(false);
   const [newSpellDesc, setNewSpellDesc] = useState('');
+  const [newSpellUrl, setNewSpellUrl] = useState('');
 
   // Step 7
   const [personalityTraits, setPersonalityTraits] = useState('');
@@ -177,12 +180,12 @@ export function CharacterCreateWizardPage() {
         });
         for (const c of cantrips) {
           await addSpell(DEMO_GAME_ID, created.id, sheetId, {
-            level: 0, name: c.name, prepared: false, isHomebrew: c.isHomebrew, description: c.isHomebrew ? c.description : null,
+            level: 0, name: c.name, prepared: false, isHomebrew: c.isHomebrew, description: c.description || null, url: c.url || null,
           });
         }
         for (const s of spells) {
           await addSpell(DEMO_GAME_ID, created.id, sheetId, {
-            level: s.level, name: s.name, prepared: false, isHomebrew: s.isHomebrew, description: s.isHomebrew ? s.description : null,
+            level: s.level, name: s.name, prepared: false, isHomebrew: s.isHomebrew, description: s.description || null, url: s.url || null,
           });
         }
       }
@@ -220,14 +223,14 @@ export function CharacterCreateWizardPage() {
 
   function handleAddCantrip() {
     if (!newCantrip.trim()) return;
-    setCantrips((s) => [...s, { name: newCantrip.trim(), level: 0, isHomebrew: newCantripHomebrew, description: newCantripDesc }]);
-    setNewCantrip(''); setNewCantripHomebrew(false); setNewCantripDesc('');
+    setCantrips((s) => [...s, { name: newCantrip.trim(), level: 0, isHomebrew: newCantripHomebrew, description: newCantripDesc, url: newCantripUrl }]);
+    setNewCantrip(''); setNewCantripHomebrew(false); setNewCantripDesc(''); setNewCantripUrl('');
   }
 
   function handleAddSpell() {
     if (!newSpell.trim()) return;
-    setSpells((s) => [...s, { name: newSpell.trim(), level: newSpellLevel, isHomebrew: newSpellHomebrew, description: newSpellDesc }]);
-    setNewSpell(''); setNewSpellHomebrew(false); setNewSpellDesc('');
+    setSpells((s) => [...s, { name: newSpell.trim(), level: newSpellLevel, isHomebrew: newSpellHomebrew, description: newSpellDesc, url: newSpellUrl }]);
+    setNewSpell(''); setNewSpellHomebrew(false); setNewSpellDesc(''); setNewSpellUrl('');
   }
 
   function onEnter(fn: () => void) {
@@ -480,11 +483,10 @@ export function CharacterCreateWizardPage() {
                 <input type="checkbox" checked={newCantripHomebrew} onChange={(e) => setNewCantripHomebrew(e.target.checked)} />
                 This is homebrew, not from an official rulebook
               </label>
-              {newCantripHomebrew && (
-                <div className="homebrew-desc-row">
-                  <textarea value={newCantripDesc} onChange={(e) => setNewCantripDesc(e.target.value)} placeholder="Short description of what it does" />
-                </div>
-              )}
+              <div className="homebrew-desc-row">
+                <textarea value={newCantripDesc} onChange={(e) => setNewCantripDesc(e.target.value)} placeholder="Description (optional)" />
+                <input value={newCantripUrl} onChange={(e) => setNewCantripUrl(e.target.value)} placeholder="URL (optional)" />
+              </div>
 
               <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>Leveled spells — require spell slots, some need to be prepared</p>
               <div className="equip-list">
@@ -507,11 +509,10 @@ export function CharacterCreateWizardPage() {
                 <input type="checkbox" checked={newSpellHomebrew} onChange={(e) => setNewSpellHomebrew(e.target.checked)} />
                 This is homebrew, not from an official rulebook
               </label>
-              {newSpellHomebrew && (
-                <div className="homebrew-desc-row">
-                  <textarea value={newSpellDesc} onChange={(e) => setNewSpellDesc(e.target.value)} placeholder="Short description of what it does" />
-                </div>
-              )}
+              <div className="homebrew-desc-row">
+                <textarea value={newSpellDesc} onChange={(e) => setNewSpellDesc(e.target.value)} placeholder="Description (optional)" />
+                <input value={newSpellUrl} onChange={(e) => setNewSpellUrl(e.target.value)} placeholder="URL (optional)" />
+              </div>
             </>
           )}
         </div>

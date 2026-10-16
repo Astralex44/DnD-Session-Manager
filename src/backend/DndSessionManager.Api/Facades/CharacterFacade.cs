@@ -321,6 +321,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
                         Name = previousSpell.Name,
                         Prepared = previousSpell.Prepared,
                         Description = previousSpell.Description,
+                        Url = previousSpell.Url,
                         IsHomebrew = previousSpell.IsHomebrew,
                     });
                 }
@@ -424,7 +425,8 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
             Level = input.Level,
             Name = input.Name.Trim(),
             Prepared = input.Prepared,
-            Description = input.IsHomebrew ? input.Description : null,
+            Description = input.Description,
+            Url = input.Url,
             IsHomebrew = input.IsHomebrew,
         };
         await unitOfWork.CharacterSpells.AddAsync(spell);
@@ -536,7 +538,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         sheet.SpellSlots.OrderBy(s => s.Level).Select(s => new SpellSlotDto(s.Id, s.Level, s.Total, s.Expended)).ToList());
 
     private static SpellDto ToSpellDto(CharacterSpell spell) =>
-        new(spell.Id, spell.Level, spell.Name, spell.Prepared, spell.Description, spell.IsHomebrew);
+        new(spell.Id, spell.Level, spell.Name, spell.Prepared, spell.Description, spell.Url, spell.IsHomebrew);
 
     private static CharacterDto ToDto(Character character, bool locked) => locked
         ? new CharacterDto(

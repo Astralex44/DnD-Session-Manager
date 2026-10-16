@@ -59,6 +59,7 @@ export interface Spell {
   name: string;
   prepared: boolean;
   description: string | null;
+  url: string | null;
   isHomebrew: boolean;
 }
 
@@ -204,6 +205,7 @@ export interface CreateSpellInput {
   name: string;
   prepared: boolean;
   description: string | null;
+  url: string | null;
   isHomebrew: boolean;
 }
 

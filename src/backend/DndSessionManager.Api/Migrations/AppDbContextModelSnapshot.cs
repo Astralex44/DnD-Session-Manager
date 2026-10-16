@@ -426,6 +426,9 @@ namespace DndSessionManager.Api.Migrations
                     b.Property<bool>("Prepared")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Url")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("LevelSheetId");

@@ -8,5 +8,6 @@ public class CreateSpellDto
     [Required, MaxLength(200)] public string Name { get; set; } = string.Empty;
     public bool Prepared { get; set; }
     public string? Description { get; set; }
+    [Url, MaxLength(500)] public string? Url { get; set; }
     public bool IsHomebrew { get; set; }
 }

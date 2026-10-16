@@ -330,9 +330,13 @@ public class CharacterSheetDocument(CharacterDetailDto character) : IDocument
                 var prefix = showLevel ? $"Lv{spell.Level} " : "";
                 var homebrew = spell.IsHomebrew ? " (Homebrew)" : "";
                 list.Item().Text($"{(spell.Prepared ? "●" : "○")} {prefix}{spell.Name}{homebrew}").FontSize(9.5f);
-                if (spell.IsHomebrew && !string.IsNullOrWhiteSpace(spell.Description))
+                if (!string.IsNullOrWhiteSpace(spell.Description))
                 {
                     list.Item().PaddingLeft(14).PaddingBottom(2).Text(spell.Description).FontSize(8.5f).Italic().FontColor(TextMuted);
+                }
+                if (!string.IsNullOrWhiteSpace(spell.Url))
+                {
+                    list.Item().PaddingLeft(14).PaddingBottom(2).Text(spell.Url).FontSize(8.5f).FontColor(TextMuted);
                 }
             }
         });
