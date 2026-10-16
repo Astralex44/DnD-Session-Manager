@@ -10,13 +10,19 @@ namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthFacade authFacade) : ControllerBase
+public class AuthController(IAuthFacade authFacade, IConfiguration configuration) : ControllerBase
 {
-    // Kicks off the Discord OAuth handshake — AuthenticationHandler.OnCreatingTicket
-    // (see Program.cs) does the actual find-or-create and signs the cookie.
+    // Kicks off the Discord OAuth handshake — OnCreatingTicket (see Program.cs)
+    // applies the login rules and signs the cookie. returnUrl is a frontend
+    // path only ("/board"); anything else is ignored so this can't be used as
+    // an open redirect to another site.
     [HttpGet("login")]
-    public IActionResult Login([FromQuery] string? returnUrl) =>
-        Challenge(new AuthenticationProperties { RedirectUri = returnUrl ?? "/" }, "Discord");
+    public IActionResult Login([FromQuery] string? returnUrl)
+    {
+        var frontendBaseUrl = (configuration["Frontend:BaseUrl"] ?? string.Empty).TrimEnd('/');
+        var path = returnUrl is not null && returnUrl.StartsWith('/') && !returnUrl.StartsWith("//") ? returnUrl : "/";
+        return Challenge(new AuthenticationProperties { RedirectUri = frontendBaseUrl + path }, "Discord");
+    }
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()

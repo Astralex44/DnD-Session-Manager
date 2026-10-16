@@ -1,11 +1,14 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/documents")]
+[Authorize(Policy = GamePolicies.Member)]
 public class DocumentsController(IDocumentFacade documentFacade) : ControllerBase
 {
     [HttpGet]
@@ -19,6 +22,7 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
         return document is null ? NotFound() : Ok(document);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost]
     public async Task<ActionResult<DocumentDto>> Create(Guid gameId, [FromForm] CreateDocumentDto input)
     {
@@ -26,6 +30,7 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
         return CreatedAtAction(nameof(GetById), new { gameId, id = document.Id }, document);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<DocumentDto>> Update(Guid gameId, Guid id, [FromForm] UpdateDocumentDto input)
     {
@@ -33,6 +38,7 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
         return document is null ? NotFound() : Ok(document);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid gameId, Guid id) =>
         await documentFacade.DeleteDocumentAsync(gameId, id) ? NoContent() : NotFound();

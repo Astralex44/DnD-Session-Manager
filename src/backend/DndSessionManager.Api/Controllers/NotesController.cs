@@ -1,11 +1,14 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/notes")]
+[Authorize(Policy = GamePolicies.Member)]
 public class NotesController(INoteFacade noteFacade, IAccessLockFacade accessLockFacade) : ControllerBase
 {
     [HttpGet("{owner}")]

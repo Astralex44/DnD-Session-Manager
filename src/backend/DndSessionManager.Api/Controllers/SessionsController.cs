@@ -1,11 +1,14 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/sessions")]
+[Authorize(Policy = GamePolicies.Dm)]
 public class SessionsController(ISessionFacade sessionFacade) : ControllerBase
 {
     [HttpGet]

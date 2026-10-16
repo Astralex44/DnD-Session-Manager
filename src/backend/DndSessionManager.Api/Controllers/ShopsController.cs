@@ -1,11 +1,14 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/shops")]
+[Authorize(Policy = GamePolicies.Member)]
 public class ShopsController(IShopFacade shopFacade) : ControllerBase
 {
     [HttpGet]
@@ -19,6 +22,7 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
         return shop is null ? NotFound() : Ok(shop);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost]
     public async Task<ActionResult<ShopDto>> Create(Guid gameId, [FromBody] CreateShopDto input)
     {
@@ -26,6 +30,7 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { gameId, id = shop.Id }, shop);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ShopDto>> Update(Guid gameId, Guid id, [FromBody] UpdateShopDto input)
     {
@@ -33,6 +38,7 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
         return shop is null ? NotFound() : Ok(shop);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid gameId, Guid id) =>
         await shopFacade.DeleteShopAsync(gameId, id) ? NoContent() : NotFound();
@@ -48,6 +54,7 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
     public async Task<IActionResult> RemoveShare(Guid gameId, Guid id, Guid characterId) =>
         await shopFacade.RemoveShareAsync(gameId, id, characterId) ? NoContent() : NotFound();
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost("{id:guid}/items")]
     public async Task<ActionResult<ShopItemDto>> AddItem(Guid gameId, Guid id, [FromBody] CreateShopItemDto input)
     {
@@ -55,6 +62,7 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
         return item is null ? BadRequest() : Ok(item);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPut("{id:guid}/items/{itemId:guid}")]
     public async Task<ActionResult<ShopItemDto>> UpdateItem(Guid gameId, Guid id, Guid itemId, [FromBody] UpdateShopItemDto input)
     {
@@ -62,6 +70,7 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
         return item is null ? BadRequest() : Ok(item);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}/items/{itemId:guid}")]
     public async Task<IActionResult> RemoveItem(Guid gameId, Guid id, Guid itemId) =>
         await shopFacade.RemoveItemAsync(gameId, id, itemId) ? NoContent() : NotFound();

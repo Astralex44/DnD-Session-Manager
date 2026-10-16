@@ -614,6 +614,31 @@ namespace DndSessionManager.Api.Migrations
                     b.ToTable("Games");
                 });
 
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameInvite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DiscordHandle")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "DiscordHandle")
+                        .IsUnique();
+
+                    b.ToTable("GameInvites");
+                });
+
             modelBuilder.Entity("DndSessionManager.Api.Entities.GameMember", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1054,6 +1079,11 @@ namespace DndSessionManager.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DiscordHandle")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<string>("DiscordId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1266,6 +1296,17 @@ namespace DndSessionManager.Api.Migrations
                     b.Navigation("Character");
 
                     b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameInvite", b =>
+                {
+                    b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.GameMember", b =>

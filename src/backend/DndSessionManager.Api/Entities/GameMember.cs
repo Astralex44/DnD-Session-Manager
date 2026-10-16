@@ -1,10 +1,9 @@
 namespace DndSessionManager.Api.Entities;
 
-// The first person to log into a game becomes Dm automatically (see
-// AuthFacade.FindOrCreateUserAsync); everyone after defaults to Player.
-// No UI to change a member's role yet — that's real GameMember management,
-// explicitly deferred (see the repo's Entscheidungs-Log) until multi-game
-// support itself is built.
+// Created at login (see AuthFacade.SignInAsync): Dm for the Discord ID in
+// Auth:DmDiscordId, Player for anyone the DM invited (GameInvite). The DM can
+// remove players from the access list; changing roles otherwise is real
+// multi-game management, explicitly deferred (see the repo's Entscheidungs-Log).
 public class GameMember
 {
     public Guid Id { get; set; }

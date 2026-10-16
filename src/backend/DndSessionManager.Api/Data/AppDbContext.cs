@@ -40,6 +40,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<AccessLock> AccessLocks => Set<AccessLock>();
     public DbSet<User> Users => Set<User>();
     public DbSet<GameMember> GameMembers => Set<GameMember>();
+    public DbSet<GameInvite> GameInvites => Set<GameInvite>();
 
     // Key ring for the auth cookie's encryption (see Program.cs). Lives in
     // Postgres so it survives container rebuilds — otherwise every deploy
@@ -361,8 +362,19 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(u => u.DiscordId).IsRequired().HasMaxLength(50);
+            entity.Property(u => u.DiscordHandle).IsRequired().HasMaxLength(50);
             entity.Property(u => u.Username).IsRequired().HasMaxLength(100);
             entity.HasIndex(u => u.DiscordId).IsUnique();
+        });
+
+        modelBuilder.Entity<GameInvite>(entity =>
+        {
+            entity.Property(i => i.DiscordHandle).IsRequired().HasMaxLength(50);
+            entity.HasIndex(i => new { i.GameId, i.DiscordHandle }).IsUnique();
+            entity.HasOne(i => i.Game)
+                  .WithMany()
+                  .HasForeignKey(i => i.GameId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<GameMember>(entity =>

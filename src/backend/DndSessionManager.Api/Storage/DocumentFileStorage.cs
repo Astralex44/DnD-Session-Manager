@@ -15,6 +15,11 @@ namespace DndSessionManager.Api.Storage;
 public class DocumentFileStorage(IWebHostEnvironment env) : IDocumentFileStorage
 {
     private const string UrlPrefix = "/api/files/documents/";
+
+    // The FileUrl a stored file name is recorded under — lets the file
+    // endpoints find the owning record (and so its game) from the name alone.
+    public static string UrlFor(string storedFileName) => $"{UrlPrefix}{storedFileName}";
+
     private static readonly HashSet<string> AllowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pdf"];
 
     private string RootDirectory => Path.Combine(env.ContentRootPath, "uploads", "documents");

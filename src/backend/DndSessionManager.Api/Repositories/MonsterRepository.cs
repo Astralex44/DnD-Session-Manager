@@ -17,6 +17,9 @@ public class MonsterRepository(AppDbContext context) : IMonsterRepository
         .OrderBy(monster => monster.Name)
         .ToListAsync();
 
+    public Task<Monster?> GetByFileUrlAsync(string fileUrl) =>
+        context.Monsters.FirstOrDefaultAsync(monster => monster.FileUrl == fileUrl);
+
     public Task AddAsync(Monster entity) => context.Monsters.AddAsync(entity).AsTask();
     public void Remove(Monster entity) => context.Monsters.Remove(entity);
 }

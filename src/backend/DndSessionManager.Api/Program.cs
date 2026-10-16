@@ -1,14 +1,17 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Data;
 using DndSessionManager.Api.Entities;
 using DndSessionManager.Api.Facades;
 using DndSessionManager.Api.Hubs;
 using DndSessionManager.Api.Repositories;
 using DndSessionManager.Api.Storage;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
@@ -55,6 +58,7 @@ builder.Services.AddScoped<ISessionMonsterRepository, SessionMonsterRepository>(
 builder.Services.AddScoped<IAccessLockRepository, AccessLockRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGameMemberRepository, GameMemberRepository>();
+builder.Services.AddScoped<IGameInviteRepository, GameInviteRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Facades — business logic layer, one per entity/feature area.
@@ -71,6 +75,10 @@ builder.Services.AddScoped<IGameTimerFacade, GameTimerFacade>();
 builder.Services.AddScoped<ISessionMonsterFacade, SessionMonsterFacade>();
 builder.Services.AddScoped<IAccessLockFacade, AccessLockFacade>();
 builder.Services.AddScoped<IAuthFacade, AuthFacade>();
+builder.Services.AddScoped<IGameAccessListFacade, GameAccessListFacade>();
+builder.Services.AddScoped<IGameAccess, GameAccess>();
+builder.Services.AddScoped<IAuthorizationHandler, GameRoleHandler>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IDocumentFileStorage, DocumentFileStorage>();
 builder.Services.AddSingleton<IMonsterFileStorage, MonsterFileStorage>();
 builder.Services.AddSingleton<IGameEventsBroadcaster, GameEventsBroadcaster>();
@@ -98,11 +106,16 @@ var discordClientId = builder.Configuration["Authentication:Discord:ClientId"];
 var discordClientSecret = builder.Configuration["Authentication:Discord:ClientSecret"];
 var discordConfigured = !string.IsNullOrEmpty(discordClientId) && !string.IsNullOrEmpty(discordClientSecret);
 
+// Where the browser goes after login/refusal — the frontend, not this API.
+var frontendBaseUrl = (builder.Configuration["Frontend:BaseUrl"] ?? string.Empty).TrimEnd('/');
+
 var authenticationBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    if (discordConfigured) options.DefaultChallengeScheme = "Discord";
+    // No Discord default challenge: an unauthenticated API call must get a
+    // plain 401 (cookie handler, below), never a redirect to Discord that a
+    // fetch can't follow. Only /api/auth/login challenges Discord, explicitly.
 })
 .AddCookie(options =>
 {
@@ -153,25 +166,51 @@ if (discordConfigured)
                 var profile = await response.Content.ReadFromJsonAsync<JsonElement>();
 
                 var discordId = profile.GetProperty("id").GetString()!;
-                var username = profile.TryGetProperty("global_name", out var globalName) && globalName.ValueKind == JsonValueKind.String
+                var handle = profile.GetProperty("username").GetString()!;
+                var displayName = profile.TryGetProperty("global_name", out var globalName) && globalName.ValueKind == JsonValueKind.String
                     ? globalName.GetString()!
-                    : profile.GetProperty("username").GetString()!;
+                    : handle;
                 var avatarUrl = profile.TryGetProperty("avatar", out var avatar) && avatar.ValueKind == JsonValueKind.String
                     ? $"https://cdn.discordapp.com/avatars/{discordId}/{avatar.GetString()}.png"
                     : null;
 
                 var authFacade = context.HttpContext.RequestServices.GetRequiredService<IAuthFacade>();
-                var (user, membership) = await authFacade.FindOrCreateUserAsync(discordId, username, avatarUrl);
+                var result = await authFacade.SignInAsync(discordId, handle, displayName, avatarUrl);
+                if (result is null)
+                {
+                    context.Identity!.AddClaim(new Claim(AuthClaims.NotInvited, "true"));
+                    return;
+                }
 
-                context.Identity!.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
-                context.Identity!.AddClaim(new Claim(ClaimTypes.Name, user.Username));
-                context.Identity!.AddClaim(new Claim("discord_id", discordId));
-                context.Identity!.AddClaim(new Claim("role", membership.Role.ToString()));
+                var (user, membership) = result.Value;
+                context.Identity!.AddClaims(AuthClaims.For(user, membership));
+            },
+
+            // Not on the DM's list → no session, straight to the frontend's
+            // "not invited" page.
+            OnTicketReceived = context =>
+            {
+                if (context.Principal?.HasClaim(c => c.Type == AuthClaims.NotInvited) == true)
+                {
+                    context.Response.Redirect($"{frontendBaseUrl}/not-invited");
+                    context.HandleResponse();
+                }
+                return Task.CompletedTask;
+            },
+
+            // Cancelled on Discord's consent screen, expired state, Discord
+            // down, ... — send the person back to the login page instead of
+            // a raw 500 from the callback endpoint.
+            OnRemoteFailure = context =>
+            {
+                context.Response.Redirect($"{frontendBaseUrl}/login?error=login_failed");
+                context.HandleResponse();
+                return Task.CompletedTask;
             },
         };
     });
 }
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(GamePolicies.Add);
 
 // Allows localhost, any private-LAN origin (not just one hardcoded IP — other
 // players' phones/laptops on the same WiFi can reach the API when the
@@ -218,9 +257,10 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.Migrate();
 
-    // QuotesPage uses this fixed game until the game selection flow exists.
-    // Seed it only for local development so the foreign key remains valid.
-    if (app.Environment.IsDevelopment() && !dbContext.Games.Any(game => game.Id == DemoGame.Id))
+    // Every page runs against this one fixed game until game selection
+    // exists, and logins are provisioned into it — make sure it exists in
+    // every environment, not only local development.
+    if (!dbContext.Games.Any(game => game.Id == DemoGame.Id))
     {
         dbContext.Games.Add(new Game
         {
@@ -243,5 +283,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<GameHub>("/hubs/game");
+
+// Development-only test login: runs the exact same login rules as Discord
+// (AuthFacade.SignInAsync) and issues the same cookie, so the access rules
+// can be exercised locally without a Discord app. Never mapped outside
+// Development.
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/api/auth/dev-login", async (HttpContext http, IAuthFacade authFacade, string discordId, string handle) =>
+    {
+        var result = await authFacade.SignInAsync(discordId, handle, handle, null);
+        if (result is null) return Results.Forbid();
+
+        var (user, membership) = result.Value;
+        var identity = new ClaimsIdentity(AuthClaims.For(user, membership), CookieAuthenticationDefaults.AuthenticationScheme);
+        await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+        return Results.Ok(new { user.Id, Role = membership.Role.ToString() });
+    });
+}
 
 app.Run();

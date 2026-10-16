@@ -19,6 +19,10 @@ public class DocumentRepository(AppDbContext context) : IDocumentRepository
         .OrderBy(doc => doc.Name)
         .ToListAsync();
 
+    public Task<Document?> GetByFileUrlAsync(string fileUrl) => context.Documents
+        .Include(doc => doc.Shares)
+        .FirstOrDefaultAsync(doc => doc.FileUrl == fileUrl);
+
     public Task AddAsync(Document entity) => context.Documents.AddAsync(entity).AsTask();
     public void Remove(Document entity) => context.Documents.Remove(entity);
 }

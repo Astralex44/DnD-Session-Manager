@@ -1,11 +1,14 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/quotes")]
+[Authorize(Policy = GamePolicies.Member)]
 public class QuotesController : ControllerBase
 {
     private readonly IQuoteFacade _quoteFacade;
@@ -22,6 +25,7 @@ public class QuotesController : ControllerBase
         return Ok(quotes);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost]
     public async Task<ActionResult<QuoteDto>> Create(Guid gameId, [FromBody] CreateQuoteDto input)
     {
@@ -29,6 +33,7 @@ public class QuotesController : ControllerBase
         return CreatedAtAction(nameof(GetAll), new { gameId }, quote);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPatch("{quoteId:guid}/toggle-shared")]
     public async Task<ActionResult<QuoteDto>> ToggleShared(Guid gameId, Guid quoteId)
     {
@@ -36,6 +41,7 @@ public class QuotesController : ControllerBase
         return quote is null ? NotFound() : Ok(quote);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPatch("{quoteId:guid}/session")]
     public async Task<ActionResult<QuoteDto>> SetSession(Guid gameId, Guid quoteId, [FromBody] SetQuoteSessionDto input)
     {
@@ -43,6 +49,7 @@ public class QuotesController : ControllerBase
         return quote is null ? NotFound() : Ok(quote);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPatch("{quoteId:guid}/character")]
     public async Task<ActionResult<QuoteDto>> SetCharacter(Guid gameId, Guid quoteId, [FromBody] SetQuoteCharacterDto input)
     {
@@ -50,6 +57,7 @@ public class QuotesController : ControllerBase
         return quote is null ? NotFound() : Ok(quote);
     }
 
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{quoteId:guid}")]
     public async Task<IActionResult> Delete(Guid gameId, Guid quoteId)
     {

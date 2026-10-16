@@ -1,34 +1,48 @@
+using DndSessionManager.Api.Auth;
+using DndSessionManager.Api.Entities;
+using DndSessionManager.Api.Repositories;
 using DndSessionManager.Api.Storage;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DndSessionManager.Api.Controllers;
 
-// TODO(auth): open on purpose for now, no auth/session exists yet — gate this
-// on the caller holding a non-hidden DocumentShare for the document once
-// auth lands (Books that are DM-only reference material need their own rule
-// since not every Document is meant to be shared).
+// Files aren't routed under api/games/{gameId}, so the game comes from the
+// Document/Monster that owns the file instead of the URL. Unknown file → 404
+// before any role check, so this doesn't reveal which files exist.
+// TODO(auth phase B): players should only get documents shared with one of
+// their own characters; for now any member of the document's game can.
 [ApiController]
 [Route("api/files/documents")]
-public class FilesController(IDocumentFileStorage fileStorage) : ControllerBase
+[Authorize]
+public class FilesController(IDocumentFileStorage fileStorage, IDocumentRepository documents, IGameAccess gameAccess) : ControllerBase
 {
     [HttpGet("{fileName}")]
     public async Task<IActionResult> GetDocumentFile(string fileName)
     {
+        var document = await documents.GetByFileUrlAsync(DocumentFileStorage.UrlFor(fileName));
+        if (document is null) return NotFound();
+        if (await gameAccess.GetRoleAsync(User, document.GameId) is null) return Forbid();
+
         var result = await fileStorage.OpenAsync(fileName);
         return result is null ? NotFound() : File(result.Value.Stream, result.Value.ContentType);
     }
 }
 
-// TODO(auth): same as FilesController above — open for now, gate on the
-// caller being the DM once auth lands (monster stat blocks aren't shared
-// with characters at all).
+// Monster stat blocks are never shown to players (FA-03) — DM of the
+// monster's game only.
 [ApiController]
 [Route("api/files/monsters")]
-public class MonsterFilesController(IMonsterFileStorage fileStorage) : ControllerBase
+[Authorize]
+public class MonsterFilesController(IMonsterFileStorage fileStorage, IMonsterRepository monsters, IGameAccess gameAccess) : ControllerBase
 {
     [HttpGet("{fileName}")]
     public async Task<IActionResult> GetMonsterFile(string fileName)
     {
+        var monster = await monsters.GetByFileUrlAsync(MonsterFileStorage.UrlFor(fileName));
+        if (monster is null) return NotFound();
+        if (await gameAccess.GetRoleAsync(User, monster.GameId) != GameMemberRole.Dm) return Forbid();
+
         var result = await fileStorage.OpenAsync(fileName);
         return result is null ? NotFound() : File(result.Value.Stream, result.Value.ContentType);
     }

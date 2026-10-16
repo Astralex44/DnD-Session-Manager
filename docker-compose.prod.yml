@@ -35,6 +35,8 @@ services:
       Cors__AllowedOrigins__0: "${DND_CORS_ORIGIN}"
       Authentication__Discord__ClientId: "${DND_DISCORD_CLIENT_ID}"
       Authentication__Discord__ClientSecret: "${DND_DISCORD_CLIENT_SECRET}"
+      Auth__DmDiscordId: "${DND_DM_DISCORD_ID}"
+      Frontend__BaseUrl: "${DND_FRONTEND_URL}"
     volumes:
       - dnd-uploads:/app/uploads
     depends_on:

@@ -1,6 +1,8 @@
+using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
 using DndSessionManager.Api.Pdf;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuestPDF.Fluent;
 
@@ -8,6 +10,7 @@ namespace DndSessionManager.Api.Controllers;
 
 [ApiController]
 [Route("api/games/{gameId:guid}/characters")]
+[Authorize(Policy = GamePolicies.Member)]
 public class CharactersController(ICharacterFacade characterFacade, ICurrencyFacade currencyFacade, IAccessLockFacade accessLockFacade) : ControllerBase
 {
     [HttpGet]
