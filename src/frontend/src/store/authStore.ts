@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from '../api/auth.ts';
-import { ApiError } from '../api/client.ts';
+import { ApiError, onAuthFailure } from '../api/client.ts';
 import type { Me } from '../types/auth.ts';
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
@@ -51,6 +51,28 @@ export function useMe() {
 
 export const useGameId = () => useMe().gameId;
 export const useIsDm = () => useMe().role === 'Dm';
+
+// 401 anywhere: the session is gone — drop to anonymous so RequireAuth sends
+// the person to /login right away. 403: usually just "not allowed to do
+// that", but also what a player the DM removed gets everywhere — so ask
+// /auth/me once, which answers 401 once there's no membership. /auth/me's own
+// failures are handled by load(), never here, so this can't loop.
+function dropSession() {
+  if (useAuthStore.getState().status === 'authenticated') {
+    useAuthStore.setState({ me: null, status: 'anonymous', error: null });
+  }
+}
+
+onAuthFailure((status, path) => {
+  if (path === '/auth/me' || useAuthStore.getState().status !== 'authenticated') return;
+  if (status === 401) {
+    dropSession();
+    return;
+  }
+  authApi.me().catch((err) => {
+    if (err instanceof ApiError && err.status === 401) dropSession();
+  });
+});
 
 function describeError(err: unknown): string {
   if (err instanceof ApiError) return `${err.status}: ${err.message}`;

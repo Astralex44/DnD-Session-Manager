@@ -4,6 +4,16 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.2.1-alpha — 2026-10-16
+
+### Fixed
+- After an update you could still be running the previous version of the app until you reloaded — that's what
+  showed a bare "401" box instead of the login page. The app now always loads its latest version.
+- When your session ends while you're using the app (logged out elsewhere, or the DM removed you), you're sent
+  straight to the login page instead of seeing errors.
+- The buttons on the login and "not invited yet" pages looked broken.
+- A server without Discord configured now says so on the login page instead of showing an error page.
+
 ## v0.2.0-alpha — 2026-10-16
 
 First release in the new version scheme: minor for features, patch for fixes (`v0.2.1-alpha`, `v0.3.0-alpha`, …).

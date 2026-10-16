@@ -13,6 +13,16 @@ export class ApiError extends Error {
   }
 }
 
+// Called on any 401/403 so the app can notice a session that's gone — expired
+// or logged out elsewhere (401), or still logged in but removed from the game
+// by the DM (403 everywhere). The auth store registers itself here (it can't
+// be imported directly: it imports this module) and RequireAuth then
+// redirects to /login instead of a page showing "401".
+let authFailureHandler: ((status: number, path: string) => void) | null = null;
+export function onAuthFailure(handler: (status: number, path: string) => void): void {
+  authFailureHandler = handler;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -24,6 +34,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) authFailureHandler?.(response.status, path);
     const body = await response.text();
     throw new ApiError(response.status, body || response.statusText);
   }

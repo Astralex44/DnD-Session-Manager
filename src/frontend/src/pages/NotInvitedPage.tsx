@@ -14,7 +14,11 @@ export function NotInvitedPage() {
           This game is invite-only. Ask your DM to invite your <strong>Discord username</strong> (the
           one with no spaces, not your display name), then log in again.
         </p>
-        <a className="btn-open" href="/login">Back to login</a>
+        <p className="hint">
+          Logged into the wrong Discord account? Switch accounts in Discord first — logging in again
+          uses whichever account Discord currently has active.
+        </p>
+        <a className="auth-button" href="/login">Back to login</a>
       </div>
     </div>
   );

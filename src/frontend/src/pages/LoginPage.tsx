@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore.ts';
 
 const ERROR_MESSAGES: Record<string, string> = {
   login_failed: "The Discord login didn't go through — it was cancelled or timed out. Try again.",
+  discord_not_configured: "Discord login isn't set up on this server yet (no Discord Client ID/Secret configured).",
 };
 
 // Outside the app shell: no sidebar, nothing that needs a game. Logging in is
@@ -32,7 +33,7 @@ export function LoginPage() {
         </div>
         <p>Log in with the Discord account your DM invited.</p>
         {error && <p className="auth-error">{error}</p>}
-        <a className="btn-discord" href={authApi.loginUrl(returnUrl)}>Log in with Discord</a>
+        <a className="auth-button" href={authApi.loginUrl(returnUrl)}>Log in with Discord</a>
         {import.meta.env.DEV && <DevLogin returnUrl={returnUrl} />}
       </div>
     </div>
@@ -56,7 +57,7 @@ function DevLogin({ returnUrl }: { returnUrl: string }) {
         <label>Discord username</label>
         <input value={handle} onChange={(e) => setHandle(e.target.value)} />
       </div>
-      <a className="btn-open dev-login-go" href={authApi.devLoginUrl(discordId, handle, returnUrl)}>Log in</a>
+      <a className="auth-button dev-login-go" href={authApi.devLoginUrl(discordId, handle, returnUrl)}>Log in</a>
     </details>
   );
 }
