@@ -12,9 +12,14 @@ function formatRemaining(endsAt: string, now: number): string {
   return `${mm}:${ss}`;
 }
 
-// DM-only per the mockup — not shown in the player Board view. Live via
-// SignalR push (see lib/realtime.ts / hooks/useLiveFetch.ts).
-export function TimerPanel() {
+interface TimerPanelProps {
+  // false = the player view (FA-12: players see running timers live, only
+  // the DM starts and stops them — the server enforces the same).
+  editable: boolean;
+}
+
+// Live via SignalR push (see lib/realtime.ts / hooks/useLiveFetch.ts).
+export function TimerPanel({ editable }: TimerPanelProps) {
   const gameId = useGameId();
   const { timers, fetchTimers, createTimer, removeTimer } = useTimersStore();
   const [label, setLabel] = useState('');
@@ -46,10 +51,11 @@ export function TimerPanel() {
           <div key={timer.id} className="timer-row">
             <span>{timer.label}</span>
             <span className="timer-time">{formatRemaining(timer.endsAt, now)}</span>
-            <button className="row-remove" onClick={() => removeTimer(gameId, timer.id)}>✕</button>
+            {editable && <button className="row-remove" onClick={() => removeTimer(gameId, timer.id)}>✕</button>}
           </div>
         ))}
 
+        {editable && <>
         <div className="timer-add-row">
           <input
             type="text" placeholder="Label" value={label}
@@ -62,6 +68,7 @@ export function TimerPanel() {
           <span className="hint" style={{ margin: 0 }}>seconds</span>
         </div>
         <button className="add-btn" style={{ marginTop: 8 }} onClick={handleAdd}>+ Start Timer</button>
+        </>}
       </div>
     </div>
   );

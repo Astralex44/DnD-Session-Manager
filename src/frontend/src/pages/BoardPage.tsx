@@ -1,3 +1,4 @@
+import { CalculatorPanel } from '../components/CalculatorPanel.tsx';
 import { CharacterLivePanel } from '../components/CharacterLivePanel.tsx';
 import { CharacterRoster } from '../components/CharacterRoster.tsx';
 import { DiceRoller } from '../components/DiceRoller.tsx';
@@ -5,6 +6,8 @@ import { InitiativePanel } from '../components/InitiativePanel.tsx';
 import { MapDmPanel } from '../components/MapDmPanel.tsx';
 import { MapPlayerPanel } from '../components/MapPlayerPanel.tsx';
 import { MonsterPanel } from '../components/MonsterPanel.tsx';
+import { NotesPanel } from '../components/NotesPanel.tsx';
+import { SessionNotesPanel } from '../components/SessionNotesPanel.tsx';
 import { ShopDmPanel } from '../components/ShopDmPanel.tsx';
 import { ShopPlayerPanel } from '../components/ShopPlayerPanel.tsx';
 import { TimerPanel } from '../components/TimerPanel.tsx';
@@ -32,10 +35,13 @@ export function BoardPage() {
             <div className="panel-header"><h3>Dice</h3></div>
             <div className="panel-body"><DiceRoller key="dm-dice" /></div>
           </div>
-          <TimerPanel />
+          <TimerPanel editable />
           <MonsterPanel />
           <ShopDmPanel />
           <MapDmPanel />
+          <CalculatorPanel />
+          <SessionNotesPanel />
+          <NotesPanel />
         </div>
       ) : (
         <div className="board-grid player">
@@ -45,8 +51,11 @@ export function BoardPage() {
             <div className="panel-header"><h3>Dice</h3></div>
             <div className="panel-body"><DiceRoller key="player-dice" /></div>
           </div>
+          <TimerPanel editable={false} />
           <ShopPlayerPanel />
           <MapPlayerPanel />
+          <NotesPanel />
+          <CalculatorPanel />
         </div>
       )}
     </div>

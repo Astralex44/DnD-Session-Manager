@@ -4,6 +4,15 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.4.0-alpha — 2026-10-17
+
+### Added
+- **Session notes on the Board (DM):** the prep notes for the session you're about to play (the next one by date,
+  switchable) sit right on the Board and can be edited there.
+- **My Notes on the Board** for everyone — your private notebook, compact, without leaving the table.
+- **Players see the timers** running on the Board (only the DM starts and stops them).
+- **Calculator** on the Board — plain four functions.
+
 ## v0.3.0-alpha — 2026-10-16
 
 ### Added
