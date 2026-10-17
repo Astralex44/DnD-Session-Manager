@@ -18,6 +18,11 @@ public interface IShopFacade
     Task<(ShopShareDto? Share, bool Forbidden)> SetShareAsync(Guid gameId, Guid shopId, Guid characterId, UpsertShopShareDto input, GameCaller caller);
     Task<bool> RemoveShareAsync(Guid gameId, Guid shopId, Guid characterId);
 
+    // FA-11 "set the sale mode for the whole shop at once": plain application
+    // logic writing the mode onto every item (Pflichtenheft — no column on
+    // Shop). Null when the shop doesn't exist or the mode isn't valid.
+    Task<ShopDto?> SetSaleModeForAllItemsAsync(Guid gameId, Guid shopId, SetShopSaleModeDto input);
+
     Task<ShopItemDto?> AddItemAsync(Guid gameId, Guid shopId, CreateShopItemDto input);
     Task<ShopItemDto?> UpdateItemAsync(Guid gameId, Guid shopId, Guid itemId, UpdateShopItemDto input);
     Task<bool> RemoveItemAsync(Guid gameId, Guid shopId, Guid itemId);

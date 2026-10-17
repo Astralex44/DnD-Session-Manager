@@ -4,6 +4,7 @@ import type {
   CreateShopInput,
   CreateShopItemInput,
   Purchase,
+  ShopSaleMode,
   Shop,
   ShopItem,
   UpsertShopShareInput,
@@ -36,6 +37,10 @@ export const shopApi = {
 
   removeItem: (gameId: string, shopId: string, itemId: string) =>
     apiClient.delete<void>(`/games/${gameId}/shops/${shopId}/items/${itemId}`),
+
+  // DM: write one sale mode onto every item of the shop.
+  setSaleModeForAll: (gameId: string, shopId: string, saleMode: ShopSaleMode) =>
+    apiClient.put<Shop>(`/games/${gameId}/shops/${shopId}/sale-mode`, { saleMode }),
 
   purchase: (gameId: string, shopId: string, itemId: string, input: CreatePurchaseInput) =>
     apiClient.post<Purchase>(`/games/${gameId}/shops/${shopId}/items/${itemId}/purchases`, input),

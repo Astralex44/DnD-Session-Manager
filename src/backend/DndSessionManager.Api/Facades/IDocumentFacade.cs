@@ -20,4 +20,10 @@ public interface IDocumentFacade
     // Forbidden = the caller may not do this; Share null + !Forbidden = not found.
     Task<(DocumentShareDto? Share, bool Forbidden)> SetShareAsync(Guid gameId, Guid documentId, Guid characterId, UpsertDocumentShareDto input, GameCaller caller);
     Task<bool> RemoveShareAsync(Guid gameId, Guid documentId, Guid characterId);
+
+    // FA-01 "after a session, maps are hidden for players unless they locked
+    // them": an explicit DM action, not a session-live flag (the Board stays
+    // a cockpit, not a gate). Hides every unlocked share of every Map in the
+    // game; shares stay, so players can unhide. Returns how many it hid.
+    Task<int> EndSessionAsync(Guid gameId);
 }

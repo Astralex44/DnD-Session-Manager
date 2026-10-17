@@ -148,7 +148,7 @@ export function ShopDmPanel() {
         {shop && shop.items.length === 0 && <p className="hint" style={{ margin: '10px 0 0' }}>No items in this shop.</p>}
 
         {shop && shop.items.map((item) => (
-          <div key={item.id} className="init-row">
+          <div key={item.id} className={`init-row${item.saleMode === 'SharedStock' && item.stockQuantity === 0 ? ' sold-out' : ''}`}>
             <span className="name">{item.name}</span>
             <div className="price-pills">
               {item.prices.map((p) => (

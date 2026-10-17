@@ -6,6 +6,9 @@ import type { GameDocument, DocumentType } from '../types/document.ts';
 interface DocumentsState {
   documents: GameDocument[];
   isLoading: boolean;
+  // True once a fetch has succeeded — until then `documents` is just the
+  // empty initial value, not "nothing shared" (see MapPlayerPanel's FA-15 baseline).
+  loaded: boolean;
   error: string | null;
 
   fetchDocuments: (gameId: string) => Promise<void>;
@@ -20,7 +23,7 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => {
   async function refetch(gameId: string) {
     try {
       const documents = await documentsApi.list(gameId);
-      set({ documents });
+      set({ documents, loaded: true });
     } catch (err) {
       set({ error: describeError(err) });
     }
@@ -29,13 +32,14 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => {
   return {
     documents: [],
     isLoading: false,
+    loaded: false,
     error: null,
 
     fetchDocuments: async (gameId) => {
       set({ isLoading: true, error: null });
       try {
         const documents = await documentsApi.list(gameId);
-        set({ documents, isLoading: false });
+        set({ documents, isLoading: false, loaded: true });
       } catch (err) {
         set({ error: describeError(err), isLoading: false });
       }

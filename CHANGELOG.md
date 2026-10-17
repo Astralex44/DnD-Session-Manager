@@ -4,6 +4,22 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.6.0-alpha — 2026-10-17
+
+### Added
+- **Buy in the shop yourself:** shops shared with you now have a **Buy** button. Items you can't afford (in exactly
+  the listed coins) show red and can't be bought; sold-out items disappear from your view. The DM still sees them,
+  greyed out and struck through.
+- **Sale mode for a whole shop (DM):** "All items…" in Manage → Shops sets shared stock or per-player for every item
+  at once.
+- **End session (DM):** one button on the Board's Maps panel hides every shared map for the players again —
+  except the ones a player locked. Nothing is unshared; players can unhide a map themselves.
+- **Hand a map on:** pass a map you hold to another character at the table (↪ on the map), like handing over the
+  paper copy.
+
+### Fixed
+- Opening or reloading the Board no longer pops up maps and shops that were shared long ago as if they were new.
+
 ## v0.5.0-alpha — 2026-10-17
 
 ### Added

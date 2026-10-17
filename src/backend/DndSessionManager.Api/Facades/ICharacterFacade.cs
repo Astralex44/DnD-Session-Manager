@@ -7,6 +7,10 @@ public interface ICharacterFacade
 {
     Task<IReadOnlyList<CharacterDto>> GetCharactersForGameAsync(Guid gameId, GameCaller caller);
     Task<(bool Exists, Guid? OwnerUserId)> GetOwnerAsync(Guid gameId, Guid characterId);
+
+    // Every active, assigned character — name and player only. Lets a player
+    // pick who to hand a map to without exposing anyone's sheet.
+    Task<IReadOnlyList<PartyMemberDto>> GetPartyAsync(Guid gameId);
     Task<CharacterDto?> SetOwnerAsync(Guid gameId, Guid characterId, Guid? ownerUserId, GameCaller dm);
     Task<CharacterDetailDto?> GetCharacterDetailAsync(Guid gameId, Guid characterId);
     Task<CharacterDto> CreateCharacterAsync(Guid gameId, CreateCharacterDto input, Guid ownerUserId);

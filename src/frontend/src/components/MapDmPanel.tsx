@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ConfirmDialog } from './ConfirmDialog.tsx';
+import { useToastStore } from '../store/toastStore.ts';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
@@ -32,6 +34,23 @@ export function MapDmPanel() {
   const { characters, fetchCharacters } = useCharactersStore();
 
   const [shareTargetId, setShareTargetId] = useState<string | null>(null);
+  const [confirmEndSession, setConfirmEndSession] = useState(false);
+  const showToast = useToastStore((t) => t.showToast);
+
+  // FA-01: at the end of a session every map is hidden again for players —
+  // except the ones a player locked. An explicit action, not a "session is
+  // live" flag (the Board is a cockpit, not a gate). Players can still
+  // unhide a map themselves.
+  async function handleEndSession() {
+    setConfirmEndSession(false);
+    try {
+      const { hidden } = await documentsApi.endSession(gameId);
+      showToast(hidden === 0 ? 'No visible unlocked maps to hide.' : `Hid ${hidden} map ${hidden === 1 ? 'share' : 'shares'} for the players.`, 'success');
+      fetchDocuments(gameId);
+    } catch {
+      showToast('Failed to end the session.', 'error');
+    }
+  }
 
   useLiveFetch(gameId, 'documents', fetchDocuments);
   useLiveFetch(gameId, 'characters', fetchCharacters);
@@ -57,7 +76,21 @@ export function MapDmPanel() {
 
   return (
     <div className="panel span-2">
-      <div className="panel-header"><h3>Maps</h3></div>
+      <div className="panel-header">
+        <h3>Maps</h3>
+        <button className="panel-header-btn" onClick={() => setConfirmEndSession(true)} title="Hide every unlocked map for all players">
+          End session
+        </button>
+      </div>
+      {confirmEndSession && (
+        <ConfirmDialog
+          title="End the session?"
+          message="Every map you shared gets hidden again for the players — except the ones a player locked. Nothing is unshared: players can unhide a map themselves, and you can share again any time."
+          confirmLabel="Hide maps"
+          onConfirm={handleEndSession}
+          onCancel={() => setConfirmEndSession(false)}
+        />
+      )}
       <div className="panel-body">
         {maps.length === 0 && <p className="hint" style={{ margin: 0 }}>No maps uploaded yet — add some in Manage → Documents.</p>}
         <div className="map-grid">

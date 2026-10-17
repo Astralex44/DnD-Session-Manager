@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect.tsx';
+import { charactersApi } from '../api/characters.ts';
+import { useToastStore } from '../store/toastStore.ts';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
@@ -26,7 +28,7 @@ interface MapPlayerPanelProps {
 
 export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
   const gameId = useGameId();
-  const { documents, fetchDocuments, setShare } = useDocumentsStore();
+  const { documents, loaded: documentsLoaded, fetchDocuments, setShare } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
   const pool = useMemo(
     () => (onlyCharacterIds ? characters.filter((c) => onlyCharacterIds.includes(c.id)) : characters),
@@ -36,6 +38,32 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
   const [viewing, setViewing] = useState<GameDocument | null>(null);
+  const [handingOn, setHandingOn] = useState<GameDocument | null>(null);
+  const [party, setParty] = useState<{ characterId: string; name: string; ownerUsername: string | null }[]>([]);
+  const showToast = useToastStore((t) => t.showToast);
+
+  // Handing a map you hold to another character — like passing it across
+  // the table (additive sharing, Entities/DocumentShare.cs). The party list
+  // is names only; the server refuses if they already have it.
+  async function openHandOn(doc: GameDocument) {
+    setHandingOn(doc);
+    try {
+      setParty(await charactersApi.party(gameId));
+    } catch {
+      setParty([]);
+    }
+  }
+
+  async function handOn(doc: GameDocument, toCharacterId: string, toName: string) {
+    setHandingOn(null);
+    try {
+      await documentsApi.setShare(gameId, doc.id, toCharacterId, false, false);
+      showToast(`Handed "${doc.name}" to ${toName}.`, 'success');
+      fetchDocuments(gameId);
+    } catch {
+      showToast(`${toName} already has "${doc.name}".`, 'error');
+    }
+  }
 
   useLiveFetch(gameId, 'documents', fetchDocuments);
   useLiveFetch(gameId, 'characters', fetchCharacters);
@@ -68,7 +96,10 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
   const [mapAlertQueue, setMapAlertQueue] = useState<GameDocument[]>([]);
 
   useEffect(() => {
-    if (!characterId) return;
+    // Wait for the first real load: before it, `documents` is the empty
+    // initial value, and seeding the baseline from that made every map
+    // already shared pop up as "new" on each page load.
+    if (!characterId || !documentsLoaded) return;
     const currentIds = new Set(sharedIdsKey ? sharedIdsKey.split(',') : []);
     const seen = seenMapIdsRef.current.get(characterId);
     if (seen) {
@@ -77,7 +108,7 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
     }
     seenMapIdsRef.current.set(characterId, currentIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterId, sharedIdsKey]);
+  }, [characterId, sharedIdsKey, documentsLoaded]);
 
   function toggleHidden(doc: GameDocument, currentlyHidden: boolean, locked: boolean) {
     if (!characterId) return;
@@ -122,6 +153,9 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
                     onClick={(e) => { e.stopPropagation(); toggleLocked(doc, share.hidden, share.locked); }}
                   >
                     🔒
+                  </button>
+                  <button title="Hand to another character" onClick={(e) => { e.stopPropagation(); openHandOn(doc); }}>
+                    ↪
                   </button>
                 </div>
                 <span className="map-label">{doc.name}</span>
@@ -186,6 +220,25 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
                   Open PDF →
                 </a>
               )}
+          </div>
+        </div>
+      )}
+      {handingOn && (
+        <div className="dialog-overlay" onClick={() => setHandingOn(null)}>
+          <div className="dialog-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Hand "{handingOn.name}" to…</h3>
+              <span className="modal-close" onClick={() => setHandingOn(null)}>✕</span>
+            </div>
+            {party.filter((p) => !pool.some((c) => c.id === p.characterId)).map((p) => (
+              <div key={p.characterId} className="init-row">
+                <span className="name">{p.name}{p.ownerUsername ? <span className="row-sub"> · {p.ownerUsername}</span> : null}</span>
+                <button className="btn-ghost" onClick={() => handOn(handingOn, p.characterId, p.name)}>Hand over</button>
+              </div>
+            ))}
+            {party.filter((p) => !pool.some((c) => c.id === p.characterId)).length === 0 && (
+              <p className="hint" style={{ margin: 0 }}>No one else at the table yet.</p>
+            )}
           </div>
         </div>
       )}

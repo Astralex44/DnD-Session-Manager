@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
+import { useToastStore } from '../store/toastStore.ts';
 import { NumberInput } from '../components/NumberInput.tsx';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
@@ -32,8 +33,16 @@ export function ShopsManagePage() {
   const gameId = useGameId();
   const {
     shops, isLoading, error,
-    fetchShops, createShop, updateShop, removeShop, addItem, updateItem, removeItem,
+    fetchShops, createShop, updateShop, removeShop, addItem, updateItem, removeItem, setSaleModeForAll
   } = useShopsStore();
+  const showToast = useToastStore((t) => t.showToast);
+
+  // FA-11: one sale mode for every item in the shop (written onto each item).
+  async function handleSaleModeForAll(shop: Shop, saleMode: ShopSaleMode) {
+    const ok = await setSaleModeForAll(gameId, shop.id, saleMode);
+    const label = SALE_MODE_OPTIONS.find((o) => o.value === saleMode)?.label ?? saleMode;
+    showToast(ok ? `All items in ${shop.name}: ${label}.` : 'Failed to update the shop.', ok ? 'success' : 'error');
+  }
   const { denominations, fetchDenominations } = useCurrencyStore();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -170,6 +179,16 @@ export function ShopsManagePage() {
                 <div className="row-title">{shop.name}</div>
               </div>
               <div className="row-actions">
+                {shop.items.length > 0 && (
+                  <div className="sale-mode-all" title="Set the sale mode of every item in this shop">
+                    <CustomSelect
+                      value=""
+                      placeholder="All items…"
+                      onChange={(v) => handleSaleModeForAll(shop, v as ShopSaleMode)}
+                      options={SALE_MODE_OPTIONS}
+                    />
+                  </div>
+                )}
                 <button onClick={() => openAddItemModal(shop.id)}>+ Item</button>
                 <button className="icon-btn" onClick={() => (editingId === shop.id ? setEditingId(null) : startEdit(shop))}>
                   {editingId === shop.id ? 'Close' : 'Edit'}

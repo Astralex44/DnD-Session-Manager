@@ -17,6 +17,10 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     public async Task<ActionResult<IReadOnlyList<CharacterDto>>> GetAll(Guid gameId) =>
         Ok(await characterFacade.GetCharactersForGameAsync(gameId, HttpContext.GetGameCaller()));
 
+    [HttpGet("party")]
+    public async Task<ActionResult<IReadOnlyList<PartyMemberDto>>> GetParty(Guid gameId) =>
+        Ok(await characterFacade.GetPartyAsync(gameId));
+
     [CharacterAccess(CharacterAccess.Read)]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CharacterDetailDto>> GetById(Guid gameId, Guid id)

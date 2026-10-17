@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { shopApi } from '../api/shop.ts';
 import { ApiError } from '../api/client.ts';
-import type { CreatePurchaseInput, CreateShopInput, CreateShopItemInput, Shop, UpsertShopShareInput } from '../types/shop.ts';
+import type { CreatePurchaseInput, CreateShopInput, CreateShopItemInput, Shop, ShopSaleMode, UpsertShopShareInput } from '../types/shop.ts';
 
 interface ShopsState {
   shops: Shop[];
   isLoading: boolean;
+  // True once a fetch has succeeded (see ShopPlayerPanel's FA-15 baseline).
+  loaded: boolean;
   error: string | null;
   purchaseMessage: string | null;
 
@@ -20,13 +22,14 @@ interface ShopsState {
   removeItem: (gameId: string, shopId: string, itemId: string) => Promise<void>;
   purchase: (gameId: string, shopId: string, itemId: string, input: CreatePurchaseInput) => Promise<boolean>;
   clearPurchaseMessage: () => void;
+  setSaleModeForAll: (gameId: string, shopId: string, saleMode: ShopSaleMode) => Promise<boolean>;
 }
 
 export const useShopsStore = create<ShopsState>((set, get) => {
   async function refetch(gameId: string) {
     try {
       const shops = await shopApi.list(gameId);
-      set({ shops });
+      set({ shops, loaded: true });
     } catch (err) {
       set({ error: describeError(err) });
     }
@@ -35,6 +38,7 @@ export const useShopsStore = create<ShopsState>((set, get) => {
   return {
     shops: [],
     isLoading: false,
+    loaded: false,
     error: null,
     purchaseMessage: null,
 
@@ -42,7 +46,7 @@ export const useShopsStore = create<ShopsState>((set, get) => {
       set({ isLoading: true, error: null });
       try {
         const shops = await shopApi.list(gameId);
-        set({ shops, isLoading: false });
+        set({ shops, isLoading: false, loaded: true });
       } catch (err) {
         set({ error: describeError(err), isLoading: false });
       }
@@ -141,6 +145,17 @@ export const useShopsStore = create<ShopsState>((set, get) => {
     },
 
     clearPurchaseMessage: () => set({ purchaseMessage: null }),
+
+    setSaleModeForAll: async (gameId, shopId, saleMode) => {
+      try {
+        await shopApi.setSaleModeForAll(gameId, shopId, saleMode);
+        await refetch(gameId);
+        return true;
+      } catch (err) {
+        set({ error: describeError(err) });
+        return false;
+      }
+    },
   };
 });
 

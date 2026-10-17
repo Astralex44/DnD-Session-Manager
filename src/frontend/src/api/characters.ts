@@ -41,6 +41,10 @@ export const charactersApi = {
   remove: (gameId: string, characterId: string) =>
     apiClient.delete<void>(`/games/${gameId}/characters/${characterId}`),
 
+  // Names only: every active, assigned character (for handing a map on).
+  party: (gameId: string) =>
+    apiClient.get<{ characterId: string; name: string; ownerUsername: string | null }[]>(`/games/${gameId}/characters/party`),
+
   // DM only: hand a character to a member's account (null unassigns).
   setOwner: (gameId: string, characterId: string, userId: string | null) =>
     apiClient.put<Character>(`/games/${gameId}/characters/${characterId}/owner`, { userId }),

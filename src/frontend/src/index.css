@@ -1173,3 +1173,15 @@ h2 {
 .view-as-banner button { background: var(--bg); color: var(--text); border: 0; flex-shrink: 0; }
 .timer-row.done { opacity: 0.55; }
 .timer-row.done .timer-time { font-style: italic; }
+
+/* v0.6.0: shop states, buy, whole-shop sale mode, End session */
+.init-row.too-expensive .coin-amount, .init-row.too-expensive .coin-abbr { color: var(--error); font-weight: bold; }
+.init-row.sold-out { opacity: 0.5; }
+.init-row.sold-out .name { text-decoration: line-through; }
+.buy-btn { padding: 4px 12px; font-size: 12.5px; }
+.sale-mode-all { width: 170px; }
+.panel-header-btn {
+  background: transparent; color: var(--bg); border: 1px solid rgba(241, 237, 226, 0.6);
+  font-size: 11.5px; padding: 3px 10px; border-radius: 4px;
+}
+.panel-header-btn:hover { background: rgba(241, 237, 226, 0.15); }

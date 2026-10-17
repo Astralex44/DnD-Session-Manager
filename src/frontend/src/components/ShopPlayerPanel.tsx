@@ -2,9 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
+import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
+import { useToastStore } from '../store/toastStore.ts';
 import { shareState } from '../types/shop.ts';
-import type { Shop } from '../types/shop.ts';
+import type { Shop, ShopItem } from '../types/shop.ts';
+import type { CharacterCurrency } from '../types/currency.ts';
+
+const EMPTY_WALLET: CharacterCurrency[] = [];
 import { useGameId } from '../store/authStore.ts';
 
 
@@ -21,7 +26,9 @@ interface ShopPlayerPanelProps {
 
 export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
   const gameId = useGameId();
-  const { shops, fetchShops } = useShopsStore();
+  const { shops, loaded: shopsLoaded, fetchShops, purchase } = useShopsStore();
+  const { wallets, fetchWallet } = useCurrencyStore();
+  const showToast = useToastStore((s) => s.showToast);
   const { characters, fetchCharacters } = useCharactersStore();
   const pool = useMemo(
     () => (onlyCharacterIds ? characters.filter((c) => onlyCharacterIds.includes(c.id)) : characters),
@@ -58,7 +65,9 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
   const [autoOpenQueue, setAutoOpenQueue] = useState<Shop[]>([]);
 
   useEffect(() => {
-    if (!characterId) return;
+    // Same as the map panel: no baseline before the first real load, or every
+    // shop already shared would auto-open on each page load.
+    if (!characterId || !shopsLoaded) return;
     const currentIds = new Set(visibleShops.map((s) => s.id));
     const seen = seenShopIdsRef.current.get(characterId);
     if (seen) {
@@ -68,7 +77,7 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
     seenShopIdsRef.current.set(characterId, currentIds);
     setViewingShop((current) => (current && !currentIds.has(current.id) ? null : current));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterId, visibleShopIdsKey]);
+  }, [characterId, visibleShopIdsKey, shopsLoaded]);
 
   useEffect(() => {
     if (viewingShop === null && autoOpenQueue.length > 0) {
@@ -80,6 +89,28 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
   function openShop(shop: Shop) {
     setViewingShop(shop);
   }
+
+  // FA-11: a character can only buy what it can pay for, in exactly the
+  // listed coins (no conversion — house rule). Wallet reloads after a buy.
+  useEffect(() => {
+    if (characterId) fetchWallet(gameId, characterId);
+  }, [gameId, characterId, fetchWallet]);
+  const wallet = characterId ? (wallets[characterId] ?? EMPTY_WALLET) : EMPTY_WALLET;
+  const canAfford = (item: ShopItem) =>
+    item.prices.every((p) => (wallet.find((w) => w.denominationId === p.denominationId)?.quantity ?? 0) >= p.amount);
+  // Sold out (shared stock at 0) disappears for players entirely (FA-11).
+  const isSoldOut = (item: ShopItem) => item.saleMode === 'SharedStock' && item.stockQuantity === 0;
+
+  async function handleBuy(shopId: string, item: ShopItem) {
+    if (!characterId) return;
+    const ok = await purchase(gameId, shopId, item.id, { characterId, quantity: 1 });
+    const message = useShopsStore.getState().purchaseMessage;
+    showToast(ok ? `Bought ${item.name}.` : (message ?? 'Purchase failed.'), ok ? 'success' : 'error');
+    fetchWallet(gameId, characterId);
+  }
+
+  // The open view follows the store, so stock and items stay current after a buy.
+  const openShopLive = viewingShop ? (shops.find((s) => s.id === viewingShop.id) ?? viewingShop) : null;
 
   return (
     <div className="panel">
@@ -115,8 +146,8 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
               <span className="modal-close" onClick={() => setViewingShop(null)}>✕</span>
             </div>
             {viewingShop.description && <p className="hint">{viewingShop.description}</p>}
-            {viewingShop.items.map((item) => (
-              <div key={item.id} className="init-row">
+            {openShopLive!.items.filter((item) => !isSoldOut(item)).map((item) => (
+              <div key={item.id} className={`init-row${canAfford(item) ? '' : ' too-expensive'}`}>
                 <span className="name">{item.name}</span>
                 <div className="price-pills">
                   {item.prices.map((p) => (
@@ -127,12 +158,20 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
                     </span>
                   ))}
                 </div>
-                {item.saleMode === 'SharedStock' && item.stockQuantity === 0 && (
-                  <span className="tag">Sold out</span>
+                {item.saleMode === 'SharedStock' && item.stockQuantity != null && (
+                  <span className="tag">{item.stockQuantity} left</span>
                 )}
+                <button
+                  className="buy-btn"
+                  disabled={!canAfford(item)}
+                  title={canAfford(item) ? undefined : "Not enough of the listed coins"}
+                  onClick={() => handleBuy(openShopLive!.id, item)}
+                >
+                  Buy
+                </button>
               </div>
             ))}
-            {viewingShop.items.length === 0 && <p className="hint" style={{ margin: 0 }}>Nothing for sale yet.</p>}
+            {openShopLive!.items.filter((item) => !isSoldOut(item)).length === 0 && <p className="hint" style={{ margin: 0 }}>Nothing for sale right now.</p>}
           </div>
         </div>
       )}

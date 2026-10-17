@@ -44,4 +44,7 @@ export const documentsApi = {
     apiClient.delete<void>(`/games/${gameId}/documents/${documentId}/shares/${characterId}`),
 
   fileUrl: (fileUrl: string) => `${API_BASE_URL.replace(/\/api$/, '')}${fileUrl}`,
+
+  // DM: hide every unlocked map share for every player (FA-01 "end of session").
+  endSession: (gameId: string) => apiClient.post<{ hidden: number }>(`/games/${gameId}/documents/end-session`, {}),
 };

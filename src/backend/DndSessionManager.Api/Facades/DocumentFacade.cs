@@ -147,6 +147,23 @@ public class DocumentFacade(IUnitOfWork unitOfWork, IDocumentFileStorage fileSto
         return true;
     }
 
+    public async Task<int> EndSessionAsync(Guid gameId)
+    {
+        var hidden = 0;
+        foreach (var map in (await unitOfWork.Documents.GetByGameIdAsync(gameId)).Where(d => d.Type == DocumentType.Map))
+        {
+            foreach (var share in map.Shares.Where(s => !s.Locked && !s.Hidden))
+            {
+                share.Hidden = true;
+                hidden++;
+            }
+        }
+
+        await unitOfWork.SaveChangesAsync();
+        if (hidden > 0) await broadcaster.NotifyAsync(gameId, "documents");
+        return hidden;
+    }
+
     private async Task<Document?> GetOwnedDocumentAsync(Guid gameId, Guid documentId)
     {
         var document = await unitOfWork.Documents.GetByIdAsync(documentId);

@@ -18,6 +18,12 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
             .ToList();
     }
 
+    public async Task<IReadOnlyList<PartyMemberDto>> GetPartyAsync(Guid gameId) =>
+        (await unitOfWork.Characters.GetByGameIdAsync(gameId))
+            .Where(c => c.OwnerUserId != null && c.Status == "active")
+            .Select(c => new PartyMemberDto(c.Id, c.Name, c.Owner?.Username))
+            .ToList();
+
     public async Task<(bool Exists, Guid? OwnerUserId)> GetOwnerAsync(Guid gameId, Guid characterId)
     {
         var character = await GetOwnedCharacterAsync(gameId, characterId);

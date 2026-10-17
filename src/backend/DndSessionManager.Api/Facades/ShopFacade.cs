@@ -107,6 +107,26 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
         return true;
     }
 
+    public async Task<ShopDto?> SetSaleModeForAllItemsAsync(Guid gameId, Guid shopId, SetShopSaleModeDto input)
+    {
+        if (!Enum.TryParse<ShopSaleMode>(input.SaleMode, true, out var mode)) return null;
+        var shop = await GetOwnedShopAsync(gameId, shopId);
+        if (shop is null) return null;
+
+        foreach (var item in shop.Items)
+        {
+            item.SaleMode = mode;
+            // A per-player item needs a limit; keep an existing one, default to 1
+            // (the spec's "each player can buy it once"). Shared stock keeps its
+            // existing count — null means unlimited.
+            if (mode == ShopSaleMode.PerPlayerLimited) item.MaxPerCharacter ??= 1;
+        }
+
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "shops");
+        return ToDto(shop, await CharacterNamesForGameAsync(gameId));
+    }
+
     public async Task<ShopItemDto?> AddItemAsync(Guid gameId, Guid shopId, CreateShopItemDto input)
     {
         if (await GetOwnedShopAsync(gameId, shopId) is null) return null;
