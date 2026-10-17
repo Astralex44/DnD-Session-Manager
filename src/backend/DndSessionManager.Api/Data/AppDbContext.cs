@@ -40,6 +40,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<User> Users => Set<User>();
     public DbSet<GameMember> GameMembers => Set<GameMember>();
     public DbSet<GameInvite> GameInvites => Set<GameInvite>();
+    public DbSet<DiceRoll> DiceRolls => Set<DiceRoll>();
 
     // Key ring for the auth cookie's encryption (see Program.cs). Lives in
     // Postgres so it survives container rebuilds — otherwise every deploy
@@ -333,6 +334,17 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             entity.HasOne(s => s.Game)
                   .WithMany()
                   .HasForeignKey(s => s.GameId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DiceRoll>(entity =>
+        {
+            entity.Property(r => r.Expression).IsRequired().HasMaxLength(100);
+            entity.Property(r => r.Dice).IsRequired().HasMaxLength(200);
+            entity.HasIndex(r => new { r.GameId, r.UserId, r.CreatedAt });
+            entity.HasOne(r => r.Game)
+                  .WithMany()
+                  .HasForeignKey(r => r.GameId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 

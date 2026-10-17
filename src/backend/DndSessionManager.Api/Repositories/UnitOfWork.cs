@@ -36,7 +36,8 @@ public class UnitOfWork : IUnitOfWork
         ISessionMonsterRepository sessionMonsters,
         IUserRepository users,
         IGameMemberRepository gameMembers,
-        IGameInviteRepository gameInvites)
+        IGameInviteRepository gameInvites,
+        IDiceRollRepository diceRolls)
     {
         _context = context;
         Quotes = quotes;
@@ -68,6 +69,7 @@ public class UnitOfWork : IUnitOfWork
         Users = users;
         GameMembers = gameMembers;
         GameInvites = gameInvites;
+        DiceRolls = diceRolls;
     }
 
     public IQuoteRepository Quotes { get; }
@@ -99,6 +101,7 @@ public class UnitOfWork : IUnitOfWork
     public IUserRepository Users { get; }
     public IGameMemberRepository GameMembers { get; }
     public IGameInviteRepository GameInvites { get; }
+    public IDiceRollRepository DiceRolls { get; }
 
     public async Task<int> SaveChangesAsync() =>
         await _context.SaveChangesAsync();

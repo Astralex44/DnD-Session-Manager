@@ -31,6 +31,7 @@ public interface IUnitOfWork
     IUserRepository Users { get; }
     IGameMemberRepository GameMembers { get; }
     IGameInviteRepository GameInvites { get; }
+    IDiceRollRepository DiceRolls { get; }
 
     // As more vertical slices get built, their repositories get added here
     // too. A facade that touches multiple repositories (e.g. ShopFacade.Purchase,

@@ -497,6 +497,47 @@ namespace DndSessionManager.Api.Migrations
                     b.ToTable("CurrencyDenominations");
                 });
 
+            modelBuilder.Entity("DndSessionManager.Api.Entities.DiceRoll", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Dice")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Expression")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsPhysical")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Total")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "UserId", "CreatedAt");
+
+                    b.ToTable("DiceRolls");
+                });
+
             modelBuilder.Entity("DndSessionManager.Api.Entities.Document", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1233,6 +1274,17 @@ namespace DndSessionManager.Api.Migrations
                 });
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.CurrencyDenomination", b =>
+                {
+                    b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("DndSessionManager.Api.Entities.DiceRoll", b =>
                 {
                     b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
                         .WithMany()

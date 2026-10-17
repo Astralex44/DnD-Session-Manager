@@ -48,9 +48,9 @@ export function TimerPanel({ editable }: TimerPanelProps) {
       <div className="panel-body">
         {timers.length === 0 && <p className="hint" style={{ margin: 0 }}>No timers running.</p>}
         {timers.map((timer) => (
-          <div key={timer.id} className="timer-row">
+          <div key={timer.id} className={`timer-row${new Date(timer.endsAt).getTime() <= now ? ' done' : ''}`}>
             <span>{timer.label}</span>
-            <span className="timer-time">{formatRemaining(timer.endsAt, now)}</span>
+            <span className="timer-time">{new Date(timer.endsAt).getTime() <= now ? 'done' : formatRemaining(timer.endsAt, now)}</span>
             {editable && <button className="row-remove" onClick={() => removeTimer(gameId, timer.id)}>✕</button>}
           </div>
         ))}

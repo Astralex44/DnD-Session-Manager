@@ -59,6 +59,7 @@ builder.Services.AddScoped<ISessionMonsterRepository, SessionMonsterRepository>(
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IGameMemberRepository, GameMemberRepository>();
 builder.Services.AddScoped<IGameInviteRepository, GameInviteRepository>();
+builder.Services.AddScoped<IDiceRollRepository, DiceRollRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Facades — business logic layer, one per entity/feature area.
@@ -75,6 +76,7 @@ builder.Services.AddScoped<IGameTimerFacade, GameTimerFacade>();
 builder.Services.AddScoped<ISessionMonsterFacade, SessionMonsterFacade>();
 builder.Services.AddScoped<IAuthFacade, AuthFacade>();
 builder.Services.AddScoped<IGameAccessListFacade, GameAccessListFacade>();
+builder.Services.AddScoped<IDiceFacade, DiceFacade>();
 builder.Services.AddScoped<IGameAccess, GameAccess>();
 builder.Services.AddScoped<IAuthorizationHandler, GameRoleHandler>();
 builder.Services.AddHttpContextAccessor();

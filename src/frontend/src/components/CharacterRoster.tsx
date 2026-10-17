@@ -13,7 +13,12 @@ function initials(name: string): string {
 // on the real character sheet (no reason to duplicate that here). Live via
 // SignalR push — a player editing their own HP on their own Board updates
 // this instantly.
-export function CharacterRoster() {
+interface CharacterRosterProps {
+  // NFA-04: switch the Board to this player's view (BoardPage owns the state).
+  onViewAs: (ownerUserId: string) => void;
+}
+
+export function CharacterRoster({ onViewAs }: CharacterRosterProps) {
   const gameId = useGameId();
   const { characters, fetchCharacters } = useCharactersStore();
 
@@ -35,7 +40,14 @@ export function CharacterRoster() {
                 HP {c.hpCurrent} / {c.hpMax ?? '—'} · Level {c.level ?? '—'} {c.class}
               </div>
             </div>
-            <Link className="view-as-btn" to={`/character/${c.id}`}>View</Link>
+            <div className="roster-actions">
+              {c.ownerUserId && (
+                <button className="view-as-btn" title={`See the Board exactly as ${c.ownerUsername} does`} onClick={() => onViewAs(c.ownerUserId!)}>
+                  View as
+                </button>
+              )}
+              <Link className="view-as-btn" to={`/character/${c.id}`}>Sheet</Link>
+            </div>
           </div>
         ))}
       </div>

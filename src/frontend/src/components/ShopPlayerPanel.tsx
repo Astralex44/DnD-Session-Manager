@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
@@ -13,10 +13,20 @@ import { useGameId } from '../store/authStore.ts';
 // feedback_manage_vs_board_actions). "Hidden" shares stay invisible here;
 // "locked" ones still show (locked just means the DM won't take more offers).
 // Live via SignalR push — a share toggled by the DM appears here instantly.
-export function ShopPlayerPanel() {
+interface ShopPlayerPanelProps {
+  // "View as player" (DM): only this player's characters are pickable, so
+  // the panel shows exactly what that player sees.
+  onlyCharacterIds?: string[];
+}
+
+export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
   const gameId = useGameId();
   const { shops, fetchShops } = useShopsStore();
   const { characters, fetchCharacters } = useCharactersStore();
+  const pool = useMemo(
+    () => (onlyCharacterIds ? characters.filter((c) => onlyCharacterIds.includes(c.id)) : characters),
+    [characters, onlyCharacterIds],
+  );
 
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [viewingShop, setViewingShop] = useState<Shop | null>(null);
@@ -28,10 +38,10 @@ export function ShopPlayerPanel() {
   }, [gameId, fetchCharacters]);
 
   useEffect(() => {
-    if (!characterId && characters.length > 0) setCharacterId(characters[0].id);
-  }, [characters, characterId]);
+    if (!characterId && pool.length > 0) setCharacterId(pool[0].id);
+  }, [pool, characterId]);
 
-  const characterOptions = characters.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
+  const characterOptions = pool.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
   const visibleShops = shops.filter((s) => {
     const share = s.shares.find((sh) => sh.characterId === characterId);
     const state = shareState(share);

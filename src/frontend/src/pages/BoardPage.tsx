@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CalculatorPanel } from '../components/CalculatorPanel.tsx';
 import { CharacterLivePanel } from '../components/CharacterLivePanel.tsx';
 import { CharacterRoster } from '../components/CharacterRoster.tsx';
@@ -12,11 +13,41 @@ import { ShopDmPanel } from '../components/ShopDmPanel.tsx';
 import { ShopPlayerPanel } from '../components/ShopPlayerPanel.tsx';
 import { TimerPanel } from '../components/TimerPanel.tsx';
 import { useIsDm } from '../store/authStore.ts';
+import { useCharactersStore } from '../store/charactersStore.ts';
 
 // Same route for both roles (Pflichtenheft 8.2); which panel set renders
 // comes from the logged-in role, and the server enforces it either way.
+// NFA-04 "view as player": the DM can switch to exactly what one player
+// sees (their characters, their shares and shops) to enter things on their
+// behalf in hybrid play. Private things stay private in that view — the
+// player's notes and dice history aren't shown; the dice panel only lets the
+// DM file a real-dice roll for them.
 export function BoardPage() {
   const isDm = useIsDm();
+  const { characters } = useCharactersStore();
+  const [viewingAs, setViewingAs] = useState<string | null>(null);
+
+  const viewedCharacters = viewingAs ? characters.filter((c) => c.ownerUserId === viewingAs) : [];
+  const viewedName = viewedCharacters[0]?.ownerUsername ?? 'player';
+
+  if (isDm && viewingAs) {
+    return (
+      <div className="board-page">
+        <div className="view-as-banner">
+          <span>
+            Viewing the Board as <strong>{viewedName}</strong> ({viewedCharacters.map((c) => c.name).join(', ')}) —
+            exactly what they see. Anything you change here, you change for them.
+          </span>
+          <button onClick={() => setViewingAs(null)}>Back to DM view</button>
+        </div>
+        <PlayerBoard
+          key={viewingAs}
+          onlyCharacterIds={viewedCharacters.map((c) => c.id)}
+          enterDiceFor={{ userId: viewingAs, name: viewedName }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="board-page">
@@ -29,7 +60,7 @@ export function BoardPage() {
 
       {isDm ? (
         <div className="board-grid">
-          <CharacterRoster />
+          <CharacterRoster onViewAs={setViewingAs} />
           <InitiativePanel editable />
           <div className="panel">
             <div className="panel-header"><h3>Dice</h3></div>
@@ -44,20 +75,33 @@ export function BoardPage() {
           <NotesPanel />
         </div>
       ) : (
-        <div className="board-grid player">
-          <CharacterLivePanel />
-          <InitiativePanel editable={false} />
-          <div className="panel">
-            <div className="panel-header"><h3>Dice</h3></div>
-            <div className="panel-body"><DiceRoller key="player-dice" /></div>
-          </div>
-          <TimerPanel editable={false} />
-          <ShopPlayerPanel />
-          <MapPlayerPanel />
-          <NotesPanel />
-          <CalculatorPanel />
-        </div>
+        <PlayerBoard />
       )}
+    </div>
+  );
+}
+
+interface PlayerBoardProps {
+  onlyCharacterIds?: string[];
+  enterDiceFor?: { userId: string; name: string };
+}
+
+// The player's panel set — for a player, and for the DM's "view as" (where
+// the notes panel is left out: those notes are private to the player).
+function PlayerBoard({ onlyCharacterIds, enterDiceFor }: PlayerBoardProps) {
+  return (
+    <div className="board-grid player">
+      <CharacterLivePanel onlyCharacterIds={onlyCharacterIds} />
+      <InitiativePanel editable={false} />
+      <div className="panel">
+        <div className="panel-header"><h3>Dice</h3></div>
+        <div className="panel-body"><DiceRoller key="player-dice" enterFor={enterDiceFor} /></div>
+      </div>
+      <TimerPanel editable={false} />
+      <ShopPlayerPanel onlyCharacterIds={onlyCharacterIds} />
+      <MapPlayerPanel onlyCharacterIds={onlyCharacterIds} />
+      {!enterDiceFor && <NotesPanel />}
+      <CalculatorPanel />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CustomSelect } from './CustomSelect.tsx';
 import { NumberInput } from './NumberInput.tsx';
@@ -19,9 +19,19 @@ const FALLBACK_POLL_MS = 20000;
 // Everything else (inventory, spells, features, PDF export) stays on the
 // real character sheet rather than being re-implemented a second time —
 // the "Open Full Sheet" link covers that.
-export function CharacterLivePanel() {
+interface CharacterLivePanelProps {
+  // "View as player" (DM): only this player's characters are pickable, so
+  // the panel shows exactly what that player sees.
+  onlyCharacterIds?: string[];
+}
+
+export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps) {
   const gameId = useGameId();
   const { characters, current, fetchCharacters, fetchCharacter, updateCharacter } = useCharactersStore();
+  const pool = useMemo(
+    () => (onlyCharacterIds ? characters.filter((c) => onlyCharacterIds.includes(c.id)) : characters),
+    [characters, onlyCharacterIds],
+  );
   const { denominations, wallets, fetchDenominations, fetchWallet } = useCurrencyStore();
   const showToast = useToastStore((s) => s.showToast);
 
@@ -35,8 +45,8 @@ export function CharacterLivePanel() {
   }, [gameId, fetchDenominations]);
 
   useEffect(() => {
-    if (!characterId && characters.length > 0) setCharacterId(characters[0].id);
-  }, [characters, characterId]);
+    if (!characterId && pool.length > 0) setCharacterId(pool[0].id);
+  }, [pool, characterId]);
 
   // Own effect (not useLiveFetch) since it needs the currently-picked
   // characterId, not just the fixed gameId — e.g. the DM editing this
@@ -63,7 +73,7 @@ export function CharacterLivePanel() {
     setHpCurrent(current?.hpCurrent ?? 0);
   }, [current]);
 
-  const options = characters.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
+  const options = pool.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
   const wallet = characterId ? (wallets[characterId] ?? EMPTY_WALLET) : EMPTY_WALLET;
 
   async function handleHpBlur() {

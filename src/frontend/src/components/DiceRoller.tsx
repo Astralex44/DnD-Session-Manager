@@ -1,27 +1,98 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { accessApi } from '../api/access.ts';
+import { CustomSelect } from './CustomSelect.tsx';
+import { NumberInput } from './NumberInput.tsx';
+import { useLiveFetch } from '../hooks/useLiveFetch.ts';
+import { useGameId, useIsDm } from '../store/authStore.ts';
+import { useDiceStore } from '../store/diceStore.ts';
+import { useToastStore } from '../store/toastStore.ts';
 
 const DICE = [4, 6, 8, 10, 12, 20];
+const ME = '';
 
-interface Roll {
-  expr: string;
-  result: number;
+interface DiceRollerProps {
+  // "View as player" mode (DM): only the physical-roll entry, filed into this
+  // player's history. Their history itself stays private — never shown here.
+  enterFor?: { userId: string; name: string };
 }
 
-// Always private, per FA-06 — never sent to the backend, just local state.
-// History capped at 5 entries per the spec's own Nicht-Ziele.
-export function DiceRoller() {
+// FA-06: always private — each person sees only their own last 5 rolls, the
+// DM included. Rolls happen on the server so the history follows you across
+// devices. NFA-03 (hybrid play): a real-dice result can be typed in instead,
+// and the DM can type one in for a player.
+export function DiceRoller({ enterFor }: DiceRollerProps) {
+  const gameId = useGameId();
+  const isDm = useIsDm();
+  const { history, fetchHistory, roll, recordPhysical } = useDiceStore();
+  const showToast = useToastStore((t) => t.showToast);
   const [die, setDie] = useState(20);
   const [count, setCount] = useState(1);
   const [mod, setMod] = useState(0);
-  const [history, setHistory] = useState<Roll[]>([]);
+  const [physicalTotal, setPhysicalTotal] = useState(10);
+  const [physicalLabel, setPhysicalLabel] = useState('');
+  const [forUserId, setForUserId] = useState(ME);
+  const [players, setPlayers] = useState<{ value: string; label: string }[]>([]);
 
-  function roll() {
-    let total = 0;
-    for (let i = 0; i < count; i++) total += 1 + Math.floor(Math.random() * die);
-    total += mod;
-    const modLabel = mod !== 0 ? (mod > 0 ? `+${mod}` : `${mod}`) : '';
-    const expr = `${count}d${die}${modLabel}`;
-    setHistory((h) => [{ expr, result: total }, ...h].slice(0, 5));
+  useLiveFetch(gameId, 'dice', fetchHistory);
+
+  // The DM's own roller can file a physical roll for any player.
+  useEffect(() => {
+    if (!isDm || enterFor) return;
+    accessApi.get(gameId).then(
+      (list) => setPlayers(list.members.filter((m) => m.role === 'Player').map((m) => ({ value: m.userId, label: m.username }))),
+      () => {},
+    );
+  }, [gameId, isDm, enterFor]);
+
+  async function handleRoll() {
+    try {
+      await roll(gameId, die, count, mod);
+    } catch {
+      showToast('Roll failed.', 'error');
+    }
+  }
+
+  async function handlePhysical() {
+    const target = enterFor?.userId ?? (forUserId || null);
+    const ok = await recordPhysical(gameId, physicalLabel, physicalTotal, target);
+    if (ok) {
+      setPhysicalLabel('');
+      if (target) showToast(`Recorded for ${enterFor?.name ?? players.find((p) => p.value === target)?.label}.`, 'success');
+    } else {
+      showToast('Failed to record the roll.', 'error');
+    }
+  }
+
+  const physicalForm = (
+    <div className="physical-roll">
+      <p className="subhead" style={{ marginTop: 0 }}>
+        {enterFor ? `Enter a real-dice roll for ${enterFor.name}` : 'Rolled real dice? Enter the result'}
+      </p>
+      <div className="physical-roll-row">
+        <NumberInput value={physicalTotal} onChange={setPhysicalTotal} />
+        <input
+          placeholder="What for (optional)"
+          value={physicalLabel}
+          onChange={(e) => setPhysicalLabel(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handlePhysical()}
+        />
+      </div>
+      {isDm && !enterFor && players.length > 0 && (
+        <div className="field" style={{ marginTop: 6 }}>
+          <CustomSelect value={forUserId} onChange={setForUserId} options={[{ value: ME, label: 'For: me' }, ...players.map((p) => ({ ...p, label: `For: ${p.label}` }))]} />
+        </div>
+      )}
+      <button className="add-btn" style={{ marginTop: 6 }} onClick={handlePhysical}>+ Record roll</button>
+    </div>
+  );
+
+  if (enterFor) {
+    return (
+      <div>
+        <p className="dice-private-note"><span className="lock">🔒</span> {enterFor.name}'s own rolls stay private</p>
+        {physicalForm}
+      </div>
+    );
   }
 
   const modLabel = mod !== 0 ? (mod > 0 ? ` + ${mod}` : ` - ${Math.abs(mod)}`) : '';
@@ -52,14 +123,18 @@ export function DiceRoller() {
           </div>
         </div>
       </div>
-      <button className="roll-btn" onClick={roll}>Roll {count}d{die}{modLabel}</button>
+      <button className="roll-btn" onClick={handleRoll}>Roll {count}d{die}{modLabel}</button>
       {history.length > 0 && (
         <div className="roll-history">
-          {history.map((r, i) => (
-            <div key={i}>{r.expr} → <strong>{r.result}</strong></div>
+          {history.map((r) => (
+            <div key={r.id} title={r.dice ? `Dice: ${r.dice}` : undefined}>
+              {r.expression} → <strong>{r.total}</strong>
+              {r.isPhysical && <span className="roll-tag">{r.enteredByOther ? 'entered by DM' : 'real dice'}</span>}
+            </div>
           ))}
         </div>
       )}
+      {physicalForm}
     </div>
   );
 }

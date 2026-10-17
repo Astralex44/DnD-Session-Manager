@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
@@ -18,10 +18,20 @@ function isImage(fileUrl: string): boolean {
 // the player's own edits to the same DocumentShare row the DM's share
 // checkbox writes to (see MapDmPanel), same demo-mode identity convention
 // as everywhere else pre-Login. Live via SignalR push.
-export function MapPlayerPanel() {
+interface MapPlayerPanelProps {
+  // "View as player" (DM): only this player's characters are pickable, so
+  // the panel shows exactly what that player sees.
+  onlyCharacterIds?: string[];
+}
+
+export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
   const gameId = useGameId();
   const { documents, fetchDocuments, setShare } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
+  const pool = useMemo(
+    () => (onlyCharacterIds ? characters.filter((c) => onlyCharacterIds.includes(c.id)) : characters),
+    [characters, onlyCharacterIds],
+  );
 
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
@@ -31,10 +41,10 @@ export function MapPlayerPanel() {
   useLiveFetch(gameId, 'characters', fetchCharacters);
 
   useEffect(() => {
-    if (!characterId && characters.length > 0) setCharacterId(characters[0].id);
-  }, [characters, characterId]);
+    if (!characterId && pool.length > 0) setCharacterId(pool[0].id);
+  }, [pool, characterId]);
 
-  const characterOptions = characters.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
+  const characterOptions = pool.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
 
   // Raw booleans, not the collapsed shareState() tri-state — Hidden and
   // Locked are independent flags here (a map can be both, or either), so the

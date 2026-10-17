@@ -1158,3 +1158,18 @@ h2 {
 .calc-key.calc-op { background: var(--surface-2); color: var(--primary-dark); font-weight: bold; }
 .calc-key.calc-eq { background: var(--primary); color: var(--bg); grid-row: span 2; }
 .calc-key.calc-zero { grid-column: span 2; }
+
+/* Dice: physical (real-dice) entry, v0.5.0 */
+.physical-roll { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.physical-roll-row { display: grid; grid-template-columns: 80px 1fr; gap: 6px; }
+.roll-tag { margin-left: 8px; font-size: 10.5px; color: var(--text-muted); font-style: italic; }
+
+/* "View as player" on the Board (v0.5.0) */
+.roster-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.view-as-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: var(--tertiary); color: var(--bg); border-radius: 6px; padding: 10px 16px; margin-bottom: 18px; font-size: 13.5px;
+}
+.view-as-banner button { background: var(--bg); color: var(--text); border: 0; flex-shrink: 0; }
+.timer-row.done { opacity: 0.55; }
+.timer-row.done .timer-time { font-style: italic; }

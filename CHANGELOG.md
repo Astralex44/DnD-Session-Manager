@@ -4,6 +4,24 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.5.0-alpha — 2026-10-17
+
+### Added
+- **Real dice count too:** rolled physical dice? Type the result into the dice panel and it joins your history
+  (marked "real dice").
+- **The DM can enter a roll for a player** (e.g. someone rolling at the table without a device) — it lands in that
+  player's own history, marked "entered by DM".
+- **View as player (DM):** "View as" next to each character on the Board switches to exactly what that player
+  sees, to enter things on their behalf; "Back to DM view" returns. Their notes and dice history stay private
+  even then.
+
+### Changed
+- Your dice history (last 5 rolls) is now kept with your account — it survives a reload and follows you to
+  another device. Still private: nobody else, the DM included, can see your rolls.
+
+### Fixed
+- Finished timers now show "done" instead of sitting at 00:00.
+
 ## v0.4.0-alpha — 2026-10-17
 
 ### Added
