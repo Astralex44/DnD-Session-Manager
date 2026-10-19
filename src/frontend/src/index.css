@@ -1161,7 +1161,9 @@ h2 {
 
 /* Dice: physical (real-dice) entry, v0.5.0 */
 .physical-roll { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border); }
-.physical-roll-row { display: grid; grid-template-columns: 80px 1fr; gap: 6px; }
+.physical-roll-row { display: flex; align-items: center; gap: 8px; }
+.physical-roll-row .physical-expr { font-family: var(--font-data); font-size: 14px; white-space: nowrap; }
+.physical-roll-row input { width: 90px; }
 .roll-tag { margin-left: 8px; font-size: 10.5px; color: var(--text-muted); font-style: italic; }
 
 /* "View as player" on the Board (v0.5.0) */
@@ -1230,3 +1232,7 @@ h2 {
 .quote-filters { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
 .quote-filters .field { width: 240px; }
 .quote-add-row .quote-input { min-height: 0; width: 100%; resize: none; }
+
+/* Board character panel: level tag + "Sheet ›" side by side in the header */
+.panel-header-actions { display: flex; align-items: center; gap: 8px; }
+a.panel-header-btn { text-decoration: none; }

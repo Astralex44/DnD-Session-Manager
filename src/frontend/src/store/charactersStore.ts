@@ -19,6 +19,10 @@ interface CharactersState {
   characters: Character[];
   current: CharacterDetail | null;
   isLoading: boolean;
+  // The character LIST's own flag. The list is refetched live from the
+  // sidebar, Board and many pages; sharing isLoading with the open sheet
+  // would blank that sheet (and drop focus mid-typing) on every refetch.
+  listLoading: boolean;
   error: string | null;
 
   fetchCharacters: (gameId: string) => Promise<void>;
@@ -67,15 +71,16 @@ export const useCharactersStore = create<CharactersState>((set, get) => {
     characters: [],
     current: null,
     isLoading: false,
+    listLoading: false,
     error: null,
 
     fetchCharacters: async (gameId) => {
-      set({ isLoading: true, error: null });
+      set({ listLoading: true });
       try {
         const characters = await charactersApi.list(gameId);
-        set({ characters, isLoading: false });
+        set({ characters, listLoading: false });
       } catch (err) {
-        set({ error: describeError(err), isLoading: false });
+        set({ error: describeError(err), listLoading: false });
       }
     },
 

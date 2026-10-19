@@ -104,6 +104,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         }
 
         await unitOfWork.Characters.AddAsync(character);
+        await DeactivateOtherCharactersAsync(gameId, character);
         // Character.ActiveLevelSheetId and CharacterLevelSheet.CharacterId form a mutual FK
         // between two brand-new rows; EF can't order a single INSERT batch for that, so the
         // active pointer is set in a second pass once both rows exist.
@@ -158,7 +159,9 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         character.AdditionalFeatures = input.AdditionalFeatures;
         character.FeaturesTraits = input.FeaturesTraits;
         character.Treasure = input.Treasure;
+        var becameActive = character.Status != "active" && input.Status == "active";
         character.Status = input.Status;
+        if (becameActive) await DeactivateOtherCharactersAsync(gameId, character);
 
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "characters");
@@ -171,6 +174,7 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         if (character is null) return null;
 
         character.Status = status;
+        if (status == "active") await DeactivateOtherCharactersAsync(gameId, character);
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "characters");
         return ToDto(character);
@@ -523,6 +527,20 @@ public class CharacterFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broa
         unitOfWork.CharacterSpellSlots.Remove(slot);
         await unitOfWork.SaveChangesAsync();
         return true;
+    }
+
+    // One active character per player — "Characters" in a player's sidebar
+    // jumps straight to it. Making one active (by creating it, or setting it
+    // active) sets the player's other active ones to inactive; dead stays dead.
+    // Unowned characters (pre-login, DM-only) are left alone.
+    private async Task DeactivateOtherCharactersAsync(Guid gameId, Character active)
+    {
+        if (active.OwnerUserId is null) return;
+        foreach (var other in await unitOfWork.Characters.GetByGameIdAsync(gameId))
+        {
+            if (other.Id != active.Id && other.OwnerUserId == active.OwnerUserId && other.Status == "active")
+                other.Status = "inactive";
+        }
     }
 
     private async Task<Character?> GetOwnedCharacterAsync(Guid gameId, Guid characterId)

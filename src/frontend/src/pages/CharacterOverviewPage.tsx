@@ -18,7 +18,7 @@ export function CharacterOverviewPage() {
   const gameId = useGameId();
   const me = useMe();
   const isDm = me.role === 'Dm';
-  const { characters, isLoading, error, fetchCharacters, setCharacterStatus } = useCharactersStore();
+  const { characters, listLoading, error, fetchCharacters, setCharacterStatus } = useCharactersStore();
 
   useEffect(() => {
     fetchCharacters(gameId);
@@ -34,7 +34,7 @@ export function CharacterOverviewPage() {
       </p>
 
       {error && <div className="error-banner">{error}</div>}
-      {isLoading && <p className="hint">Loading…</p>}
+      {listLoading && characters.length === 0 && <p className="hint">Loading…</p>}
 
       <div className="char-list">
         {characters.map((c) => {

@@ -4,6 +4,20 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.10.0-alpha — 2026-10-19
+
+### Added
+- **Board ⇄ character sheet in one click:** "Sheet ›" in the Board's character panel opens that character's sheet;
+  "‹ Board" at the top of the sheet goes straight back.
+- **"Characters" in a player's sidebar opens their active character directly.** No active character → the list, to
+  pick or create one. On the sheet, "All my characters" (when you have more than one) leads back to the list.
+
+### Changed
+- **One active character per player:** setting a character active (or creating a new one) makes your other active
+  characters inactive.
+- **Real-dice rolls use the dice selection:** pick the dice as for a normal roll, enter the total, and it's recorded
+  as e.g. "5d12+3 → 35". The roll history now sits at the bottom of the dice panel.
+
 ## v0.9.0-alpha — 2026-10-19
 
 ### Added

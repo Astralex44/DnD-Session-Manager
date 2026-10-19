@@ -63,8 +63,8 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const me = useMe();
   const navigate = useNavigate();
   const {
-    current, isLoading, error,
-    fetchCharacter, updateCharacter, setSkillProficiency, setSaveProficiency,
+    current, characters, isLoading, error,
+    fetchCharacter, fetchCharacters, updateCharacter, setSkillProficiency, setSaveProficiency,
     addAttack, updateAttack, removeAttack, addItem, updateItem, removeItem,
     createLevelSheet, setActiveLevelSheet, updateHpMax, removeLevelSheet,
     upsertSpellcasting, addSpell, setSpellPrepared, removeSpell,
@@ -90,6 +90,10 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const [showSpellcastingForm, setShowSpellcastingForm] = useState(false);
 
   useEffect(() => {
+    fetchCharacters(gameId);
+  }, [gameId, fetchCharacters]);
+
+  useEffect(() => {
     if (characterId) fetchCharacter(gameId, characterId);
   }, [gameId, characterId, fetchCharacter]);
 
@@ -109,7 +113,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   if (isLoading || !current || !form) {
     return (
       <div>
-        <Link className="back-link" to="/characters">‹ Back</Link>
+        <Link className="back-link" to="/board">‹ Board</Link>
         {error && <div className="error-banner">{error}</div>}
         {isLoading && <p className="hint">Loading…</p>}
       </div>
@@ -122,6 +126,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   // else allowed in (the DM) gets the whole sheet read-only — controls
   // render disabled or hidden rather than failing with a 403 on blur.
   const isOwner = current.ownerUserId === me.userId;
+  const ownCharacterCount = characters.filter((c) => c.ownerUserId === me.userId).length;
 
   function updateField<K extends keyof UpdateCharacterInput>(key: K, value: UpdateCharacterInput[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -274,7 +279,13 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           >
             Download PDF
           </a>
-          <Link className="back-link no-print" to="/characters">‹ Back</Link>
+          {/* Back to the table in one click; the character list stays reachable
+              for switching or creating — "Characters" in a player's sidebar
+              now jumps straight to the active character instead. */}
+          {(me.role === 'Dm' || ownCharacterCount > 1) && (
+            <Link className="back-link no-print" to="/characters">{me.role === 'Dm' ? 'All characters' : 'All my characters'}</Link>
+          )}
+          <Link className="back-link no-print" to="/board">‹ Board</Link>
         </div>
       </div>
 

@@ -18,7 +18,9 @@ import { QuotesPage } from './pages/QuotesPage.tsx';
 import { SessionsManagePage } from './pages/SessionsManagePage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { ShopsManagePage } from './pages/ShopsManagePage.tsx';
-import { useAuthStore, useIsDm, useMe } from './store/authStore.ts';
+import { useLiveFetch } from './hooks/useLiveFetch.ts';
+import { useAuthStore, useGameId, useIsDm, useMe } from './store/authStore.ts';
+import { useCharactersStore } from './store/charactersStore.ts';
 
 // One shell for everything (see the routing table in the vault's Architecture
 // note). The DM's setup pages live under /manage as an expandable "Manage"
@@ -40,6 +42,7 @@ function MainLayout() {
   const location = useLocation();
   const isDm = useIsDm();
   const nav = (active: boolean) => `nav-item${active ? ' active' : ''}`;
+  const charactersTarget = useCharactersLinkTarget();
 
   return (
     <>
@@ -57,7 +60,7 @@ function MainLayout() {
           <Link className={nav(location.pathname === '/')} to="/">
             <span className="glyph">⌂</span> Dashboard
           </Link>
-          <Link className={nav(location.pathname.startsWith('/characters') || location.pathname.startsWith('/character/'))} to="/characters">
+          <Link className={nav(location.pathname.startsWith('/characters') || location.pathname.startsWith('/character/'))} to={charactersTarget}>
             <span className="glyph">♟</span> Characters
           </Link>
           <Link className={nav(location.pathname.startsWith('/board'))} to="/board">
@@ -78,6 +81,21 @@ function MainLayout() {
       </div>
     </>
   );
+}
+
+// "Characters" in the sidebar: the DM gets the list of everyone's
+// characters; a player jumps straight to the sheet of their active character
+// (one per player, enforced on the server), or the list when there's none —
+// to create one or pick one. Kept live, so setting another character active
+// updates the link at once.
+function useCharactersLinkTarget(): string {
+  const gameId = useGameId();
+  const isDm = useIsDm();
+  const { characters, fetchCharacters } = useCharactersStore();
+  useLiveFetch(gameId, 'characters', fetchCharacters);
+  if (isDm) return '/characters';
+  const active = characters.find((c) => c.status === 'active');
+  return active ? `/character/${active.id}` : '/characters';
 }
 
 // DM only. Opens itself when you're on a Manage page and stays open; the

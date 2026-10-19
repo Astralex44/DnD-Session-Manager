@@ -105,7 +105,11 @@ export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps
     <div className="panel span-2">
       <div className="panel-header">
         <h3>{current.name}</h3>
-        <span className="tag">Level {current.activeLevelSheet?.level ?? '—'} {current.class}</span>
+        <div className="panel-header-actions">
+          <span className="tag">Level {current.activeLevelSheet?.level ?? '—'} {current.class}</span>
+          {/* One click to the full sheet of exactly this character; the sheet's "‹ Board" comes back. */}
+          <Link className="panel-header-btn" to={`/character/${current.id}`}>Sheet ›</Link>
+        </div>
       </div>
       <div className="panel-body">
         {options.length > 1 && (
@@ -146,9 +150,6 @@ export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps
           </div>
         )}
 
-        <Link className="add-btn" style={{ marginTop: 14, display: 'block', textAlign: 'center', textDecoration: 'none' }} to={`/character/${current.id}`}>
-          Open Full Sheet
-        </Link>
       </div>
     </div>
   );

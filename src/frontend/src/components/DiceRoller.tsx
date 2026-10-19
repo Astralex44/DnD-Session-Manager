@@ -29,7 +29,6 @@ export function DiceRoller({ enterFor }: DiceRollerProps) {
   const [count, setCount] = useState(1);
   const [mod, setMod] = useState(0);
   const [physicalTotal, setPhysicalTotal] = useState(10);
-  const [physicalLabel, setPhysicalLabel] = useState('');
   const [forUserId, setForUserId] = useState(ME);
   const [players, setPlayers] = useState<{ value: string; label: string }[]>([]);
 
@@ -54,52 +53,21 @@ export function DiceRoller({ enterFor }: DiceRollerProps) {
 
   async function handlePhysical() {
     const target = enterFor?.userId ?? (forUserId || null);
-    const ok = await recordPhysical(gameId, physicalLabel, physicalTotal, target);
+    const ok = await recordPhysical(gameId, expression, physicalTotal, target);
     if (ok) {
-      setPhysicalLabel('');
       if (target) showToast(`Recorded for ${enterFor?.name ?? players.find((p) => p.value === target)?.label}.`, 'success');
     } else {
       showToast('Failed to record the roll.', 'error');
     }
   }
 
-  const physicalForm = (
-    <div className="physical-roll">
-      <p className="subhead" style={{ marginTop: 0 }}>
-        {enterFor ? `Enter a real-dice roll for ${enterFor.name}` : 'Rolled real dice? Enter the result'}
-      </p>
-      <div className="physical-roll-row">
-        <NumberInput value={physicalTotal} onChange={setPhysicalTotal} />
-        <input
-          placeholder="What for (optional)"
-          value={physicalLabel}
-          onChange={(e) => setPhysicalLabel(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handlePhysical()}
-        />
-      </div>
-      {isDm && !enterFor && players.length > 0 && (
-        <div className="field" style={{ marginTop: 6 }}>
-          <CustomSelect value={forUserId} onChange={setForUserId} options={[{ value: ME, label: 'For: me' }, ...players.map((p) => ({ ...p, label: `For: ${p.label}` }))]} />
-        </div>
-      )}
-      <button className="add-btn" style={{ marginTop: 6 }} onClick={handlePhysical}>+ Record roll</button>
-    </div>
-  );
-
-  if (enterFor) {
-    return (
-      <div>
-        <p className="dice-private-note"><span className="lock">🔒</span> {enterFor.name}'s own rolls stay private</p>
-        {physicalForm}
-      </div>
-    );
-  }
-
+  // One dice selection for both: rolling in the app, and recording a roll
+  // made with real dice — so a real roll reads like any other ("5d12+3 → 35").
+  const expression = `${count}d${die}${mod > 0 ? `+${mod}` : mod < 0 ? `${mod}` : ''}`;
   const modLabel = mod !== 0 ? (mod > 0 ? ` + ${mod}` : ` - ${Math.abs(mod)}`) : '';
 
-  return (
-    <div>
-      <p className="dice-private-note"><span className="lock">🔒</span> only visible to you</p>
+  const diceControls = (
+    <>
       <div className="die-row">
         {DICE.map((d) => (
           <div key={d} className={`die${d === die ? ' selected' : ''}`} onClick={() => setDie(d)}>d{d}</div>
@@ -123,7 +91,44 @@ export function DiceRoller({ enterFor }: DiceRollerProps) {
           </div>
         </div>
       </div>
+    </>
+  );
+
+  const physicalForm = (
+    <div className="physical-roll">
+      <p className="subhead" style={{ marginTop: 0 }}>
+        {enterFor ? `Real dice ${enterFor.name} rolled — set the dice above, then the total` : 'Rolled real dice? Set the dice above, then enter the total'}
+      </p>
+      <div className="physical-roll-row">
+        <span className="physical-expr">{expression} →</span>
+        <NumberInput value={physicalTotal} onChange={setPhysicalTotal} onKeyDown={(e) => e.key === 'Enter' && handlePhysical()} />
+      </div>
+      {isDm && !enterFor && players.length > 0 && (
+        <div className="field" style={{ marginTop: 6 }}>
+          <CustomSelect value={forUserId} onChange={setForUserId} options={[{ value: ME, label: 'For: me' }, ...players.map((p) => ({ ...p, label: `For: ${p.label}` }))]} />
+        </div>
+      )}
+      <button className="add-btn" style={{ marginTop: 6 }} onClick={handlePhysical}>+ Record {expression} → {physicalTotal}</button>
+    </div>
+  );
+
+  if (enterFor) {
+    return (
+      <div>
+        <p className="dice-private-note"><span className="lock">🔒</span> {enterFor.name}'s own rolls stay private</p>
+        {diceControls}
+        {physicalForm}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="dice-private-note"><span className="lock">🔒</span> only visible to you</p>
+      {diceControls}
       <button className="roll-btn" onClick={handleRoll}>Roll {count}d{die}{modLabel}</button>
+      {physicalForm}
+      {/* History last: roll or record above, results collect at the bottom. */}
       {history.length > 0 && (
         <div className="roll-history">
           {history.map((r) => (
@@ -134,7 +139,6 @@ export function DiceRoller({ enterFor }: DiceRollerProps) {
           ))}
         </div>
       )}
-      {physicalForm}
     </div>
   );
 }
