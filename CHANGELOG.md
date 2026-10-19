@@ -4,6 +4,12 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.6.1-alpha — 2026-10-19
+
+### Fixed
+- The browser tab now shows a d20 icon in the app's colours and the title "DnD Session Manager" (it said
+  "frontend" with a generic logo).
+
 ## v0.6.0-alpha — 2026-10-17
 
 ### Added
