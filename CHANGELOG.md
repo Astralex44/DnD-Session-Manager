@@ -4,6 +4,11 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.7.1-alpha — 2026-10-19
+
+### Changed
+- **Log out** moved into a menu behind your name and avatar (top right) instead of sitting out in the open.
+
 ## v0.7.0-alpha — 2026-10-19
 
 ### Changed

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { RequireAuth } from './components/RequireAuth.tsx';
 import { ToastContainer } from './components/ToastContainer.tsx';
@@ -112,22 +113,56 @@ function ManageLayout() {
   );
 }
 
+// Profile button top right; logging out sits behind it, not out in the open.
+// Closes on a click outside or Escape.
 function UserMenu() {
   const me = useMe();
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   async function handleLogout() {
+    setOpen(false);
     await logout();
     navigate('/login', { replace: true });
   }
 
   return (
-    <div className="user-menu">
-      {me.avatarUrl && <img className="user-avatar" src={me.avatarUrl} alt="" />}
-      <span className="user-name">{me.username}</span>
+    <div className="user-menu" ref={rootRef}>
       {me.role === 'Dm' && <span className="role-badge">DM</span>}
-      <button className="btn-set-active" onClick={handleLogout}>Log out</button>
+      <button
+        type="button"
+        className="user-menu-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {me.avatarUrl ? <img className="user-avatar" src={me.avatarUrl} alt="" /> : <span className="user-avatar placeholder" />}
+        <span className="user-name">{me.username}</span>
+        <span className="user-menu-caret">▾</span>
+      </button>
+      {open && (
+        <div className="user-menu-dropdown" role="menu">
+          <button type="button" role="menuitem" onClick={handleLogout}>Log out</button>
+        </div>
+      )}
     </div>
   );
 }
