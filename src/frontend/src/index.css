@@ -899,9 +899,11 @@ h2 {
 }
 
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
-.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--primary); color: var(--bg); }
+/* Light bar with a brown title — solid brown headers on every panel made the
+   Board heavy; the brown is kept for buttons, the things you click. */
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface-2); color: var(--primary-dark); border-bottom: 1px solid var(--tertiary); }
 .panel-header h3 { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; font-weight: normal; }
-.panel-header .tag { font-size: 10px; background: rgba(241,237,226,0.18); padding: 2px 8px; border-radius: 10px; letter-spacing: 0.04em; }
+.panel-header .tag { font-size: 10px; background: rgba(110,85,64,0.12); padding: 2px 8px; border-radius: 10px; letter-spacing: 0.04em; }
 .panel-body { padding: 14px 16px; flex: 1; }
 
 /* ---- Initiative ---- */
@@ -1139,7 +1141,7 @@ h2 {
 /* Board panels added in v0.4.0: session notes, my notes, calculator */
 .board-notes-text { width: 100%; min-height: 120px; line-height: 1.5; }
 .panel-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
-.panel-header-link { color: var(--bg); font-size: 12px; text-decoration: none; opacity: 0.85; }
+.panel-header-link { color: var(--primary-dark); font-size: 12px; text-decoration: none; opacity: 0.85; }
 .panel-header-link:hover { opacity: 1; text-decoration: underline; }
 .calc-display {
   display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
@@ -1183,10 +1185,10 @@ h2 {
 .buy-btn { padding: 4px 12px; font-size: 12.5px; }
 .sale-mode-all { width: 170px; }
 .panel-header-btn {
-  background: transparent; color: var(--bg); border: 1px solid rgba(241, 237, 226, 0.6);
+  background: transparent; color: var(--primary-dark); border: 1px solid var(--primary);
   font-size: 11.5px; padding: 3px 10px; border-radius: 4px;
 }
-.panel-header-btn:hover { background: rgba(241, 237, 226, 0.15); }
+.panel-header-btn:hover { background: rgba(146, 115, 85, 0.15); }
 
 /* Profile menu (header): logout behind a click */
 .user-menu { position: relative; }

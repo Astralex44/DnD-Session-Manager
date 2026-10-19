@@ -4,6 +4,10 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+### Changed
+- **Lighter Board:** panel headers are a light parchment bar with a brown title instead of solid dark brown;
+  the brown is kept for the buttons.
+
 ## v0.10.0-alpha — 2026-10-19
 
 ### Added
