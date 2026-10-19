@@ -92,7 +92,7 @@ builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("DndSessionManager");
 
-// Release 1 auth (see the repo's Entscheidungs-Log — Discord OAuth only,
+// Release 1 auth (see wiki/Decision-Log.md "Login: a fixed DM plus invites" — Discord OAuth only,
 // Google/multi-provider deferred until after v1 ships). Cookie holds our own
 // session; the Discord OAuth handshake only runs once, at login, to resolve
 // who the person is (AuthFacade.FindOrCreateUserAsync).

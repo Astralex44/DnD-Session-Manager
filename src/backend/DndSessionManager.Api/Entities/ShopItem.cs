@@ -17,8 +17,8 @@ public class ShopItem
 
     // SharedStock: total units available across all buyers, decrements on every
     // purchase, null = unlimited. PerPlayerLimited: not used for availability —
-    // MaxPerCharacter governs it instead, no shared counter needed (per
-    // Entscheidungs-Log: "kein gemeinsamer Zähler bei Letzterem nötig").
+    // MaxPerCharacter governs it instead, no shared counter needed (see
+    // wiki/Decision-Log.md "Shop: shared stock vs. per-player limit").
     public int? StockQuantity { get; set; }
 
     // PerPlayerLimited only: max total units a single character may ever buy of

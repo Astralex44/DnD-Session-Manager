@@ -1,9 +1,9 @@
 namespace DndSessionManager.Api.Entities;
 
-// Vorlage getrennt von Live-Kampfteilnehmer (siehe wiki/Entscheidungs-Log.md):
-// this is a reusable template (name, PDF stat block, default HP), owned by the
-// DM, spanning the whole game. The live, HP-tracking copy of a monster in an
-// active encounter is a separate concept that belongs to the future Board.
+// Template separate from the live combatant (see wiki/Decision-Log.md "Monsters:
+// template separate from the live combatant"): this is a reusable template
+// (name, PDF stat block, default HP), owned by the DM, spanning the whole game.
+// The live, HP-tracking copy of a monster on the Board is SessionMonster.
 public class Monster
 {
     public Guid Id { get; set; }

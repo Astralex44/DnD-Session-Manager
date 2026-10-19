@@ -1,8 +1,8 @@
 namespace DndSessionManager.Api.Entities;
 
 // The live, HP-tracking copy of a monster in an active encounter — deliberately
-// separate from Monster (see wiki/Entscheidungs-Log.md "Monster: Vorlage getrennt
-// von Live-Kampfteilnehmer", also noted in monsters-books-sessions-state memory).
+// separate from Monster (see wiki/Decision-Log.md "Monsters: template separate
+// from the live combatant", also noted in monsters-books-sessions-state memory).
 // MonsterId is optional: the DM can spawn an instance from a saved Monster
 // template (Name/HpMax prefilled from it) or add an ad-hoc one on the spot,
 // same freeform pattern as InitiativeEntry. Not session-scoped by FK — like

@@ -197,8 +197,8 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
         return true;
     }
 
-    // Exact-denomination, no-conversion purchase (see wiki/Entscheidungs-Log.md "Shop:
-    // geteilter Vorrat vs. pro Spieler einmalig" and the currency house rule): every
+    // Exact-denomination, no-conversion purchase (see wiki/Decision-Log.md "Shop:
+    // shared stock vs. per-player limit" and the currency house rule): every
     // price component must be paid in full in its own denomination, nothing is
     // converted or substituted, and the whole check-and-debit happens in one
     // SaveChangesAsync call so it commits atomically.
