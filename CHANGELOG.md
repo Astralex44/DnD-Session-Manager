@@ -4,6 +4,13 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.8.0-alpha — 2026-10-19
+
+### Changed
+- **Manage is part of the main sidebar (DM):** instead of switching to a separate area with its own header, "Manage"
+  opens a group in the normal sidebar with Documents, Monsters, Shops, Quotes, Sessions, Players and Settings.
+  The Board is always one click away, and the group stays open until you close it.
+
 ## v0.7.1-alpha — 2026-10-19
 
 ### Changed

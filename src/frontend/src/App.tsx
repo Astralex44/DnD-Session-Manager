@@ -20,14 +20,26 @@ import { SettingsPage } from './pages/SettingsPage.tsx';
 import { ShopsManagePage } from './pages/ShopsManagePage.tsx';
 import { useAuthStore, useIsDm, useMe } from './store/authStore.ts';
 
-// Two shells (see the routing table in the vault's Architecture note):
-// MainLayout for everyone — Dashboard, Characters, Board, Notes, Help — and
-// ManageLayout, the DM's setup area under /manage with its own header and
-// sidebar (matching docs/mockups/DnD_Tool_Manage_Mockup.html). /manage is
-// DM-only here (DmOnly) and on the server (GameDm policy).
+// One shell for everything (see the routing table in the vault's Architecture
+// note). The DM's setup pages live under /manage as an expandable "Manage"
+// group in the same sidebar — not a separate area with its own header, so the
+// Board is always one click away during a session. /manage is DM-only here
+// (DmOnly) and on the server (GameDm policy).
+const MANAGE_ITEMS: [path: string, glyph: string, label: string][] = [
+  ['/manage/documents', '★', 'Documents'],
+  ['/manage/monsters', '☠', 'Monsters'],
+  ['/manage/shops', '⚖', 'Shops'],
+  ['/manage/quotes', '❝', 'Quotes'],
+  ['/manage/sessions', '○', 'Sessions'],
+  ['/manage/players', '☷', 'Players'],
+  ['/manage/settings', '⚙', 'Settings'],
+];
+const MANAGE_OPEN_KEY = 'dnd.sidebar.manageOpen';
+
 function MainLayout() {
   const location = useLocation();
   const isDm = useIsDm();
+  const nav = (active: boolean) => `nav-item${active ? ' active' : ''}`;
 
   return (
     <>
@@ -42,24 +54,20 @@ function MainLayout() {
 
       <div className="layout">
         <nav className="sidebar">
-          <Link className={`nav-item${location.pathname === '/' ? ' active' : ''}`} to="/">
+          <Link className={nav(location.pathname === '/')} to="/">
             <span className="glyph">⌂</span> Dashboard
           </Link>
-          <Link className={`nav-item${location.pathname.startsWith('/characters') || location.pathname.startsWith('/character/') ? ' active' : ''}`} to="/characters">
+          <Link className={nav(location.pathname.startsWith('/characters') || location.pathname.startsWith('/character/'))} to="/characters">
             <span className="glyph">♟</span> Characters
           </Link>
-          <Link className={`nav-item${location.pathname.startsWith('/board') ? ' active' : ''}`} to="/board">
+          <Link className={nav(location.pathname.startsWith('/board'))} to="/board">
             <span className="glyph">⚔</span> Board
           </Link>
-          <Link className={`nav-item${location.pathname.startsWith('/notes') ? ' active' : ''}`} to="/notes">
+          <Link className={nav(location.pathname.startsWith('/notes'))} to="/notes">
             <span className="glyph">✎</span> Notes
           </Link>
-          {isDm && (
-            <Link className="nav-item" to="/manage/documents">
-              <span className="glyph">☰</span> Manage
-            </Link>
-          )}
-          <Link className={`nav-item${location.pathname.startsWith('/help') ? ' active' : ''}`} to="/help">
+          {isDm && <ManageGroup />}
+          <Link className={nav(location.pathname.startsWith('/help'))} to="/help">
             <span className="glyph">❔</span> Help
           </Link>
         </nav>
@@ -72,44 +80,56 @@ function MainLayout() {
   );
 }
 
-function ManageLayout() {
+// DM only. Opens itself when you're on a Manage page and stays open; the
+// browser remembers whether you last left it open or closed.
+function ManageGroup() {
   const location = useLocation();
-  const item = (path: string, glyph: string, label: string) => (
-    <Link className={`nav-item${location.pathname.startsWith(path) ? ' active' : ''}`} to={path}>
-      <span className="glyph">{glyph}</span> {label}
-    </Link>
-  );
+  const onManagePage = location.pathname.startsWith('/manage');
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(MANAGE_OPEN_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  // Arriving on a Manage page opens the group, and it stays open after you
+  // leave (e.g. jumping to the Board mid-session) until you close it yourself.
+  // Adjusting state during render, guarded, is React's pattern for this — no
+  // effect needed.
+  if (onManagePage && !open) setOpen(true);
+  const expanded = open || onManagePage;
+
+  function toggle() {
+    const next = !expanded;
+    setOpen(next);
+    try {
+      localStorage.setItem(MANAGE_OPEN_KEY, next ? '1' : '0');
+    } catch {
+      // Storage blocked — the group just won't remember its state.
+    }
+  }
 
   return (
-    <>
-      <header className="app-header">
-        <div className="brand">
-          <span className="glyph">⚔</span>
-          <h1>DnD Session Manager</h1>
-          <span className="sub">— Management</span>
+    <div className="nav-group">
+      <button
+        type="button"
+        className={`nav-item nav-group-toggle${onManagePage ? ' active-parent' : ''}`}
+        aria-expanded={expanded}
+        onClick={toggle}
+      >
+        <span className="glyph">☰</span> Manage
+        <span className="nav-caret">{expanded ? '▾' : '▸'}</span>
+      </button>
+      {expanded && (
+        <div className="nav-sub">
+          {MANAGE_ITEMS.map(([path, glyph, label]) => (
+            <Link key={path} className={`nav-item nav-sub-item${location.pathname.startsWith(path) ? ' active' : ''}`} to={path}>
+              <span className="glyph">{glyph}</span> {label}
+            </Link>
+          ))}
         </div>
-        <div className="manage-header-right">
-          <Link className="back-link" to="/board">‹ Back to Board</Link>
-          <UserMenu />
-        </div>
-      </header>
-
-      <div className="layout">
-        <nav className="sidebar">
-          {item('/manage/documents', '★', 'Documents')}
-          {item('/manage/monsters', '☠', 'Monsters')}
-          {item('/manage/shops', '⚖', 'Shops')}
-          {item('/manage/quotes', '❝', 'Quotes')}
-          {item('/manage/sessions', '○', 'Sessions')}
-          {item('/manage/players', '☷', 'Players')}
-          {item('/manage/settings', '⚙', 'Settings')}
-        </nav>
-
-        <main>
-          <Outlet />
-        </main>
-      </div>
-    </>
+      )}
+    </div>
   );
 }
 
@@ -188,21 +208,19 @@ export function App() {
             <Route path="/board" element={<BoardPage />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/help" element={<HelpPage />} />
+            <Route element={<DmOnly />}>
+              <Route path="/manage" element={<Navigate to="/manage/documents" replace />} />
+              <Route path="/manage/documents" element={<DocumentsManagePage />} />
+              <Route path="/manage/monsters" element={<MonstersManagePage />} />
+              <Route path="/manage/shops" element={<ShopsManagePage />} />
+              <Route path="/manage/quotes" element={<QuotesPage />} />
+              <Route path="/manage/sessions" element={<SessionsManagePage />} />
+              <Route path="/manage/players" element={<PlayersPage />} />
+              <Route path="/manage/settings" element={<SettingsPage />} />
+            </Route>
             {/* Old bookmark from when Players lived in the main sidebar. */}
             <Route path="/players" element={<Navigate to="/manage/players" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-          <Route element={<DmOnly />}>
-            <Route path="/manage" element={<ManageLayout />}>
-              <Route index element={<Navigate to="documents" replace />} />
-              <Route path="documents" element={<DocumentsManagePage />} />
-              <Route path="monsters" element={<MonstersManagePage />} />
-              <Route path="shops" element={<ShopsManagePage />} />
-              <Route path="quotes" element={<QuotesPage />} />
-              <Route path="sessions" element={<SessionsManagePage />} />
-              <Route path="players" element={<PlayersPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
           </Route>
         </Route>
       </Routes>

@@ -1133,8 +1133,6 @@ h2 {
 /* …except the borderless number inside a coin pill, which stays borderless. */
 .coin-pill :is(input:not([type="checkbox"]):not([type="radio"])):disabled { border: 0; background: transparent; }
 
-/* Manage header: "Back to Board" next to the user menu */
-.manage-header-right { display: flex; align-items: center; gap: 16px; }
 
 /* Board panels added in v0.4.0: session notes, my notes, calculator */
 .board-notes-text { width: 100%; min-height: 120px; line-height: 1.5; }
@@ -1204,3 +1202,13 @@ h2 {
   border: 0; border-radius: 5px; padding: 8px 10px; font-size: 13.5px;
 }
 .user-menu-dropdown button:hover { background: var(--surface-2); }
+
+/* Manage as an expandable group in the main sidebar (v0.8.0) */
+.nav-group-toggle {
+  width: 100%; background: transparent; color: var(--text); border: 0; border-left: 3px solid transparent;
+  border-radius: 0; font-family: inherit; text-align: left; cursor: pointer;
+}
+.nav-group-toggle:hover { background: var(--surface-2); }
+.nav-group-toggle.active-parent { font-weight: bold; }
+.nav-caret { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+.nav-sub .nav-sub-item { padding: 8px 22px 8px 40px; font-size: 13.5px; }
