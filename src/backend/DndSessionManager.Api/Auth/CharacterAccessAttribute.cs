@@ -9,12 +9,6 @@ public enum CharacterAccess
     // Owner, or the DM (who sees every character, read-only).
     Read,
 
-    // Owner, or the DM — the narrow DM exception from the decision log: after
-    // a character dies, the DM brings the replacement's level and attributes
-    // in line with the group. Main sheet fields, level sheets and spell slots
-    // (which deliberately don't carry over on level-up — the DM sets them).
-    OwnerOrDm,
-
     // The owner only.
     Owner,
 }
@@ -47,6 +41,9 @@ public class CharacterAccessAttribute(CharacterAccess access) : Attribute, IAsyn
 
         var caller = context.HttpContext.GetGameCaller();
         var isOwner = ownerUserId == caller.UserId;
+        // The DM reads every character but never edits one that isn't theirs
+        // (Severin, 2026-10-19 — replaces the old replacement-character
+        // exception, see the repo's decision log).
         var allowed = access switch
         {
             CharacterAccess.Owner => isOwner,

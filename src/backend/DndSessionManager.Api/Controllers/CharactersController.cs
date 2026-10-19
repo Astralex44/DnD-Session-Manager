@@ -48,7 +48,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return CreatedAtAction(nameof(GetById), new { gameId, id = character.Id }, character);
     }
 
-    [CharacterAccess(CharacterAccess.OwnerOrDm)]
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CharacterDetailDto>> Update(Guid gameId, Guid id, [FromBody] UpdateCharacterDto input)
     {
@@ -140,7 +140,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     public async Task<IActionResult> RemoveItem(Guid gameId, Guid id, Guid itemId) =>
         await characterFacade.RemoveItemAsync(gameId, id, itemId) ? NoContent() : NotFound();
 
-    [CharacterAccess(CharacterAccess.OwnerOrDm)]
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPost("{id:guid}/level-sheets")]
     public async Task<ActionResult<LevelSheetDetailDto>> CreateLevelSheet(Guid gameId, Guid id, [FromBody] CreateLevelSheetDto input)
     {
@@ -148,7 +148,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return levelSheet is null ? NotFound() : Ok(levelSheet);
     }
 
-    [CharacterAccess(CharacterAccess.OwnerOrDm)]
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}/active-level-sheet")]
     public async Task<ActionResult<CharacterDetailDto>> SetActiveLevelSheet(Guid gameId, Guid id, [FromBody] SetActiveLevelSheetDto input)
     {
@@ -156,7 +156,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return character is null ? NotFound() : Ok(character);
     }
 
-    [CharacterAccess(CharacterAccess.OwnerOrDm)]
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPatch("{id:guid}/level-sheets/{levelSheetId:guid}/hp-max")]
     public async Task<ActionResult<LevelSheetDetailDto>> UpdateHpMax(Guid gameId, Guid id, Guid levelSheetId, [FromBody] UpdateHpMaxDto input)
     {
@@ -202,7 +202,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
     public async Task<IActionResult> RemoveSpell(Guid gameId, Guid id, Guid levelSheetId, Guid spellId) =>
         await characterFacade.RemoveSpellAsync(gameId, id, levelSheetId, spellId) ? NoContent() : NotFound();
 
-    [CharacterAccess(CharacterAccess.OwnerOrDm)]
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpPut("{id:guid}/level-sheets/{levelSheetId:guid}/spell-slots")]
     public async Task<ActionResult<SpellSlotDto>> UpsertSpellSlot(Guid gameId, Guid id, Guid levelSheetId, [FromBody] UpsertSpellSlotDto input)
     {
@@ -210,7 +210,7 @@ public class CharactersController(ICharacterFacade characterFacade, ICurrencyFac
         return slot is null ? NotFound() : Ok(slot);
     }
 
-    [CharacterAccess(CharacterAccess.OwnerOrDm)]
+    [CharacterAccess(CharacterAccess.Owner)]
     [HttpDelete("{id:guid}/level-sheets/{levelSheetId:guid}/spell-slots/{slotId:guid}")]
     public async Task<IActionResult> RemoveSpellSlot(Guid gameId, Guid id, Guid levelSheetId, Guid slotId) =>
         await characterFacade.RemoveSpellSlotAsync(gameId, id, levelSheetId, slotId) ? NoContent() : NotFound();

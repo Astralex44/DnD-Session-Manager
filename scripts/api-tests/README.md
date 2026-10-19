@@ -25,6 +25,12 @@ scripts/api-tests/access-matrix.sh      # who gets in, DM-only vs member endpoin
 scripts/api-tests/ownership-matrix.sh   # characters/notes per account, note adoption, sharing, purchases, filtering
 ```
 
+To run them next to your own local stack without touching it, point them at a second API and database:
+`DND_TEST_API=http://localhost:5002 DND_TEST_APP=http://localhost:5175 DND_TEST_DB=dnd_test` (start that API with
+`ConnectionStrings__Default=…;Database=dnd_test`, `ASPNETCORE_URLS=http://localhost:5002` and
+`dotnet run --no-launch-profile` — without that flag `launchSettings.json` overrides the URL and the second API
+silently binds 5001 on top of your own).
+
 Both log in through `GET /api/auth/dev-login?discordId=…&handle=…`, which only exists in Development and runs the
 same rules as the Discord login (`AuthFacade.SignInAsync`).
 

@@ -4,6 +4,13 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.7.0-alpha — 2026-10-19
+
+### Changed
+- **The DM's view of a player's character is completely read-only** — no Level Up, no level switching, no edits to
+  ability scores, HP maximum or spell slots, and no HP changes from the Board. Bringing a replacement character up
+  to the group after a death is now the player's job. (Before, the DM could adjust those for replacement characters.)
+
 ## v0.6.2-alpha — 2026-10-19
 
 ### Fixed

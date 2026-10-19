@@ -26,10 +26,9 @@ neuen Sessions-Verwaltung verknüpft werden.
 ### Charaktere (`/characters`)
 
 Die grösste bisher fertige Funktion. Ein Charakter gehört komplett dem Spieler selbst — der DM muss (und soll)
-normalerweise nicht eingreifen. Einzige Ausnahme: nach dem Tod eines Charakters darf der DM beim Ersatzcharakter
-Level und Attribute manuell an die Gruppe angleichen, damit der neue Charakter nicht komplett von vorn anfangen
-muss (siehe Entscheidungs-Log). Alles andere — Erstellung, laufende Pflege, Levelaufstieg — macht der Spieler
-selbst.
+normalerweise nicht eingreifen. Der DM sieht alle Charakterbögen, aber nur lesend. Alles — Erstellung, laufende
+Pflege, Levelaufstieg, auch das Angleichen eines Ersatzcharakters an die Gruppe nach einem Tod — macht der Spieler
+selbst (seit 2026-10-19; vorher durfte der DM beim Ersatzcharakter eingreifen, siehe Entscheidungs-Log).
 
 **Erstellung** (`+ Create New Character`): ein 8-Schritte-Assistent — Grunddaten, Attribute, Fertigkeiten &
 Rettungswürfe, Ausrüstung, Merkmale, Angriffe, Zauber (nur falls Zauberwirker), Persönlichkeit & Hintergrund. Jeder

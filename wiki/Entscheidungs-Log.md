@@ -38,9 +38,9 @@ dieselben Kartenfreigaben wie der alte Charakter gehabt, einfach weil es derselb
 ## Ersatzcharakter nach Tod: bewusst kein automatischer Übertrag
 
 Bestätigt vom Auftraggeber: neues Inventar (höchstens Starterausrüstung), Kartenfreigaben und Shop-Zugänge bei null.
-Bewusst als Konsequenz fürs Sterben gedacht. Einzige Ausnahme: Level und Attribute werden vom DM manuell an die
-restliche Gruppe angeglichen, damit ein Ersatzcharakter nicht weit zurückliegt, das bleibt aber ein manueller Schritt,
-keine automatische Berechnung.
+Bewusst als Konsequenz fürs Sterben gedacht. Level und Attribute gleicht der Spieler selbst an die Gruppe an, keine
+automatische Berechnung. (Ursprünglich durfte das der DM beim Ersatzcharakter tun; **seit 2026-10-19 gestrichen**:
+der DM sieht fremde Charakterbögen nur noch lesend.)
 
 ## Shop: geteilter Vorrat vs. pro Spieler einmalig
 

@@ -9,7 +9,7 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
 import type { CharacterCurrency } from '../types/currency.ts';
-import { useGameId } from '../store/authStore.ts';
+import { useGameId, useMe } from '../store/authStore.ts';
 
 const EMPTY_WALLET: CharacterCurrency[] = [];
 const FALLBACK_POLL_MS = 20000;
@@ -27,6 +27,7 @@ interface CharacterLivePanelProps {
 
 export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps) {
   const gameId = useGameId();
+  const me = useMe();
   const { characters, current, fetchCharacters, fetchCharacter, updateCharacter } = useCharactersStore();
   const pool = useMemo(
     () => (onlyCharacterIds ? characters.filter((c) => onlyCharacterIds.includes(c.id)) : characters),
@@ -92,6 +93,8 @@ export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps
   }
 
   const hpMax = current.activeLevelSheet?.hpMax ?? 0;
+  // Only the owner changes HP — in "view as player" the DM sees it read-only.
+  const isOwner = current?.ownerUserId === me.userId;
   const hpPercent = hpMax > 0 ? Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100)) : 0;
   const abilities: [string, number][] = [
     ['Strength', current.strength], ['Dexterity', current.dexterity], ['Constitution', current.constitution],
@@ -120,7 +123,7 @@ export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps
             <div className="hp-bar-track"><div className={`hp-bar-fill${hpPercent < 25 ? ' low' : ''}`} style={{ width: `${hpPercent}%` }} /></div>
           </div>
           <div className="hp-control">
-            <NumberInput className="hp-input" value={hpCurrent} onChange={setHpCurrent} onBlur={handleHpBlur} />
+            <NumberInput className="hp-input" disabled={!isOwner} value={hpCurrent} onChange={setHpCurrent} onBlur={handleHpBlur} />
             <span className="hp-sep">/</span>
             <span className="hp-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{hpMax}</span>
           </div>

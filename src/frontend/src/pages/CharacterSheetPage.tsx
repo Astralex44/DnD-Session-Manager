@@ -118,13 +118,10 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
 
   const sheet = current.activeLevelSheet;
 
-  // Mirrors the server's CharacterAccess rules: the owner edits everything;
-  // the DM reads every character and may only adjust what bringing a
-  // replacement character up to the group needs — ability scores, HP
-  // maximum, level sheets and spell slots. Everything else renders disabled
-  // rather than failing with a 403 on blur.
+  // Mirrors the server's CharacterAccess rules: only the owner edits; anyone
+  // else allowed in (the DM) gets the whole sheet read-only — controls
+  // render disabled or hidden rather than failing with a 403 on blur.
   const isOwner = current.ownerUserId === me.userId;
-  const canAdjust = isOwner || me.role === 'Dm';
 
   function updateField<K extends keyof UpdateCharacterInput>(key: K, value: UpdateCharacterInput[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -263,12 +260,12 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
             <div className="level-sheet-picker no-print">
               <CustomSelect
                 value={current.activeLevelSheetId}
-                onChange={(v) => setActiveLevelSheet(gameId, characterId, v)}
+                onChange={(v) => isOwner && setActiveLevelSheet(gameId, characterId, v)}
                 options={current.levelSheets.map((s) => ({ value: s.id, label: `Level ${s.level} (HP ${s.hpMax})` }))}
               />
             </div>
           )}
-          {canAdjust && <button className="btn-ghost no-print" onClick={startLevelUp}>+ Level Up</button>}
+          {isOwner && <button className="btn-ghost no-print" onClick={startLevelUp}>+ Level Up</button>}
           <a
             className="btn-ghost no-print"
             href={charactersApi.pdfUrl(gameId, characterId)}
@@ -285,8 +282,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
       {!isOwner && (
         <div className="readonly-banner no-print">
           {current.ownerUsername ? `${current.ownerUsername}'s character` : 'Not assigned to a player yet'} — read-only
-          for you as DM, except ability scores, HP maximum, level sheets and spell slots (for bringing a
-          replacement character up to the group).
+          for you as DM. Only the player edits their own sheet.
         </div>
       )}
 
@@ -357,7 +353,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
               key={`${sheet?.id}-${sheet?.hpMax}`}
               type="number"
               defaultValue={sheet?.hpMax ?? 0}
-              disabled={!sheet || !canAdjust}
+              disabled={!sheet || !isOwner}
               onBlur={(e) => handleHpMaxBlur(Number(e.target.value))}
             />
           </div>
@@ -413,32 +409,32 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           <div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Strength}</span>
-              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.strength} onChange={(v) => updateField('strength', v)} />
+              <NumberInput className="ab-score-input" disabled={!isOwner} value={form.strength} onChange={(v) => updateField('strength', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.strength))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Dexterity}</span>
-              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.dexterity} onChange={(v) => updateField('dexterity', v)} />
+              <NumberInput className="ab-score-input" disabled={!isOwner} value={form.dexterity} onChange={(v) => updateField('dexterity', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.dexterity))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Constitution}</span>
-              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.constitution} onChange={(v) => updateField('constitution', v)} />
+              <NumberInput className="ab-score-input" disabled={!isOwner} value={form.constitution} onChange={(v) => updateField('constitution', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.constitution))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Intelligence}</span>
-              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.intelligence} onChange={(v) => updateField('intelligence', v)} />
+              <NumberInput className="ab-score-input" disabled={!isOwner} value={form.intelligence} onChange={(v) => updateField('intelligence', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.intelligence))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Wisdom}</span>
-              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.wisdom} onChange={(v) => updateField('wisdom', v)} />
+              <NumberInput className="ab-score-input" disabled={!isOwner} value={form.wisdom} onChange={(v) => updateField('wisdom', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.wisdom))}</span>
             </div>
             <div className="ability-block">
               <span className="ab-name">{ABILITY_SHORT.Charisma}</span>
-              <NumberInput className="ab-score-input" disabled={!canAdjust} value={form.charisma} onChange={(v) => updateField('charisma', v)} />
+              <NumberInput className="ab-score-input" disabled={!isOwner} value={form.charisma} onChange={(v) => updateField('charisma', v)} />
               <span className="ab-mod">{fmtMod(modifier(form.charisma))}</span>
             </div>
           </div>
@@ -693,13 +689,13 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
                   <label>Level {level}</label>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                     <NumberInput
-                      min={0} className="spell-slot-input" disabled={!canAdjust}
+                      min={0} className="spell-slot-input" disabled={!isOwner}
                       value={slot?.expended ?? 0}
                       onChange={(v) => upsertSpellSlot(gameId, characterId, sheet.id, { level, total: slot?.total ?? 0, expended: v })}
                     />
                     /
                     <NumberInput
-                      min={0} className="spell-slot-input" disabled={!canAdjust}
+                      min={0} className="spell-slot-input" disabled={!isOwner}
                       value={slot?.total ?? 0}
                       onChange={(v) => upsertSpellSlot(gameId, characterId, sheet.id, { level, total: v, expended: slot?.expended ?? 0 })}
                     />

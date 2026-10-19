@@ -2,16 +2,16 @@
 # Ownership matrix: DM + two players (Robin, Severin) on pre-login data.
 # WARNING: wipes users, members, invites, characters, notes, maps, shops, quotes, sessions and currencies in the LOCAL dev database
 # (docker container "dnd-postgres") to start from a known state. Local only —
-# it talks to http://localhost:5001 and never to production.
+# it talks to ${DND_TEST_API:-http://localhost:5001} and never to production.
 # Needs the API running in Development with Auth__DmDiscordId=111 (see README.md).
 # Usage: ownership-matrix.sh [scratch dir for cookie jars]
-S=${1:-$(mktemp -d)}; H=http://localhost:5001; B=$H/api; G=00000000-0000-0000-0000-000000000001
+S=${1:-$(mktemp -d)}; H=${DND_TEST_API:-http://localhost:5001}; B=$H/api; G=00000000-0000-0000-0000-000000000001
 DM=$S/b_dm.jar; RO=$S/b_ro.jar; SE=$S/b_se.jar; rm -f $DM $RO $SE
 pass=0; fail=0
 check() { if [ "$2" = "$3" ]; then pass=$((pass+1)); printf "  ok   %-62s %s\n" "$1" "$3"; else fail=$((fail+1)); printf "  FAIL %-62s want %s got %s\n" "$1" "$2" "$3"; fi; }
 code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 J=(-H 'Content-Type: application/json')
-sql() { docker exec dnd-postgres psql -U postgres -d dndsessionmanager -tAc "$1"; }
+sql() { docker exec dnd-postgres psql -U postgres -d ${DND_TEST_DB:-dndsessionmanager} -tAc "$1"; }
 jget() { python3 -c "import sys,json;d=json.load(sys.stdin);print($1)"; }
 
 sql 'delete from "Notes"; delete from "Purchases"; delete from "ShopShares"; delete from "ShopItemPrices"; delete from "ShopItems"; delete from "Shops"; delete from "DocumentShares"; delete from "Documents"; delete from "Quotes"; delete from "Sessions"; delete from "CharacterCurrencies"; delete from "CurrencyDenominations"; update "Characters" set "ActiveLevelSheetId"=null; delete from "Characters"; delete from "GameMembers"; delete from "GameInvites"; delete from "Users";' >/dev/null
@@ -64,7 +64,10 @@ check "Severin deletes Amber" 403 $(code -b $SE -X DELETE $B/games/$G/characters
 check "DM reads Amber" 200 $(code -b $DM $B/games/$G/characters/$AMBER)
 check "DM edits Amber skill (owner only)" 403 $(code -b $DM -X PATCH "${J[@]}" -d '{"proficient":false}' $B/games/$G/characters/$AMBER/skills/$SKILL)
 DETAIL=$(curl -s -b $DM $B/games/$G/characters/$AMBER | python3 -c 'import sys,json;d=json.load(sys.stdin);d["strength"]=16;print(json.dumps(d))')
-check "DM adjusts Amber's attributes (exception)" "16" "$(curl -s -b $DM -X PATCH "${J[@]}" -d "$DETAIL" $B/games/$G/characters/$AMBER | jget 'd["strength"]')"
+LS=$(curl -s -b $DM $B/games/$G/characters/$AMBER | jget 'd["activeLevelSheetId"]')
+check "DM levels Amber up" 403 $(code -b $DM "${J[@]}" -d '{"level":2,"hpToAdd":5,"proficiencyBonus":2,"makeActive":true}' $B/games/$G/characters/$AMBER/level-sheets)
+check "DM sets Amber's spell slots" 403 $(code -b $DM -X PUT "${J[@]}" -d '{"level":1,"total":2,"expended":0}' $B/games/$G/characters/$AMBER/level-sheets/$LS/spell-slots)
+check "DM edits Amber's attributes (no DM exception since 2026-10-19)" 403 $(code -b $DM -X PATCH "${J[@]}" -d "$DETAIL" $B/games/$G/characters/$AMBER)
 check "DM deletes Amber (owner only)" 403 $(code -b $DM -X DELETE $B/games/$G/characters/$AMBER)
 check "Robin reads Rhogar's wallet" 403 $(code -b $RO $B/games/$G/characters/$RHOGAR/currency)
 NEWC=$(curl -s -b $RO "${J[@]}" -d '{"name":"Robins Alt","class":"Bard","level":1,"hpMax":8,"proficiencyBonus":2}' $B/games/$G/characters | jget 'd["ownerUserId"]')
