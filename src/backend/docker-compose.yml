@@ -31,6 +31,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=dndsessionmanager;Username=postgres;Password=postgres"
+      # Real Discord login locally: values come from src/backend/.env (gitignored,
+      # see .env.example next to this file). Empty → the login page says Discord
+      # isn't set up, everything else still works. (User-secrets only apply to
+      # `dotnet run`, not to this container.)
+      Authentication__Discord__ClientId: "${DND_DISCORD_CLIENT_ID:-}"
+      Authentication__Discord__ClientSecret: "${DND_DISCORD_CLIENT_SECRET:-}"
+      Auth__DmDiscordId: "${DND_DM_DISCORD_ID:-}"
 
 volumes:
   postgres_data:
