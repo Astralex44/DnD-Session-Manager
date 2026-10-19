@@ -1,33 +1,32 @@
 # DnD Session Manager — Wiki
 
-Diese Wiki ergänzt [Lastenheft](../blob/main/docs/Lastenheft.docx)
-und [Pflichtenheft](../blob/main/docs/Pflichtenheft.docx) um schnell durchsuchbare Hintergrundinformationen. Die beiden
-Word-Dokumente bleiben die verbindliche Quelle für Anforderungen und technische Spezifikation, hier geht's eher um
-Überblick, Navigation und das "warum".
+Background to the [Lastenheft](../docs/DnD_Tool_Lastenheft.docx) and [Pflichtenheft](../docs/DnD_Tool_Pflichtenheft.docx)
+(the German requirements and technical specification), kept quick to search. The two Word documents remain the
+binding source for requirements; this wiki is about the overview, finding your way around, and the "why".
 
-## Seiten
+## Pages
 
-- [[Architektur]] — Backend-Stack, Deployment, Frontend-Struktur, Seitenbaum
-- [[Datenmodell]] — Überblick über das ERD, die wichtigsten Design-Entscheidungen
-- [[Feature-Übersicht]] — Alle FA-/NFA-Anforderungen kompakt auf einen Blick
-- [[Screens und Mockups]] — Welcher Screen macht was, wo liegt das passende Mockup
-- [[Entscheidungs-Log]] — Chronologisch, warum etwas so entschieden wurde und nicht anders
-- [[Setup]] — Lokale Entwicklungsumgebung aufsetzen
+- [Architecture](Architecture.md) — backend and frontend stack, auth, real-time, deployment, routes
+- [Data Model](Data-Model.md) — the entities as built and the main design choices
+- [Feature Overview](Feature-Overview.md) — every FA/NFA requirement at a glance, with its status
+- [Features and Ideas](Features-and-Ideas.md) — where the user guides are, plus ideas not built yet
+- [Screens and Mockups](Screens-and-Mockups.md) — which mockup shows which screen
+- [Decision Log](Decision-Log.md) — why things were decided the way they were
+- [Setup](Setup.md) — local development, tests, releases
 
-## Wo finde ich was?
+## Where do I find what?
 
-| Frage                                 | Antwort                                                                 |
-|---------------------------------------|-------------------------------------------------------------------------|
-| Was soll das Tool können?             | [Lastenheft](../blob/main/docs/Lastenheft.docx)                         |
-| Wie wird's technisch umgesetzt?       | [Pflichtenheft](../blob/main/docs/Pflichtenheft.docx) + [[Architektur]] |
-| Wie sieht ein bestimmter Screen aus?  | [[Screens und Mockups]]                                                 |
-| Warum ist X so und nicht anders?      | [[Entscheidungs-Log]]                                                   |
-| Wie bekomme ich das lokal zum Laufen? | [[Setup]]                                                               |
+| Question                                | Answer                                                                                          |
+|-----------------------------------------|-------------------------------------------------------------------------------------------------|
+| What should the tool do?                | [Lastenheft](../docs/DnD_Tool_Lastenheft.docx)                                                  |
+| How is it built?                        | [Architecture](Architecture.md), [Pflichtenheft](../docs/DnD_Tool_Pflichtenheft.docx) chapter 8 |
+| How do I use it as DM or player?        | The guides in [`docs/guides/`](../docs/guides/)                                                 |
+| What did the screens look like planned? | [Screens and Mockups](Screens-and-Mockups.md)                                                   |
+| Why is X the way it is?                 | [Decision Log](Decision-Log.md)                                                                 |
+| How do I run it locally?                | [Setup](Setup.md)                                                                               |
+| What changed in which release?          | [CHANGELOG](../CHANGELOG.md)                                                                    |
 
-## Projektstand
+## Project status
 
-Planung abgeschlossen (Lastenheft + Pflichtenheft final, alle Screens gemockt, Datenmodell steht, keine offenen
-Design-Entscheidungen mehr). Umsetzung hat begonnen: ein erster vertikaler Durchstich (Quote-Entität, komplett durch
-alle Schichten) existiert im Repo, siehe `GETTING_STARTED.md`. Für die Übergabe an einen Coding-Agenten gibt's
-zusätzlich `CLAUDE_CODE_BRIEF.md` mit der kompletten Zusammenfassung von Architektur, Datenmodell und Business-Regeln an
-einem Ort.
+Every requirement from the specification is built and live at [dnd.astralex.dev](https://dnd.astralex.dev), still
+released as alpha (see the [CHANGELOG](../CHANGELOG.md)). Login is through Discord, by invite from the DM.

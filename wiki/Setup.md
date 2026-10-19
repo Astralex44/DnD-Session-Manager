@@ -1,75 +1,63 @@
 # Setup
 
-Ein erster vertikaler Durchstich existiert bereits im Repo (Quote-Entität, komplett durch alle
-Schichten). Diese Seite beschreibt, wie man ihn lokal zum Laufen bringt. Ausführlichere Version
-mit Troubleshooting: `GETTING_STARTED.md` im Repo-Root.
+How to run the app locally, test it and ship a release.
 
-## Docker Compose
+## Requirements
 
-```yaml
-services:
-  api:
-    build:
-      context: ./src/backend/DndSessionManager.Api
-      dockerfile: Dockerfile
-    ports:
-      - "5001:8080"
-    environment:
-      - ConnectionStrings__Default=Host=db;Port=5433;Database=dnd_session_manager;Username=postgres;Password=postgres
-    depends_on:
-      - db
+- Docker with Docker Compose
+- .NET SDK 8 (only to run the API outside Docker, or to add migrations with `dotnet-ef`)
+- Node.js 22 for the frontend
 
-  db:
-    image: postgres:16
-    environment:
-      - POSTGRES_DB=dnd_session_manager
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
-```
-
-Ein Reverse Proxy für TLS kommt dazu, sobald es um echtes Deployment statt lokaler Entwicklung geht.
-
-## Vorausgesetzt
-
-- Docker & Docker Compose
-- .NET SDK 8 (für Backend-Entwicklung ausserhalb des Containers, inkl. `dotnet-ef` für Migrationen)
-- Node.js (für Frontend-Entwicklung, React + Vite)
-
-## Lokal starten
+## Run it locally
 
 ```bash
-docker compose up db -d
-
+# API (port 5001) and Postgres (port 5433) in Docker
 cd src/backend
-dotnet restore && dotnet build
-cd DndSessionManager.Api
-dotnet ef migrations add InitialCreate
-dotnet ef database update
-dotnet run                      # http://localhost:5000, Swagger unter /swagger
+cp .env.example .env            # optional: fill in for real Discord login, see below
+docker compose up -d --build
 
-# zweites Terminal
+# Frontend (port 5173), in a second terminal
 cd src/frontend
 npm install
-cp .env.example .env
-npm run dev                     # http://localhost:5173
+cp .env.example .env            # VITE_API_BASE_URL=http://localhost:5001/api
+npm run dev
 ```
 
-## Wichtig
+Open http://localhost:5173. Migrations run when the API starts, so a fresh database is ready right away. Swagger is
+at http://localhost:5001/swagger.
 
-Das Backend wurde ohne verfügbares .NET SDK geschrieben (Entwicklungsumgebung ohne `dotnet`).
-Der erste `dotnet build` sollte deshalb bewusst als Kontrollschritt behandelt werden, nicht nur
-als Formalität.
+## Discord login locally
 
-## Discord-App für lokale Entwicklung
+Without Discord settings the login page says Discord isn't set up; everything else still works. For real login:
 
-Für den OAuth-Flow wird eine eigene Discord-Application mit Redirect-URI auf `localhost` benötigt,
-siehe [Discord Developer Portal](https://discord.com/developers/applications). Details folgen,
-sobald der Auth-Flow implementiert ist (nächster grosser Schritt laut Build-Reihenfolge in
-`CLAUDE_CODE_BRIEF.md`).
+1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications). Under
+   OAuth2, add the redirect `http://localhost:5001/api/auth/discord/callback`. Scopes needed: `identify` only.
+2. Put its client ID and secret in `src/backend/.env`, plus your own Discord user ID as `DND_DM_DISCORD_ID` so you're
+   the DM (Discord → Settings → Advanced → Developer Mode, then right-click yourself → Copy User ID).
+3. `docker compose up -d` again so the container picks them up.
 
-## Nächste Schritte
+Running the API with `dotnet run` instead of Docker? The same values go into user-secrets
+(`Authentication:Discord:ClientId`, `Authentication:Discord:ClientSecret`, `Auth:DmDiscordId`); the `.env` file
+only feeds the container.
 
-Siehe `CLAUDE_CODE_BRIEF.md`, Abschnitt 10: `Character` als nächste Entität (grösste, zentralste),
-danach `Map`/`MapShare`, dann `Shop`/`Purchase`, dann `Session`-Werkzeuge inkl. SignalR, dann Auth.
+**Without Discord at all:** in Development the API has
+`GET /api/auth/dev-login?discordId=…&handle=…&returnUrl=/`, which signs in as that Discord account (the DM if the ID
+matches `Auth:DmDiscordId`, otherwise only if invited). It doesn't exist outside Development.
+
+## Tests
+
+`scripts/api-tests/` holds end-to-end checks of the login, access and ownership rules (curl, one check per line).
+Run them before tagging a release that touches auth, sharing, characters or notes. They wipe tables in the database
+they point at, so run them against a separate test stack — the [README there](../scripts/api-tests/README.md)
+explains how. Build checks: `dotnet build` in `src/backend`, `npm run build` and `npm run lint` in `src/frontend`.
+
+## Releases
+
+1. Update [CHANGELOG.md](../CHANGELOG.md): move "Unreleased" to a new version heading with the date.
+2. Tag and push: `git tag vMAJOR.MINOR.PATCH-alpha && git push origin main --tags` — minor for features, patch for
+   fixes.
+3. The tag runs `.github/workflows/deploy.yml`, which checks the tag out on the server and rebuilds
+   (`docker compose -f docker-compose.prod.yml up -d --build`). See [Architecture](Architecture.md#deployment).
+
+Production configuration lives in a gitignored `.env` on the server; `.env.example` at the repo root lists the
+variables. Its Discord app needs the redirect `https://dnd-api.astralex.dev/api/auth/discord/callback`.

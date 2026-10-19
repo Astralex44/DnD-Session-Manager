@@ -1,71 +1,54 @@
 # DnD Session Manager
 
-Selbst gehostetes Tool zur Verwaltung von D&D-Sessions: ein Live-Board für den eigentlichen Spielabend (Initiative,
-Würfel, Karten, Shops, Timer, Notizen) und eine Verwaltungsoberfläche für den Spielleiter zwischen den Sessions.
+A self-hosted tool for running D&D sessions: a live **Board** for game night (initiative, dice, maps, shops, timers,
+monsters, notes) that updates for everyone at the table without reloading, full 5e **character sheets** that belong
+to their players, and the DM's setup pages for between sessions.
 
-Entstanden aus einer klassischen Lastenheft/Pflichtenheft-Planung, der Spielleiter der Gruppe ist der Auftraggeber.
+It grew out of a classic requirements/specification process, with the group's DM as the client. Live at
+[dnd.astralex.dev](https://dnd.astralex.dev), invite-only, still released as alpha.
 
 ## Stack
 
-| Bereich    | Technologie                              |
-|------------|------------------------------------------|
-| Backend    | ASP.NET Core (C#), Entity Framework Core |
-| Datenbank  | PostgreSQL                               |
-| Echtzeit   | SignalR                                  |
-| Frontend   | React, Vite, React Router, Zustand       |
-| Auth       | Discord OAuth/OIDC                       |
-| Deployment | Docker Compose, selbst gehostet          |
+| Area       | Technology                                       |
+|------------|--------------------------------------------------|
+| Backend    | ASP.NET Core 8 (C#), Entity Framework Core       |
+| Database   | PostgreSQL                                       |
+| Real-time  | SignalR                                          |
+| Frontend   | React, Vite, React Router, Zustand               |
+| Auth       | Discord OAuth, cookie session, invite-only       |
+| Deployment | Docker Compose behind Caddy, self-hosted         |
 
-Details und Begründungen: [Pflichtenheft](docs/Pflichtenheft.docx), Kapitel 8.
+How it fits together and why: the [wiki](wiki/Home.md), especially [Architecture](wiki/Architecture.md) and the
+[Decision Log](wiki/Decision-Log.md).
 
 ## Status
 
-Planung abgeschlossen, keine offenen Design-Entscheidungen mehr. Umsetzung hat begonnen: ein erster vertikaler
-Durchstich (`Quote`-Entität, durch alle vier Architekturschichten) liegt im Repo, siehe [
-`GETTING_STARTED.md`](GETTING_STARTED.md). Für die Übergabe des restlichen Bauplans an einen Coding-Agenten liegt
-zusätzlich [`CLAUDE_CODE_BRIEF.md`](CLAUDE_CODE_BRIEF.md) bereit.
+Every requirement from the specification is built (see the [Feature Overview](wiki/Feature-Overview.md)). Changes per
+release are in the [CHANGELOG](CHANGELOG.md).
 
-## Dokumentation
+## Documentation
 
-| Dokument                                 | Beschreibung                                                                    |
-|------------------------------------------|---------------------------------------------------------------------------------|
-| [Lastenheft](docs/Lastenheft.docx)       | Anforderungen aus Sicht des Spielleiters (Auftraggeber), das "Was"              |
-| [Pflichtenheft](docs/Pflichtenheft.docx) | Technische Umsetzungsplanung, das "Wie"                                         |
-| [ERD](docs/ERD.png)                      | Datenmodell im Überblick ([.drawio-Quelldatei](docs/ERD.drawio) zum Bearbeiten) |
-| [Mockups](docs/mockups/)                 | Interaktive HTML-Mockups aller Screens, direkt im Browser öffnen                |
-| [Wiki](../../wiki)                       | Architektur-Entscheidungen, Feature-Übersicht, Entscheidungs-Log                |
+| Document                                                        | What it is                                                      |
+|-----------------------------------------------------------------|-----------------------------------------------------------------|
+| [DM Guide](docs/guides/DM-Guide.pdf), [Player Guide](docs/guides/Player-Guide.pdf) | How to use the tool, for the DM and for players  |
+| [Wiki](wiki/Home.md)                                            | Architecture, data model, features, decisions, setup            |
+| [CHANGELOG](CHANGELOG.md)                                       | What changed in which release                                   |
+| [Lastenheft](docs/DnD_Tool_Lastenheft.docx)                     | Requirements from the DM's (client's) point of view, the "what" (German) |
+| [Pflichtenheft](docs/DnD_Tool_Pflichtenheft.docx)               | Technical specification, the "how" (German)                     |
+| [Functional specification](docs/DnD_Tool_Funktionale_Spezifikation.docx) | Detailed functional spec (German)                       |
+| [ERD](docs/DnD_Tool_ERD_New_Version.drawio)                     | The planned data model (open with draw.io)                      |
+| [Mockups](docs/mockups/)                                        | Interactive HTML mockups of the planned screens                 |
 
-Für alles, was über "welches Dokument sagt was" hinausgeht, lohnt sich ein Blick ins [Wiki](../../wiki), gerade das
-Entscheidungs-Log hält fest, warum bestimmte Dinge so gebaut sind und nicht anders.
-
-## Grobe Seitenstruktur
-
-```
-/login                    Discord-Login
-/                          Dashboard
-/board                     Live-Session (Panels: Initiative, Würfel, Karten, Shop, Timer, Notizen, ...)
-/characters                Charakter-Übersicht
-/character/:id             Charakterbogen
-/notes                     Private Notizen
-/manage                    Verwaltung (nur DM)
-  /manage/maps
-  /manage/monsters
-  /manage/shops
-  /manage/books
-  /manage/quotes
-  /manage/sessions
-  /manage/settings
-```
-
-## Lokale Entwicklung
+## Local development
 
 ```bash
-docker compose up
+cd src/backend && docker compose up -d --build     # API on :5001, Postgres on :5433
+cd src/frontend && npm install && cp .env.example .env && npm run dev   # app on :5173
 ```
 
-Details folgen, sobald das Backend-Grundgerüst steht.
+Discord login, the dev login for tests, the test suites and releases: see [Setup](wiki/Setup.md).
 
-## Sprachkonvention
+## Language
 
-Dokumentation (dieses README, Lastenheft, Pflichtenheft, Wiki) auf Deutsch, vorerst — Übersetzung ins Englische steht
-noch aus. Das Tool selbst (Code und sichtbare UI-Texte) ist komplett Englisch.
+Everything is in English — code, UI, docs, wiki and changelog — except the three Word specifications, which stay
+German.
