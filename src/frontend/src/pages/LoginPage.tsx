@@ -12,10 +12,22 @@ const ERROR_MESSAGES: Record<string, string> = {
 // a full-page trip to Discord via the API, which sends the browser back to
 // returnUrl afterwards (or to /not-invited when the DM hasn't invited you).
 export function LoginPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const { status, error: loadError, load } = useAuthStore();
   const returnUrl = params.get('returnUrl') ?? '/';
-  const error = ERROR_MESSAGES[params.get('error') ?? ''] ?? loadError;
+
+  // ?error= comes from the API's redirect after a failed attempt. Read it
+  // once, then drop it from the address — otherwise it sticks around and a
+  // reload (or a later visit to the same URL) shows a message about an
+  // attempt that's long over, e.g. "not set up" after Discord was configured.
+  const [errorCode] = useState(() => params.get('error'));
+  const error = ERROR_MESSAGES[errorCode ?? ''] ?? loadError;
+  useEffect(() => {
+    if (!params.has('error')) return;
+    const next = new URLSearchParams(params);
+    next.delete('error');
+    setParams(next, { replace: true });
+  }, [params, setParams]);
 
   // Someone who opens /login while still logged in goes straight on.
   useEffect(() => {

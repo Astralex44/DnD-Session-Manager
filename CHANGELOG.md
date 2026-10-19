@@ -4,6 +4,12 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.6.2-alpha — 2026-10-19
+
+### Fixed
+- A login error message (e.g. "Discord login isn't set up") no longer sticks around after the problem is gone —
+  it's shown once and then cleared from the address.
+
 ## v0.6.1-alpha — 2026-10-19
 
 ### Fixed
