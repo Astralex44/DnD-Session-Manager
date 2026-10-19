@@ -1,0 +1,13 @@
+{
+  "name": "dnd-guides",
+  "private": true,
+  "type": "module",
+  "description": "Renders the DM and Player guides to PDF in the app's look",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "marked": "14.1.4",
+    "puppeteer-core": "23.11.1"
+  }
+}

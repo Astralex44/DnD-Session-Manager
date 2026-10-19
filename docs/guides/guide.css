@@ -1,0 +1,126 @@
+/* Same tokens as src/frontend/src/index.css, so the PDFs look like the app. */
+:root {
+  --bg: #F1EDE2;
+  --surface: #E6DFCC;
+  --surface-2: #DCD3B8;
+  --border: #C9BFA0;
+  --primary: #927355;
+  --primary-dark: #6E5540;
+  --text: #1D1A10;
+  --text-muted: #6B5D4A;
+  --secondary: #4A5A42;
+  --tertiary: #B08D4C;
+  --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+  --font-body: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+  --font-data: 'Courier New', Courier, monospace;
+}
+
+@page { size: A4; margin: 0; }
+
+html, body { margin: 0; background: var(--bg); }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 10.5pt;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* Page margins live in a repeating table header/footer, so the parchment
+   background runs edge to edge on every page (Chrome paints @page margins
+   white). */
+.page-frame { width: 100%; border-collapse: collapse; }
+.page-frame > thead td { height: 16mm; }
+.page-frame > tfoot td { height: 18mm; }
+.page-frame > tbody > tr > td { padding: 0 18mm; vertical-align: top; }
+
+/* Title band, like the app header. */
+.masthead {
+  background: var(--primary-dark);
+  color: var(--bg);
+  margin: -16mm -18mm 8mm;
+  padding: 14mm 18mm 9mm;
+  border-bottom: 3px solid var(--tertiary);
+}
+.masthead .glyph { color: var(--tertiary); font-size: 20pt; margin-right: 8pt; }
+.masthead .kicker {
+  font-family: var(--font-display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 8.5pt;
+  color: var(--surface-2);
+  margin: 0 0 4pt;
+}
+.masthead h1 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 24pt;
+  margin: 0;
+  color: var(--bg);
+}
+.masthead .asof { margin: 6pt 0 0; font-size: 9pt; color: var(--surface-2); }
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 15pt;
+  color: var(--primary-dark);
+  border-bottom: 1px solid var(--tertiary);
+  padding-bottom: 3pt;
+  margin: 16pt 0 8pt;
+  break-after: avoid;
+}
+h3 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 12pt;
+  color: var(--secondary);
+  margin: 12pt 0 5pt;
+  break-after: avoid;
+}
+
+p { margin: 0 0 7pt; }
+ul, ol { margin: 0 0 8pt; padding-left: 16pt; }
+li { margin-bottom: 3pt; break-inside: avoid; }
+li::marker { color: var(--primary); }
+strong { color: var(--primary-dark); }
+em { color: var(--text-muted); }
+a { color: var(--primary-dark); }
+code {
+  font-family: var(--font-data);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-size: 9.5pt;
+}
+
+/* Tables like the app's .box panels. */
+table.content {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 4pt 0 12pt;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 9.5pt;
+}
+table.content th {
+  background: var(--primary);
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-weight: normal;
+  text-align: left;
+  padding: 5pt 8pt;
+}
+table.content td {
+  padding: 5pt 8pt;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+table.content tr { break-inside: avoid; }
+table.content tbody tr:nth-child(even) td { background: var(--surface-2); }
+table.content td:first-child { white-space: nowrap; font-weight: bold; color: var(--primary-dark); }
