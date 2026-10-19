@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ColorSwatchPicker } from '../components/ColorSwatchPicker.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
+import { currencyApi } from '../api/currency.ts';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import type { CurrencyDenomination } from '../types/currency.ts';
 import { useGameId } from '../store/authStore.ts';
@@ -14,6 +15,24 @@ export function SettingsPage() {
   } = useCurrencyStore();
 
   const [deleteTarget, setDeleteTarget] = useState<CurrencyDenomination | null>(null);
+  const [usage, setUsage] = useState<Awaited<ReturnType<typeof currencyApi.usage>> | null>(null);
+
+  // Check first: a coin still used in shop prices can't be deleted (the
+  // server refuses too) — say exactly which items, so the DM knows where to
+  // look. Coins in purses are only a warning: they're lost with it.
+  async function askDelete(d: CurrencyDenomination) {
+    try {
+      setUsage(await currencyApi.usage(gameId, d.id));
+    } catch {
+      setUsage(null);
+    }
+    setDeleteTarget(d);
+  }
+
+  function closeDelete() {
+    setDeleteTarget(null);
+    setUsage(null);
+  }
 
   useEffect(() => {
     fetchDenominations(gameId);
@@ -106,7 +125,7 @@ export function SettingsPage() {
                   </>
                 )}
                 {isBase && <span className="base-badge">Base Unit</span>}
-                <span className="row-remove" onClick={() => setDeleteTarget(d)}>✕</span>
+                <span className="row-remove" onClick={() => askDelete(d)}>✕</span>
               </div>
             );
           })}
@@ -117,16 +136,33 @@ export function SettingsPage() {
         {!isLoading && sorted.length === 0 && <p className="hint">No currencies set up for this game yet.</p>}
       </div>
 
-      {deleteTarget && (
+      {deleteTarget && usage && usage.shopItems.length > 0 && (
+        <div className="dialog-overlay" onClick={closeDelete}>
+          <div className="dialog-box" onClick={(e) => e.stopPropagation()}>
+            <h3>Can't delete "{deleteTarget.name}" yet</h3>
+            <p>These shop items still have a price in {deleteTarget.abbreviation}. Change their prices in Manage → Shops first:</p>
+            <ul className="usage-list">
+              {usage.shopItems.map((x) => <li key={`${x.shop}/${x.item}`}><strong>{x.shop}</strong> → {x.item}</li>)}
+            </ul>
+            <div className="form-actions"><button onClick={closeDelete}>OK</button></div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (!usage || usage.shopItems.length === 0) && (
         <ConfirmDialog
           title="Delete this currency?"
-          message={`This permanently deletes "${deleteTarget.name}" — any shop prices and character wallets using it lose that denomination. This can't be undone.`}
+          message={
+            usage && usage.charactersHolding > 0
+              ? `${usage.charactersHolding} ${usage.charactersHolding === 1 ? 'character holds' : 'characters hold'} ${usage.totalHeld} ${deleteTarget.abbreviation} in total — those coins are deleted from their purses along with "${deleteTarget.name}". This can't be undone.`
+              : `This permanently deletes "${deleteTarget.name}". No shop prices or purses use it. This can't be undone.`
+          }
           confirmLabel="Delete Currency"
           onConfirm={async () => {
             await removeDenomination(gameId, deleteTarget.id);
-            setDeleteTarget(null);
+            closeDelete();
           }}
-          onCancel={() => setDeleteTarget(null)}
+          onCancel={closeDelete}
         />
       )}
     </div>

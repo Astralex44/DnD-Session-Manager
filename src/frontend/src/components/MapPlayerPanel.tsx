@@ -4,6 +4,7 @@ import { charactersApi } from '../api/characters.ts';
 import { useToastStore } from '../store/toastStore.ts';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
+import { FileThumb } from './FileThumb.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useDocumentsStore } from '../store/documentsStore.ts';
 import type { GameDocument } from '../types/document.ts';
@@ -137,9 +138,7 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
           <div className="map-grid">
             {visible.map(({ doc, share }) => (
               <div key={doc.id} className="map-thumb" onClick={() => setViewing(doc)}>
-                {isImage(doc.fileUrl)
-                  ? <img src={documentsApi.fileUrl(doc.fileUrl)} alt={doc.name} />
-                  : <div className="map-thumb-icon">📄</div>}
+                <FileThumb url={documentsApi.fileUrl(doc.fileUrl)} alt={doc.name} />
                 <div className="map-actions">
                   <button
                     title="Hide"
@@ -173,9 +172,7 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
               <div className="map-grid">
                 {hidden.map(({ doc, share }) => (
                   <div key={doc.id} className="map-thumb hidden-map" onClick={() => setViewing(doc)}>
-                    {isImage(doc.fileUrl)
-                      ? <img src={documentsApi.fileUrl(doc.fileUrl)} alt={doc.name} />
-                      : <div className="map-thumb-icon">📄</div>}
+                    <FileThumb url={documentsApi.fileUrl(doc.fileUrl)} alt={doc.name} />
                     <div className="map-actions">
                       <button
                         title="Unhide"

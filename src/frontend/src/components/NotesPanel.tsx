@@ -9,7 +9,12 @@ import { useToastStore } from '../store/toastStore.ts';
 // FA-08 on the Board (Pflichtenheft 8.3, both roles): your own private
 // notebook, compact — pick a page, write, save. Creating many pages,
 // renaming and deleting stay on the Notes page.
-export function NotesPanel() {
+interface NotesPanelProps {
+  // Across the whole Board row (the player Board's last row).
+  fullWidth?: boolean;
+}
+
+export function NotesPanel({ fullWidth }: NotesPanelProps) {
   const gameId = useGameId();
   const { notes, fetchNotes, createNote, updateNote } = useNotesStore();
   const showToast = useToastStore((s) => s.showToast);
@@ -35,7 +40,7 @@ export function NotesPanel() {
   }
 
   return (
-    <div className="panel">
+    <div className={`panel${fullWidth ? ' span-full' : ''}`}>
       <div className="panel-header">
         <h3>My Notes</h3>
         <Link className="panel-header-link" to="/notes">All pages ›</Link>

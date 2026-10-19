@@ -1,3 +1,4 @@
+import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -485,7 +486,7 @@ export function CharacterCreateWizardPage() {
                 This is homebrew, not from an official rulebook
               </label>
               <div className="homebrew-desc-row">
-                <textarea value={newCantripDesc} onChange={(e) => setNewCantripDesc(e.target.value)} placeholder="Description (optional)" />
+                <AutoResizeTextarea value={newCantripDesc} onChange={(e) => setNewCantripDesc(e.target.value)} placeholder="Description (optional)" />
                 <input value={newCantripUrl} onChange={(e) => setNewCantripUrl(e.target.value)} placeholder="URL (optional)" />
               </div>
 
@@ -511,7 +512,7 @@ export function CharacterCreateWizardPage() {
                 This is homebrew, not from an official rulebook
               </label>
               <div className="homebrew-desc-row">
-                <textarea value={newSpellDesc} onChange={(e) => setNewSpellDesc(e.target.value)} placeholder="Description (optional)" />
+                <AutoResizeTextarea value={newSpellDesc} onChange={(e) => setNewSpellDesc(e.target.value)} placeholder="Description (optional)" />
                 <input value={newSpellUrl} onChange={(e) => setNewSpellUrl(e.target.value)} placeholder="URL (optional)" />
               </div>
             </>
@@ -524,18 +525,18 @@ export function CharacterCreateWizardPage() {
           <h2>Personality &amp; Background</h2>
           <p className="hint">Optional, but helps the DM weave your character into the story.</p>
           <div className="personality-grid">
-            <div className="field"><label>Personality Traits</label><textarea value={personalityTraits} onChange={(e) => setPersonalityTraits(e.target.value)} placeholder="How does your character carry themselves?" /></div>
-            <div className="field"><label>Ideals</label><textarea value={ideals} onChange={(e) => setIdeals(e.target.value)} placeholder="What does your character stand for?" /></div>
-            <div className="field"><label>Bonds</label><textarea value={bonds} onChange={(e) => setBonds(e.target.value)} placeholder="What ties your character to the world?" /></div>
-            <div className="field"><label>Flaws</label><textarea value={flaws} onChange={(e) => setFlaws(e.target.value)} placeholder="What is your character's weakness?" /></div>
+            <div className="field"><label>Personality Traits</label><AutoResizeTextarea value={personalityTraits} onChange={(e) => setPersonalityTraits(e.target.value)} placeholder="How does your character carry themselves?" /></div>
+            <div className="field"><label>Ideals</label><AutoResizeTextarea value={ideals} onChange={(e) => setIdeals(e.target.value)} placeholder="What does your character stand for?" /></div>
+            <div className="field"><label>Bonds</label><AutoResizeTextarea value={bonds} onChange={(e) => setBonds(e.target.value)} placeholder="What ties your character to the world?" /></div>
+            <div className="field"><label>Flaws</label><AutoResizeTextarea value={flaws} onChange={(e) => setFlaws(e.target.value)} placeholder="What is your character's weakness?" /></div>
           </div>
           <div className="field full" style={{ marginTop: 14 }}>
             <label>Backstory</label>
-            <textarea style={{ minHeight: 110 }} value={backstory} onChange={(e) => setBackstory(e.target.value)} placeholder="Where does your character come from, what drives them?" />
+            <AutoResizeTextarea style={{ minHeight: 110 }} value={backstory} onChange={(e) => setBackstory(e.target.value)} placeholder="Where does your character come from, what drives them?" />
           </div>
           <div className="field full" style={{ marginTop: 14 }}>
             <label>Appearance</label>
-            <textarea value={appearance} onChange={(e) => setAppearance(e.target.value)} placeholder="What does your character look like?" />
+            <AutoResizeTextarea value={appearance} onChange={(e) => setAppearance(e.target.value)} placeholder="What does your character look like?" />
           </div>
           <p className="subhead">Physical Details</p>
           <div className="basics-grid">
@@ -548,19 +549,19 @@ export function CharacterCreateWizardPage() {
           </div>
           <div className="field full" style={{ marginTop: 14 }}>
             <label>Other Proficiencies &amp; Languages</label>
-            <textarea value={otherProficiencies} onChange={(e) => setOtherProficiencies(e.target.value)} placeholder="e.g. Thieves' Tools, Common, Elvish" />
+            <AutoResizeTextarea value={otherProficiencies} onChange={(e) => setOtherProficiencies(e.target.value)} placeholder="e.g. Thieves' Tools, Common, Elvish" />
           </div>
           <div className="field full" style={{ marginTop: 14 }}>
             <label>Allies &amp; Organizations</label>
-            <textarea value={alliesOrganizations} onChange={(e) => setAlliesOrganizations(e.target.value)} placeholder="Groups, contacts, or people your character can call on" />
+            <AutoResizeTextarea value={alliesOrganizations} onChange={(e) => setAlliesOrganizations(e.target.value)} placeholder="Groups, contacts, or people your character can call on" />
           </div>
           <div className="field full" style={{ marginTop: 14 }}>
             <label>Additional Features</label>
-            <textarea value={additionalFeatures} onChange={(e) => setAdditionalFeatures(e.target.value)} placeholder="Anything else worth noting" />
+            <AutoResizeTextarea value={additionalFeatures} onChange={(e) => setAdditionalFeatures(e.target.value)} placeholder="Anything else worth noting" />
           </div>
           <div className="field full" style={{ marginTop: 14 }}>
             <label>Treasure</label>
-            <textarea value={treasure} onChange={(e) => setTreasure(e.target.value)} placeholder="Notable valuables — not tracked as inventory" />
+            <AutoResizeTextarea value={treasure} onChange={(e) => setTreasure(e.target.value)} placeholder="Notable valuables — not tracked as inventory" />
           </div>
         </div>
       )}

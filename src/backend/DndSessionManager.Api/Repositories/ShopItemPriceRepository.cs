@@ -16,6 +16,11 @@ public class ShopItemPriceRepository(AppDbContext context) : IShopItemPriceRepos
         .Where(price => price.ShopItemId == shopItemId)
         .ToListAsync();
 
+    public async Task<IReadOnlyList<ShopItemPrice>> GetByDenominationIdAsync(Guid denominationId) => await context.ShopItemPrices
+        .Where(p => p.CurrencyDenominationId == denominationId)
+        .Include(p => p.ShopItem).ThenInclude(i => i!.Shop)
+        .ToListAsync();
+
     public Task AddAsync(ShopItemPrice entity) => context.ShopItemPrices.AddAsync(entity).AsTask();
     public void Remove(ShopItemPrice entity) => context.ShopItemPrices.Remove(entity);
 }

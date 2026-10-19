@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useSessionsStore } from '../store/sessionsStore.ts';
 import type { Session, UpsertSessionInput } from '../types/session.ts';
@@ -65,6 +66,50 @@ export function SessionsManagePage() {
     if (ok) closeModal();
   }
 
+  // Inline like every other Manage page: 'new' opens the create panel at the
+  // top, a session opens its edit panel inside its own card. Prep notes get a
+  // large field that keeps growing with the text.
+  const sessionForm = (isNew: boolean) => (
+    <div className={`map-edit-panel${isNew ? ' create-panel' : ''}`}>
+      <div className="field">
+        <label>Title</label>
+        <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. The Curse of Ravenholt" />
+      </div>
+      <div className="field-grid" style={{ marginTop: 10 }}>
+        <div className="field">
+          <label>Date</label>
+          <input
+            type="date"
+            value={toDateInput(form.scheduledAt)}
+            onChange={(e) => setForm((f) => ({ ...f, scheduledAt: fromDateAndTime(e.target.value, toTimeInput(f.scheduledAt)) }))}
+          />
+        </div>
+        <div className="field">
+          <label>Time</label>
+          <input
+            type="time"
+            value={toTimeInput(form.scheduledAt)}
+            onChange={(e) => setForm((f) => ({ ...f, scheduledAt: fromDateAndTime(toDateInput(f.scheduledAt), e.target.value) }))}
+          />
+        </div>
+      </div>
+      <div className="field full" style={{ marginTop: 10 }}>
+        <label>Session Notes (Prep)</label>
+        <AutoResizeTextarea
+          className="session-notes-field"
+          value={form.notes}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          placeholder="Your prep — scenes, NPCs, what to remember. Grows as you write."
+        />
+      </div>
+
+      <div className="form-actions" style={{ marginTop: 12 }}>
+        <button className="btn-ghost" onClick={closeModal}>Cancel</button>
+        <button onClick={handleSave}>{isNew ? 'Create Session' : 'Save'}</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="sessions-page">
       <div className="section-header">
@@ -72,10 +117,11 @@ export function SessionsManagePage() {
           <h2>Sessions</h2>
           <p className="hint">Title and prepared notes per session.</p>
         </div>
-        <button onClick={openAddModal}>+ Add Session</button>
+        <button onClick={() => (modalTarget === 'new' ? closeModal() : openAddModal())}>{modalTarget === 'new' ? 'Cancel' : '+ Add Session'}</button>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
+      {modalTarget === 'new' && sessionForm(true)}
       {isLoading && <p className="hint">Loading…</p>}
 
       <div className="card-list">
@@ -92,60 +138,21 @@ export function SessionsManagePage() {
                 </div>
               </div>
               <div className="row-actions">
-                <button className="icon-btn" onClick={() => openEditModal(session)}>Edit</button>
+                <button className="icon-btn" onClick={() => (modalTarget !== 'new' && modalTarget?.id === session.id ? closeModal() : openEditModal(session))}>
+                  {modalTarget !== 'new' && modalTarget?.id === session.id ? 'Close' : 'Edit'}
+                </button>
                 <button className="icon-btn" onClick={() => setDeleteTarget(session)}>Delete</button>
               </div>
             </div>
 
-            {session.notes && <div className="session-notes-preview">{session.notes}</div>}
+            {modalTarget !== 'new' && modalTarget?.id === session.id
+              ? sessionForm(false)
+              : session.notes && <div className="session-notes-preview">{session.notes}</div>}
           </div>
         ))}
       </div>
 
       {!isLoading && sessions.length === 0 && <p className="hint">No sessions yet.</p>}
-
-      {modalTarget && (
-        <div className="dialog-overlay" onClick={closeModal}>
-          <div className="dialog-box wide" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{modalTarget === 'new' ? 'Add Session' : 'Edit Session'}</h3>
-              <span className="modal-close" onClick={closeModal}>✕</span>
-            </div>
-
-            <div className="field">
-              <label>Title</label>
-              <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. The Curse of Ravenholt" />
-            </div>
-            <div className="field-grid" style={{ marginTop: 10 }}>
-              <div className="field">
-                <label>Date</label>
-                <input
-                  type="date"
-                  value={toDateInput(form.scheduledAt)}
-                  onChange={(e) => setForm((f) => ({ ...f, scheduledAt: fromDateAndTime(e.target.value, toTimeInput(f.scheduledAt)) }))}
-                />
-              </div>
-              <div className="field">
-                <label>Time</label>
-                <input
-                  type="time"
-                  value={toTimeInput(form.scheduledAt)}
-                  onChange={(e) => setForm((f) => ({ ...f, scheduledAt: fromDateAndTime(toDateInput(f.scheduledAt), e.target.value) }))}
-                />
-              </div>
-            </div>
-            <div className="field full" style={{ marginTop: 10 }}>
-              <label>Session Notes (Prep)</label>
-              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-            </div>
-
-            <div className="form-actions" style={{ marginTop: 16 }}>
-              <button className="btn-ghost" onClick={closeModal}>Cancel</button>
-              <button onClick={handleSave}>Save</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {deleteTarget && (
         <ConfirmDialog

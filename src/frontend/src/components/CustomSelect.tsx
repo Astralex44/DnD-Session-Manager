@@ -7,6 +7,9 @@ export interface CustomSelectOption {
   // the first one. Ungrouped options (group left unset) render plain, so
   // this is opt-in per option â€” existing callers are unaffected.
   group?: string;
+  // Optional explanation shown under the label in the open menu only
+  // (the closed trigger shows just the label).
+  description?: string;
 }
 
 interface CustomSelectProps {
@@ -56,6 +59,7 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Selectâ€
               }}
             >
               {option.label}
+              {option.description && <span className="cs-option-desc">{option.description}</span>}
             </div>,
           );
           return nodes;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useQuotesStore } from '../store/quotesStore.ts';
@@ -8,6 +9,7 @@ import { useGameId } from '../store/authStore.ts';
 // Hardcoded until the Game context / login flow exists.
 const NO_SESSION = '__none__';
 const NO_CHARACTER = '__none__';
+const ALL_SESSIONS = '__all_sessions__';
 const ALL_QUOTES = '__all__';
 
 export function QuotesPage() {
@@ -20,6 +22,7 @@ export function QuotesPage() {
   const [newSessionId, setNewSessionId] = useState(NO_SESSION);
   const [newCharacterId, setNewCharacterId] = useState(NO_CHARACTER);
   const [filter, setFilter] = useState(ALL_QUOTES);
+  const [sessionFilter, setSessionFilter] = useState(ALL_SESSIONS);
 
   useEffect(() => {
     fetchQuotes(gameId);
@@ -47,7 +50,16 @@ export function QuotesPage() {
     ]),
   ];
 
+  // Two independent filters — who said it, and in which session — combined.
+  const sessionFilterOptions = [
+    { value: ALL_SESSIONS, label: 'All sessions' },
+    { value: NO_SESSION, label: 'No session' },
+    ...sessions.map((s) => ({ value: s.id, label: `Session ${s.number}${s.title ? ` — ${s.title}` : ''}` })),
+  ];
+
   const visibleQuotes = quotes.filter((q) => {
+    if (sessionFilter === NO_SESSION && q.sessionId) return false;
+    if (sessionFilter !== ALL_SESSIONS && sessionFilter !== NO_SESSION && q.sessionId !== sessionFilter) return false;
     if (filter === ALL_QUOTES) return true;
     if (filter.startsWith('player:')) return q.playerName === filter.slice('player:'.length);
     if (filter.startsWith('character:')) return q.characterId === filter.slice('character:'.length);
@@ -75,12 +87,18 @@ export function QuotesPage() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="quote-add-row">
-        <input
-          type="text"
+        <AutoResizeTextarea
+          className="quote-input"
+          rows={1}
           value={newText}
-          placeholder="What was said?"
+          placeholder="What was said? (Enter adds it, Shift+Enter for a new line)"
           onChange={(e) => setNewText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
         />
         <div className="quote-add-meta">
           <CustomSelect value={newCharacterId} onChange={setNewCharacterId} options={characterOptions} />
@@ -89,9 +107,15 @@ export function QuotesPage() {
         </div>
       </div>
 
-      <div className="field" style={{ maxWidth: 260, marginBottom: 14 }}>
-        <label>Filter</label>
-        <CustomSelect value={filter} onChange={setFilter} options={filterOptions} />
+      <div className="quote-filters">
+        <div className="field">
+          <label>Who</label>
+          <CustomSelect value={filter} onChange={setFilter} options={filterOptions} />
+        </div>
+        <div className="field">
+          <label>Session</label>
+          <CustomSelect value={sessionFilter} onChange={setSessionFilter} options={sessionFilterOptions} />
+        </div>
       </div>
 
       {isLoading && <p className="hint">Loading…</p>}

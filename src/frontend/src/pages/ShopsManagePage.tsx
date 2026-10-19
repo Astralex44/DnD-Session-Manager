@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
 import { useToastStore } from '../store/toastStore.ts';
@@ -10,15 +11,12 @@ import type { CreateShopItemInput, Shop, ShopItem, ShopSaleMode } from '../types
 import { useGameId } from '../store/authStore.ts';
 
 
-const SALE_MODE_OPTIONS: { value: ShopSaleMode; label: string }[] = [
-  { value: 'SharedStock', label: 'Shared Stock' },
-  { value: 'PerPlayerLimited', label: 'Per Player Limited' },
+// The explanation lives in the dropdown itself (shown under each option in
+// the open menu), not as extra text in the item form.
+const SALE_MODE_OPTIONS: { value: ShopSaleMode; label: string; description: string }[] = [
+  { value: 'SharedStock', label: 'Shared Stock', description: 'One stock for everyone — once it runs out, nobody can buy more.' },
+  { value: 'PerPlayerLimited', label: 'Per Player Limited', description: 'Each character buys on their own, up to a limit — no shared counter.' },
 ];
-
-const SALE_MODE_HINT: Record<ShopSaleMode, string> = {
-  SharedStock: 'All characters share the same stock. Once it runs out, nobody can buy more, regardless of who used it.',
-  PerPlayerLimited: 'Each character can buy independently, up to the limit below — no shared counter.',
-};
 
 const EMPTY_ITEM_FORM: CreateShopItemInput = {
   name: '', description: '', icon: '', saleMode: 'SharedStock', stockQuantity: 1, maxPerCharacter: null, prices: [],
@@ -38,9 +36,15 @@ export function ShopsManagePage() {
   const showToast = useToastStore((t) => t.showToast);
 
   // FA-11: one sale mode for every item in the shop (written onto each item).
-  async function handleSaleModeForAll(shop: Shop, saleMode: ShopSaleMode) {
-    const ok = await setSaleModeForAll(gameId, shop.id, saleMode);
-    const label = SALE_MODE_OPTIONS.find((o) => o.value === saleMode)?.label ?? saleMode;
+  // Only offered while editing the shop, and confirmed first — it overwrites
+  // each item's own setting.
+  const [saleModeAll, setSaleModeAll] = useState<{ shop: Shop; mode: ShopSaleMode } | null>(null);
+  async function applySaleModeForAll() {
+    if (!saleModeAll) return;
+    const { shop, mode } = saleModeAll;
+    setSaleModeAll(null);
+    const ok = await setSaleModeForAll(gameId, shop.id, mode);
+    const label = SALE_MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode;
     showToast(ok ? `All items in ${shop.name}: ${label}.` : 'Failed to update the shop.', ok ? 'success' : 'error');
   }
   const { denominations, fetchDenominations } = useCurrencyStore();
@@ -152,14 +156,14 @@ export function ShopsManagePage() {
       </div>
 
       {showCreate && (
-        <div className="map-edit-panel">
+        <div className="map-edit-panel create-panel">
           <div className="field">
             <label>Shop Name</label>
             <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. The Weary Traveler" />
           </div>
           <div className="field" style={{ marginTop: 10 }}>
             <label>Description</label>
-            <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Optional flavor text" />
+            <AutoResizeTextarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Optional flavor text" />
           </div>
           <div className="form-actions" style={{ marginTop: 12 }}>
             <button className="btn-ghost" onClick={() => setShowCreate(false)}>Cancel</button>
@@ -179,16 +183,6 @@ export function ShopsManagePage() {
                 <div className="row-title">{shop.name}</div>
               </div>
               <div className="row-actions">
-                {shop.items.length > 0 && (
-                  <div className="sale-mode-all" title="Set the sale mode of every item in this shop">
-                    <CustomSelect
-                      value=""
-                      placeholder="All items…"
-                      onChange={(v) => handleSaleModeForAll(shop, v as ShopSaleMode)}
-                      options={SALE_MODE_OPTIONS}
-                    />
-                  </div>
-                )}
                 <button onClick={() => openAddItemModal(shop.id)}>+ Item</button>
                 <button className="icon-btn" onClick={() => (editingId === shop.id ? setEditingId(null) : startEdit(shop))}>
                   {editingId === shop.id ? 'Close' : 'Edit'}
@@ -255,8 +249,24 @@ export function ShopsManagePage() {
                 </div>
                 <div className="field" style={{ marginTop: 10 }}>
                   <label>Description</label>
-                  <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                  <AutoResizeTextarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
                 </div>
+                {shop.items.length > 0 && (
+                  <div className="field" style={{ marginTop: 10 }}>
+                    <label>Sale mode for all items</label>
+                    <div className="sale-mode-all">
+                      <CustomSelect
+                        value=""
+                        placeholder="Set all items to…"
+                        onChange={(v) => setSaleModeAll({ shop, mode: v as ShopSaleMode })}
+                        options={SALE_MODE_OPTIONS}
+                      />
+                    </div>
+                    <p className="hint warn" style={{ margin: '6px 0 0' }}>
+                      Overwrites the sale mode of all {shop.items.length} {shop.items.length === 1 ? 'item' : 'items'} in this shop — each item's own setting is lost.
+                    </p>
+                  </div>
+                )}
                 <div className="form-actions" style={{ marginTop: 12 }}>
                   <button className="btn-ghost" onClick={() => setEditingId(null)}>Cancel</button>
                   <button onClick={() => handleSaveEdit(shop)}>Save</button>
@@ -284,7 +294,7 @@ export function ShopsManagePage() {
             </div>
             <div className="field" style={{ marginTop: 10 }}>
               <label>Description</label>
-              <input value={itemForm.description} onChange={(e) => setItemForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional flavor text" />
+              <AutoResizeTextarea value={itemForm.description} onChange={(e) => setItemForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional flavor text" />
             </div>
 
             <p className="hint" style={{ marginTop: 14, marginBottom: 6 }}>Price (one or more denominations)</p>
@@ -314,7 +324,6 @@ export function ShopsManagePage() {
                 options={SALE_MODE_OPTIONS}
               />
             </div>
-            <p className="hint" style={{ marginTop: 6, marginBottom: 0 }}>{SALE_MODE_HINT[itemForm.saleMode]}</p>
 
             {itemForm.saleMode === 'SharedStock' ? (
               <div className="field" style={{ marginTop: 10 }}>
@@ -343,6 +352,16 @@ export function ShopsManagePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {saleModeAll && (
+        <ConfirmDialog
+          title={`Change all items in ${saleModeAll.shop.name}?`}
+          message={`All ${saleModeAll.shop.items.length} items become "${SALE_MODE_OPTIONS.find((o) => o.value === saleModeAll.mode)?.label}". Each item's own sale mode is overwritten${saleModeAll.mode === 'PerPlayerLimited' ? ' (items without a limit get 1 per character)' : ''}.`}
+          confirmLabel="Change all items"
+          onConfirm={applySaleModeForAll}
+          onCancel={() => setSaleModeAll(null)}
+        />
       )}
 
       {deleteTarget && (

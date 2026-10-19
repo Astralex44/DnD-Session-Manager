@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
+import { monstersApi } from '../api/monsters.ts';
 import { useMonstersStore } from '../store/monstersStore.ts';
 import type { Monster } from '../types/monster.ts';
 import { useGameId } from '../store/authStore.ts';
@@ -10,6 +11,8 @@ export function MonstersManagePage() {
   const gameId = useGameId();
   const { monsters, isLoading, error, fetchMonsters, createMonster, updateMonster, removeMonster } = useMonstersStore();
 
+  // Inline like every other Manage page: 'new' opens the create panel under
+  // the drop zone, a monster opens its edit panel inside its own card.
   const [modalTarget, setModalTarget] = useState<Monster | 'new' | null>(null);
   const [name, setName] = useState('');
   const [hp, setHp] = useState(10);
@@ -51,6 +54,27 @@ export function MonstersManagePage() {
     updateMonster(gameId, monster.id, monster.name, value, null);
   }
 
+  const monsterForm = (isNew: boolean) => (
+    <div className={`map-edit-panel${isNew ? ' create-panel' : ''}`}>
+      <div className="field">
+        <label>Name</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Goblin Scout" />
+      </div>
+      <div className="field" style={{ marginTop: 10 }}>
+        <label>{isNew ? 'Stat Block (PDF)' : 'Replace Stat Block (optional)'}</label>
+        <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+      </div>
+      <div className="field" style={{ marginTop: 10, maxWidth: 160 }}>
+        <label>Default HP</label>
+        <NumberInput min={0} value={hp} onChange={setHp} />
+      </div>
+      <div className="form-actions" style={{ marginTop: 12 }}>
+        <button className="btn-ghost" onClick={closeModal}>Cancel</button>
+        <button onClick={handleSave} disabled={!name.trim() || (isNew && !file)}>{isNew ? 'Create Monster' : 'Save'}</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="monsters-page">
       <h2>Monsters</h2>
@@ -61,10 +85,11 @@ export function MonstersManagePage() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="upload-zone" onClick={openAddModal}>
+      <div className="upload-zone" onClick={() => (modalTarget === 'new' ? closeModal() : openAddModal())}>
         <span className="glyph">☠</span>
-        Drag a PDF here, or click to create
+        {modalTarget === 'new' ? 'Cancel' : 'Click to add a monster'}
       </div>
+      {modalTarget === 'new' && monsterForm(true)}
 
       {isLoading && <p className="hint">Loading…</p>}
 
@@ -85,49 +110,19 @@ export function MonstersManagePage() {
                 />
               </div>
               <div className="row-actions">
-                <button className="icon-btn" onClick={() => openEditModal(monster)}>Edit</button>
+                <a className="icon-btn" href={monstersApi.fileUrl(monster.fileUrl)} target="_blank" rel="noreferrer">Open</a>
+                <button className="icon-btn" onClick={() => (modalTarget !== 'new' && modalTarget?.id === monster.id ? closeModal() : openEditModal(monster))}>
+                  {modalTarget !== 'new' && modalTarget?.id === monster.id ? 'Close' : 'Edit'}
+                </button>
                 <button className="icon-btn" onClick={() => setDeleteTarget(monster)}>Delete</button>
               </div>
             </div>
+            {modalTarget !== 'new' && modalTarget?.id === monster.id && monsterForm(false)}
           </div>
         ))}
       </div>
 
       {!isLoading && monsters.length === 0 && <p className="hint">No monsters yet.</p>}
-
-      {modalTarget && (
-        <div className="dialog-overlay" onClick={closeModal}>
-          <div className="dialog-box wide" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{modalTarget === 'new' ? 'Add Monster' : 'Edit Monster'}</h3>
-              <span className="modal-close" onClick={closeModal}>✕</span>
-            </div>
-
-            <div className="field">
-              <label>Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Goblin Scout" />
-            </div>
-            <div className="field" style={{ marginTop: 10 }}>
-              <label>{modalTarget === 'new' ? 'Stat Block (PDF)' : 'Replace Stat Block (optional)'}</label>
-              <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            </div>
-            <div className="field" style={{ marginTop: 10 }}>
-              <label>Default HP</label>
-              <NumberInput min={0} value={hp} onChange={setHp} />
-            </div>
-
-            <div className="form-actions" style={{ marginTop: 16 }}>
-              {modalTarget !== 'new' && (
-                <button className="btn-danger" style={{ marginRight: 'auto' }} onClick={() => { setDeleteTarget(modalTarget); closeModal(); }}>
-                  Delete Monster
-                </button>
-              )}
-              <button className="btn-ghost" onClick={closeModal}>Cancel</button>
-              <button onClick={handleSave}>Save</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {deleteTarget && (
         <ConfirmDialog

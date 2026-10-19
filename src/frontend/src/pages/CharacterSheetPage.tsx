@@ -671,7 +671,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           </div>
           <div className="field full" style={{ marginTop: 8 }}>
             <label>Description</label>
-            <textarea value={newSpell.description ?? ''} onChange={(e) => setNewSpell({ ...newSpell, description: e.target.value })} />
+            <AutoResizeTextarea value={newSpell.description ?? ''} onChange={(e) => setNewSpell({ ...newSpell, description: e.target.value })} />
           </div>
           <div className="field full">
             <label>URL</label>

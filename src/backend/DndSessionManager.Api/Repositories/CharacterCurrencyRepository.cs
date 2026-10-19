@@ -19,6 +19,10 @@ public class CharacterCurrencyRepository(AppDbContext context) : ICharacterCurre
     public Task<CharacterCurrency?> GetByCharacterAndDenominationAsync(Guid characterId, Guid denominationId) =>
         context.CharacterCurrencies.FirstOrDefaultAsync(c => c.CharacterId == characterId && c.CurrencyDenominationId == denominationId);
 
+    public async Task<IReadOnlyList<CharacterCurrency>> GetByDenominationIdAsync(Guid denominationId) => await context.CharacterCurrencies
+        .Where(c => c.CurrencyDenominationId == denominationId)
+        .ToListAsync();
+
     public Task AddAsync(CharacterCurrency entity) => context.CharacterCurrencies.AddAsync(entity).AsTask();
     public void Remove(CharacterCurrency entity) => context.CharacterCurrencies.Remove(entity);
 }

@@ -41,14 +41,36 @@ public class CurrencyFacade(IUnitOfWork unitOfWork) : ICurrencyFacade
         return ToDto(denomination);
     }
 
-    public async Task<bool> DeleteDenominationAsync(Guid gameId, Guid id)
+    public async Task<CurrencyUsageDto?> GetUsageAsync(Guid gameId, Guid id)
+    {
+        if (await GetOwnedDenominationAsync(gameId, id) is null) return null;
+
+        var prices = await unitOfWork.ShopItemPrices.GetByDenominationIdAsync(id);
+        var held = (await unitOfWork.CharacterCurrencies.GetByDenominationIdAsync(id)).Where(c => c.Quantity > 0).ToList();
+        return new CurrencyUsageDto(
+            prices
+                .Select(p => new CurrencyUsageShopItemDto(p.ShopItem?.Shop?.Name ?? "?", p.ShopItem?.Name ?? "?"))
+                .OrderBy(x => x.Shop).ThenBy(x => x.Item)
+                .ToList(),
+            held.Select(c => c.CharacterId).Distinct().Count(),
+            held.Sum(c => c.Quantity));
+    }
+
+    // Shop prices reference the coin with a restricting FK — deleting it would
+    // fail deep in the database with an unreadable error. Refuse up front with
+    // the list of items instead; coins in purses are deleted along with it
+    // (the UI warns about that before calling this).
+    public async Task<(bool Deleted, CurrencyUsageDto? InUse)> DeleteDenominationAsync(Guid gameId, Guid id)
     {
         var denomination = await GetOwnedDenominationAsync(gameId, id);
-        if (denomination is null) return false;
+        if (denomination is null) return (false, null);
+
+        var usage = (await GetUsageAsync(gameId, id))!;
+        if (usage.ShopItems.Count > 0) return (false, usage);
 
         unitOfWork.CurrencyDenominations.Remove(denomination);
         await unitOfWork.SaveChangesAsync();
-        return true;
+        return (true, null);
     }
 
     public async Task<IReadOnlyList<CurrencyDenominationDto>?> ReorderDenominationsAsync(Guid gameId, ReorderCurrencyDenominationsDto input)

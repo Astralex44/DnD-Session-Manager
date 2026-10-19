@@ -13,6 +13,9 @@ export const currencyApi = {
     apiClient.put<CurrencyDenomination>(`/games/${gameId}/currency-denominations/${id}`, input),
 
   remove: (gameId: string, id: string) => apiClient.delete<void>(`/games/${gameId}/currency-denominations/${id}`),
+  // Where the coin is still used — shop prices block deleting it, coins in purses are lost with it.
+  usage: (gameId: string, id: string) =>
+    apiClient.get<{ shopItems: { shop: string; item: string }[]; charactersHolding: number; totalHeld: number }>(`/games/${gameId}/currency-denominations/${id}/usage`),
 
   reorder: (gameId: string, orderedIds: string[]) =>
     apiClient.put<CurrencyDenomination[]>(`/games/${gameId}/currency-denominations/reorder`, { orderedIds }),

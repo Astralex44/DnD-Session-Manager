@@ -29,9 +29,21 @@ public class CurrencyController(ICurrencyFacade currencyFacade) : ControllerBase
     }
 
     [Authorize(Policy = GamePolicies.Dm)]
+    [HttpGet("{id:guid}/usage")]
+    public async Task<ActionResult<CurrencyUsageDto>> GetUsage(Guid gameId, Guid id)
+    {
+        var usage = await currencyFacade.GetUsageAsync(gameId, id);
+        return usage is null ? NotFound() : Ok(usage);
+    }
+
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid gameId, Guid id) =>
-        await currencyFacade.DeleteDenominationAsync(gameId, id) ? NoContent() : NotFound();
+    public async Task<IActionResult> Delete(Guid gameId, Guid id)
+    {
+        var (deleted, inUse) = await currencyFacade.DeleteDenominationAsync(gameId, id);
+        if (inUse is not null) return Conflict(inUse);
+        return deleted ? NoContent() : NotFound();
+    }
 
     [Authorize(Policy = GamePolicies.Dm)]
     [HttpPut("reorder")]

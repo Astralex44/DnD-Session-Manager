@@ -327,6 +327,7 @@ h2 {
 .cs-option { padding: 9px 12px; font-size: 13px; cursor: pointer; color: var(--text); }
 .cs-option:hover { background: var(--bg); }
 .cs-option.selected { background: rgba(146,115,85,0.16); font-weight: bold; color: var(--primary-dark); }
+.cs-option-desc { display: block; margin-top: 2px; font-size: 11.5px; font-weight: normal; color: var(--text-muted); line-height: 1.35; }
 .cs-group-label {
   padding: 8px 12px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
   color: var(--text-muted); border-top: 1px solid var(--border);
@@ -884,16 +885,17 @@ h2 {
 /* ===== Board (ported from docs/mockups/DnD_Tool_Board_Mockup.html) ===== */
 
 .board-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.board-grid.player { grid-template-columns: repeat(2, 1fr); max-width: 920px; }
 .board-grid .panel.span-2 { grid-column: span 2; }
+/* Full row: the DM's session notes, a player's notes. */
+.board-grid .panel.span-full { grid-column: 1 / -1; }
 @media (max-width: 640px) {
   .board-grid .panel.span-2 { grid-column: span 1; }
 }
 @media (max-width: 980px) {
-  .board-grid, .board-grid.player { grid-template-columns: repeat(2, 1fr); max-width: none; }
+  .board-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  .board-grid, .board-grid.player { grid-template-columns: 1fr; }
+  .board-grid { grid-template-columns: 1fr; }
 }
 
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
@@ -1212,3 +1214,19 @@ h2 {
 .nav-group-toggle.active-parent { font-weight: bold; }
 .nav-caret { margin-left: auto; font-size: 11px; color: var(--text-muted); }
 .nav-sub .nav-sub-item { padding: 8px 22px 8px 40px; font-size: 13.5px; }
+
+/* Currency delete blocked: the shop items still pricing in it */
+.usage-list { margin: 8px 0 14px; padding-left: 18px; max-height: 220px; overflow-y: auto; font-size: 13.5px; }
+
+/* v0.8.1: a create form gets breathing room from the list below it */
+.map-edit-panel.create-panel { margin: 0 0 18px; }
+.board-grid .span-full .board-notes-text { min-height: 280px; }
+.hint.warn { color: var(--error); font-style: normal; }
+.sale-mode-all { width: auto; max-width: 260px; }
+/* Session prep notes: lots of room, and it grows with the text */
+/* .field textarea (0,1,1) would win over a bare class — raise it (vault: CSS specificity gotcha). */
+.field textarea.session-notes-field { width: 100%; min-height: 320px; line-height: 1.6; font-size: 14px; }
+/* Quotes: two filters side by side; the quote field grows */
+.quote-filters { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.quote-filters .field { width: 240px; }
+.quote-add-row .quote-input { min-height: 0; width: 100%; resize: none; }

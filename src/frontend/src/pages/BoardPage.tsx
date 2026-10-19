@@ -90,18 +90,21 @@ interface PlayerBoardProps {
 // the notes panel is left out: those notes are private to the player).
 function PlayerBoard({ onlyCharacterIds, enterDiceFor }: PlayerBoardProps) {
   return (
+    // Three full-width columns like the DM's Board, ordered so no row has a
+    // gap: character (2) + dice / initiative, timer, shop / maps (2) +
+    // calculator / notes across the whole row.
     <div className="board-grid player">
       <CharacterLivePanel onlyCharacterIds={onlyCharacterIds} />
-      <InitiativePanel editable={false} />
       <div className="panel">
         <div className="panel-header"><h3>Dice</h3></div>
         <div className="panel-body"><DiceRoller key="player-dice" enterFor={enterDiceFor} /></div>
       </div>
+      <InitiativePanel editable={false} />
       <TimerPanel editable={false} />
       <ShopPlayerPanel onlyCharacterIds={onlyCharacterIds} />
       <MapPlayerPanel onlyCharacterIds={onlyCharacterIds} />
-      {!enterDiceFor && <NotesPanel />}
       <CalculatorPanel />
+      {!enterDiceFor && <NotesPanel fullWidth />}
     </div>
   );
 }

@@ -4,6 +4,27 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+## v0.9.0-alpha — 2026-10-19
+
+### Added
+- **Previews of shared files:** maps and documents on the Board show a small preview — PDFs show their first page.
+- **Quotes can be filtered by session** as well as by who said them.
+- **Monster stat blocks open from Manage → Monsters** (Open), not only from the Board.
+
+### Changed
+- The player Board uses the full width of the screen.
+- Session notes get much more room — a large field in Manage → Sessions, and full width on the Board.
+- Adding and editing monsters and sessions happens right on the page, like shops and documents, instead of in a pop-up.
+- "Set all items to…" (sale mode for a whole shop) moved into the shop's edit form and asks before it changes anything.
+- The sale-mode explanations are shown inside the dropdown instead of under it.
+
+### Fixed
+- Text fields grow with what you type everywhere (shop and item descriptions, the character creation wizard, spell
+  descriptions, quotes) instead of hiding text behind a scrollbar.
+- A newly opened create form no longer sits right against the list below it.
+- Deleting a currency that shop items still use now says which items (shop → item) instead of failing with a long
+  error; deleting one that's only in characters' purses warns how many coins are lost first.
+
 ## v0.8.0-alpha — 2026-10-19
 
 ### Changed

@@ -42,7 +42,7 @@ export function SessionNotesPanel() {
   }
 
   return (
-    <div className="panel span-2">
+    <div className="panel span-full">
       <div className="panel-header"><h3>Session Notes</h3></div>
       <div className="panel-body">
         {!selected ? (
