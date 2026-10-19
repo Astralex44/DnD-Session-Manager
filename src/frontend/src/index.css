@@ -899,9 +899,10 @@ h2 {
 }
 
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
-/* Light bar with a brown title — solid brown headers on every panel made the
-   Board heavy; the brown is kept for buttons, the things you click. */
-.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface-2); color: var(--primary-dark); border-bottom: 1px solid var(--tertiary); }
+/* No bar: a brown title with a brass underline on the panel's own surface —
+   solid brown headers on every panel made the Board heavy; the brown is kept
+   for buttons, the things you click. */
+.panel-header { display: flex; align-items: center; justify-content: space-between; margin: 0 16px; padding: 12px 0 8px; background: transparent; color: var(--primary-dark); border-bottom: 1px solid var(--tertiary); }
 .panel-header h3 { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; font-weight: normal; }
 .panel-header .tag { font-size: 10px; background: rgba(110,85,64,0.12); padding: 2px 8px; border-radius: 10px; letter-spacing: 0.04em; }
 .panel-body { padding: 14px 16px; flex: 1; }
