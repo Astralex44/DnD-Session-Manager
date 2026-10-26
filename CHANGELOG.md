@@ -2,7 +2,7 @@
 
 User-facing changes, newest first. Internal work (refactors, tooling, groundwork nobody can see yet) is left out.
 
-## [Unreleased]
+## v0.11.0-alpha — 2026-10-26
 
 ### Added
 - **Timers for chosen characters:** when starting a timer, the DM picks *Everyone* or one or more characters. Players
