@@ -5,6 +5,8 @@ public record ShopItemDto(
     string Name,
     string Description,
     string Icon,
+    string Category,
+    decimal Weight,
     string SaleMode,
     int? StockQuantity,
     int? MaxPerCharacter,

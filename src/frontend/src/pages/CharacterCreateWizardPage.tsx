@@ -6,6 +6,8 @@ import { CustomSelect } from '../components/CustomSelect.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { ABILITIES, SKILL_NAMES } from '../types/character.ts';
+import { SHOP_ITEM_CATEGORIES } from '../types/shop.ts';
+import { formatWeight } from '../lib/dnd.ts';
 import type { CreateAttackInput, CreateItemInput } from '../types/character.ts';
 import { useGameId } from '../store/authStore.ts';
 
@@ -368,20 +370,29 @@ export function CharacterCreateWizardPage() {
           <p className="hint">Enter starting equipment. No import from a previous character — every new character starts at zero.</p>
           <div className="item-list">
             {items.map((it, i) => (
-              <div key={i} className="item-row">
-                <span className="item-qty">{it.quantity}×</span>
-                <span className="item-name">{it.name}</span>
-                <span className="item-category">{it.category}</span>
+              <div key={i} className="item-row readonly" title={it.description || undefined}>
+                <span className="item-qty-ro">{it.quantity}×</span>
+                <span className="item-name-ro">{it.name}</span>
+                {it.category && <span className="item-category-ro">{it.category}</span>}
+                {it.weight > 0 && <span className="item-weight-ro">{formatWeight(it.weight * it.quantity)}</span>}
                 <button className="row-remove" onClick={() => setItems((s) => s.filter((_, idx) => idx !== i))}>✕</button>
               </div>
             ))}
           </div>
           <div className="add-row">
             <input placeholder="Name, e.g. Rope (50 ft)" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={onEnter(handleAddItem)} />
-            <input placeholder="Category" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} onKeyDown={onEnter(handleAddItem)} />
-            <NumberInput className="item-qty" min={1} value={newItem.quantity} onChange={(v) => setNewItem({ ...newItem, quantity: v })} onKeyDown={onEnter(handleAddItem)} />
+            <input placeholder="Category" list="wizard-item-categories" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} onKeyDown={onEnter(handleAddItem)} />
+            <NumberInput className="item-qty" min={1} title="Quantity" value={newItem.quantity} onChange={(v) => setNewItem({ ...newItem, quantity: v })} onKeyDown={onEnter(handleAddItem)} />
+            <NumberInput className="item-weight" min={0} step={0.1} title="Weight (lb) per item" placeholder="lb" value={newItem.weight} onChange={(v) => setNewItem({ ...newItem, weight: Math.max(0, v) })} onKeyDown={onEnter(handleAddItem)} />
             <button onClick={handleAddItem}>+ Add</button>
           </div>
+          <datalist id="wizard-item-categories">
+            {SHOP_ITEM_CATEGORIES.map((c) => <option key={c} value={c} />)}
+          </datalist>
+          <input
+            className="wizard-item-desc" placeholder="Description (optional), added with the item above"
+            value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} onKeyDown={onEnter(handleAddItem)}
+          />
           <p className="hint" style={{ marginTop: 14, marginBottom: 0 }}>
             Starting coin purse isn't set up here yet — the currency &amp; shop system tracks gold/silver/copper
             (etc.) as separate, non-convertible counts and isn't built yet.

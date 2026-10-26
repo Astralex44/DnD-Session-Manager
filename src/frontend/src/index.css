@@ -319,11 +319,11 @@ h2 {
 .custom-select-trigger .cs-arrow { color: var(--text-muted); font-size: 10px; transition: transform 0.15s; flex-shrink: 0; }
 .custom-select.open .cs-arrow { transform: rotate(180deg); }
 .custom-select-menu {
-  display: none; position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 45;
+  /* Portalled to <body> and placed by CustomSelect.tsx (fixed, above dialogs). */
+  position: fixed; z-index: 150; font-family: var(--font-body);
   background: var(--surface); border: 1px solid var(--primary); border-radius: 6px;
   box-shadow: 0 10px 24px rgba(29,26,16,0.25); overflow: hidden; max-height: 260px; overflow-y: auto;
 }
-.custom-select.open .custom-select-menu { display: block; }
 .cs-option { padding: 9px 12px; font-size: 13px; cursor: pointer; color: var(--text); }
 .cs-option:hover { background: var(--bg); }
 .cs-option.selected { background: rgba(146,115,85,0.16); font-weight: bold; color: var(--primary-dark); }
@@ -613,6 +613,63 @@ h2 {
 .item-row input.item-name:not([type="checkbox"]):not([type="radio"]) { flex: 1; padding: 4px 8px; }
 .item-row input.item-category:not([type="checkbox"]):not([type="radio"]) { width: 140px; flex-shrink: 0; padding: 4px 8px; }
 
+/* Wizard Equipment step: compact number fields, description on its own line. */
+.add-row input.item-qty:not([type="checkbox"]):not([type="radio"]),
+.add-row input.item-weight:not([type="checkbox"]):not([type="radio"]) { flex: 0 0 72px; min-width: 0; }
+input.wizard-item-desc:not([type="checkbox"]):not([type="radio"]) { width: 100%; margin: -12px 0 20px; box-sizing: border-box; }
+
+/* Read-only inventory list on the sheet; editing lives in InventoryModal. */
+.item-row.readonly { padding: 6px 10px; }
+.item-row .item-qty-ro { font-family: var(--font-data); color: var(--text-muted); min-width: 28px; }
+.item-row .item-name-ro { flex: 1; min-width: 0; font-weight: bold; }
+.item-row .item-category-ro { color: var(--text-muted); font-size: 11.5px; }
+.item-row .item-weight-ro { font-family: var(--font-data); color: var(--text-muted); font-size: 11.5px; min-width: 52px; text-align: right; }
+.inventory-footer { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.inventory-total { font-size: 12.5px; color: var(--text-muted); margin-right: auto; }
+
+/* ---- Inventory modal: card grid ----
+   Fixed 180–240px cards, so a wider window adds columns instead of
+   stretching cards. The dialog has no max width on purpose: it grows with
+   the window, so a bigger window really does fit more cards per row. */
+.dialog-box.inventory-dialog {
+  max-width: none; width: 94vw; max-height: 88vh; overflow-y: auto; padding: 22px 24px;
+}
+.dialog-box .inventory-summary { font-size: 12.5px; color: var(--text-muted); margin: -6px 0 14px; }
+.inventory-grid {
+  display: grid; gap: 12px; align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 240px));
+}
+.inventory-card {
+  display: flex; flex-direction: column; gap: 4px; min-height: 96px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  font-size: 12.5px; text-align: left;
+}
+.inventory-card.clickable { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.inventory-card.clickable:hover { border-color: var(--primary); box-shadow: 0 3px 10px rgba(29,26,16,0.12); }
+.inventory-card.editing { border-color: var(--primary); gap: 8px; }
+.inventory-card.editing .field label { font-size: 10px; }
+.inventory-card .inv-card-top { display: flex; align-items: baseline; gap: 6px; }
+.inventory-card .inv-name { flex: 1; min-width: 0; font-weight: bold; font-size: 13.5px; overflow-wrap: anywhere; }
+.inventory-card .inv-qty { font-family: var(--font-data); color: var(--primary-dark); font-weight: bold; }
+.inventory-card .inv-category {
+  align-self: flex-start; font-size: 10.5px; padding: 1px 8px; border-radius: 10px;
+  border: 1px solid var(--border); color: var(--text-muted); background: var(--surface);
+}
+.inventory-card .inv-weight { font-family: var(--font-data); font-size: 11.5px; color: var(--text-muted); }
+.dialog-box .inventory-card p.inv-desc {
+  margin: 2px 0 0; font-size: 12px; color: var(--text-muted); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.inventory-card .inv-edit-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.inventory-card .inv-edit-pair input:not([type="checkbox"]):not([type="radio"]) { width: 100%; min-width: 0; }
+.inventory-card .inv-card-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.inventory-card .inv-card-actions button { padding: 6px 12px; font-size: 12.5px; }
+button.inventory-card.add-card {
+  align-items: center; justify-content: center; cursor: pointer; font-family: var(--font-body);
+  border-style: dashed; color: var(--primary-dark); background: transparent; font-size: 13px;
+}
+button.inventory-card.add-card:hover { border-color: var(--primary); background: var(--bg); }
+
 /* ---- Shop item table (Manage) ---- */
 .shop-item-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
 .shop-item-table th { text-align: left; font-size: 10px; text-transform: uppercase; color: var(--text-muted); padding: 6px; border-bottom: 1px solid var(--border); }
@@ -622,6 +679,16 @@ h2 {
 .shop-item-table col.col-qty { width: 70px; }
 .shop-item-table col.col-mode { width: 130px; }
 .shop-item-table col.col-edit { width: 80px; }
+.shop-item-table tr.shop-cat-row td {
+  padding: 12px 6px 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--primary-dark); font-weight: bold; border-bottom: 1px solid var(--border);
+}
+.item-weight-note { margin-left: 8px; font-size: 11.5px; color: var(--text-muted); }
+.shop-filters { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.shop-filters .field { width: 240px; }
+.shop-location { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+.modal-header h3 .shop-location { display: block; font-family: var(--font-body); }
+.item-form-pair { display: grid; grid-template-columns: 1fr 140px; gap: 12px; margin-top: 10px; }
 .mode-chip {
   font-size: 11px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border);
   background: var(--bg); color: var(--text-muted); white-space: nowrap;
@@ -952,6 +1019,9 @@ h2 {
 }
 .roll-history { margin-top: 12px; font-size: 12px; color: var(--text-muted); }
 .roll-history div { padding: 2px 0; }
+.roll-history .roll-history-head,
+.roll-history .roll-history-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.roll-history .roll-history-head { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
 
 /* ---- Timer ---- */
 .timer-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
@@ -960,6 +1030,13 @@ h2 {
 .timer-add-row { margin-top: 10px; }
 .timer-add-row input[type="text"] { width: 100%; }
 .timer-add-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.timer-for { display: block; font-size: 11px; color: var(--text-muted); font-style: italic; }
+.timer-targets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.timer-targets .timer-target-chip {
+  font-size: 11.5px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-muted); cursor: pointer;
+}
+.timer-targets .timer-target-chip.on { border-color: var(--primary); background: rgba(146,115,85,0.16); color: var(--primary-dark); font-weight: bold; }
 .timer-add-meta input[type="number"] { width: 60px; flex-shrink: 0; }
 .map-preview { max-width: 100%; max-height: 320px; border-radius: 6px; border: 1px solid var(--border); margin-top: 10px; display: block; }
 
@@ -1183,6 +1260,14 @@ h2 {
 .init-row.too-expensive .coin-amount, .init-row.too-expensive .coin-abbr { color: var(--error); font-weight: bold; }
 .init-row.sold-out { opacity: 0.5; }
 .init-row.sold-out .name { text-decoration: line-through; }
+.shop-cat-label {
+  margin: 12px 0 2px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--primary-dark); font-weight: bold;
+}
+.shop-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.shop-item-meta { font-size: 11.5px; color: var(--text-muted); font-style: italic; }
+/* Price, stock tag and Buy were touching in the full shop view. */
+.dialog-box .init-row { gap: 10px; }
 .buy-btn { padding: 4px 12px; font-size: 12.5px; }
 .sale-mode-all { width: 170px; }
 .panel-header-btn {

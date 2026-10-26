@@ -10,4 +10,6 @@ export const diceApi = {
   // forUserId: DM only — the roll goes into that player's history.
   recordPhysical: (gameId: string, expression: string, total: number, forUserId: string | null) =>
     apiClient.post<DiceRoll>(`/games/${gameId}/dice/physical`, { expression, total, forUserId }),
+  clear: (gameId: string) => apiClient.delete<void>(`/games/${gameId}/dice`),
+  remove: (gameId: string, rollId: string) => apiClient.delete<void>(`/games/${gameId}/dice/${rollId}`),
 };

@@ -704,6 +704,28 @@ namespace DndSessionManager.Api.Migrations
                     b.ToTable("GameTimers");
                 });
 
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameTimerTarget", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TimerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.HasIndex("TimerId", "CharacterId")
+                        .IsUnique();
+
+                    b.ToTable("GameTimerTargets");
+                });
+
             modelBuilder.Entity("DndSessionManager.Api.Entities.InitiativeEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -983,6 +1005,11 @@ namespace DndSessionManager.Api.Migrations
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1000,6 +1027,11 @@ namespace DndSessionManager.Api.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -1027,6 +1059,10 @@ namespace DndSessionManager.Api.Migrations
 
                     b.Property<int?>("StockQuantity")
                         .HasColumnType("integer");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
 
                     b.HasKey("Id");
 
@@ -1366,6 +1402,25 @@ namespace DndSessionManager.Api.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameTimerTarget", b =>
+                {
+                    b.HasOne("DndSessionManager.Api.Entities.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DndSessionManager.Api.Entities.GameTimer", "Timer")
+                        .WithMany("Targets")
+                        .HasForeignKey("TimerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+
+                    b.Navigation("Timer");
+                });
+
             modelBuilder.Entity("DndSessionManager.Api.Entities.InitiativeEntry", b =>
                 {
                     b.HasOne("DndSessionManager.Api.Entities.Game", "Game")
@@ -1591,6 +1646,11 @@ namespace DndSessionManager.Api.Migrations
                     b.Navigation("Members");
 
                     b.Navigation("Quotes");
+                });
+
+            modelBuilder.Entity("DndSessionManager.Api.Entities.GameTimer", b =>
+                {
+                    b.Navigation("Targets");
                 });
 
             modelBuilder.Entity("DndSessionManager.Api.Entities.Shop", b =>

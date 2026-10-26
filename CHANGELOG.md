@@ -4,6 +4,36 @@ User-facing changes, newest first. Internal work (refactors, tooling, groundwork
 
 ## [Unreleased]
 
+### Added
+- **Timers for chosen characters:** when starting a timer, the DM picks *Everyone* or one or more characters. Players
+  only see the timers meant for them; the DM sees all of them, each marked with who it's for.
+- **Shop purchases go into the inventory:** whatever is bought (by a player or through the DM's Sell) lands in the
+  buyer's inventory with its category, weight and description. Buying more of an item you already have adds to its
+  count.
+- **Shop categories:** every shop item has a category from a fixed list (Armor and shields, Weapons, Adventuring
+  gear, Tools, Spellcasting focus, Gemstones, Poisons, Miscellaneous). Shops show their items grouped by it. Existing
+  items start as Miscellaneous.
+- **Weight on shop items**, shown in the shop.
+- **Shop locations:** a shop can have a location (e.g. "Waterdeep, Dock Ward"), set when creating or editing it, with
+  suggestions from locations already used. Manage → Shops can be searched by name or location and filtered by
+  location; on the Board the DM's shop picker groups shops by location and has a location filter. Players see the
+  location under the shop's name.
+- **Inventory view:** "View inventory" on the sheet opens your items as cards — more per row the wider the window.
+  Click a card to edit it, "+ New item" to add one. The sheet itself lists the items read-only, with weight and a
+  total weight.
+- **Clearing dice rolls:** ✕ removes one roll from your history, "Clear all" empties it.
+
+### Changed
+- **Bigger uploads:** maps, books and monster stat blocks can be up to 100 MB (was about 28 MB). A file that's too
+  large now says so right away.
+- Item weight and description show on the sheet, in the creation wizard and in the PDF export.
+
+### Fixed
+- Dropdown menus inside Board panels (e.g. the shop) were cut off at the panel's edge and awkward to scroll. They now
+  float above everything.
+- "All my characters" on the sheet was missing for players with just one character, leaving no way back to the
+  character list.
+
 ## v0.10.1-alpha — 2026-10-19
 
 ### Changed

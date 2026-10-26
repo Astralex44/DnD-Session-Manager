@@ -13,12 +13,15 @@ public class GameTimersController(IGameTimerFacade gameTimerFacade) : Controller
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<GameTimerDto>>> GetAll(Guid gameId) =>
-        Ok(await gameTimerFacade.GetTimersForGameAsync(gameId));
+        Ok(await gameTimerFacade.GetTimersForGameAsync(gameId, HttpContext.GetGameCaller()));
 
     [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost]
-    public async Task<ActionResult<GameTimerDto>> Create(Guid gameId, [FromBody] CreateGameTimerDto input) =>
-        Ok(await gameTimerFacade.CreateTimerAsync(gameId, input));
+    public async Task<ActionResult<GameTimerDto>> Create(Guid gameId, [FromBody] CreateGameTimerDto input)
+    {
+        var timer = await gameTimerFacade.CreateTimerAsync(gameId, input);
+        return timer is null ? BadRequest("Unknown character.") : Ok(timer);
+    }
 
     [Authorize(Policy = GamePolicies.Dm)]
     [HttpDelete("{timerId:guid}")]

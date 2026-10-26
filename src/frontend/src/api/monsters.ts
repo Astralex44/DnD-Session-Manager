@@ -1,18 +1,6 @@
-import { API_BASE_URL, apiClient, ApiError } from './client.ts';
+import { API_BASE_URL, apiClient } from './client.ts';
+import { uploadForm as upload } from '../lib/upload.ts';
 import type { Monster } from '../types/monster.ts';
-
-async function upload<T>(path: string, method: 'POST' | 'PUT', form: FormData): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    body: form,
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    throw new ApiError(response.status, body || response.statusText);
-  }
-  return response.json() as Promise<T>;
-}
 
 // Route shape matches MonstersController: /api/games/{gameId}/monsters
 export const monstersApi = {

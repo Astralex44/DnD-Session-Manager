@@ -5,5 +5,6 @@ public record ShopDto(
     Guid GameId,
     string Name,
     string Description,
+    string Location,
     IReadOnlyList<ShopItemDto> Items,
     IReadOnlyList<ShopShareDto> Shares);

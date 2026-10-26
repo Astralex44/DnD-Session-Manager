@@ -13,6 +13,10 @@ public class ShopItem
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
+
+    // One of ShopItemCategories.All; carried over to the buyer's inventory.
+    public string Category { get; set; } = ShopItemCategories.Miscellaneous;
+    public decimal Weight { get; set; }
     public ShopSaleMode SaleMode { get; set; }
 
     // SharedStock: total units available across all buyers, decrements on every

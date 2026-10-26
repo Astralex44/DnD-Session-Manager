@@ -32,3 +32,23 @@ export function toUpdateCharacterInput(c: CharacterDetail): UpdateCharacterInput
   void _ls; void _als; void _sk; void _sv; void _at; void _it;
   return rest;
 }
+
+// Item weights are pounds, as in the PHB (the backend's PDF export uses the
+// same "lb" suffix). Up to two decimals, no trailing zeros: "0.5 lb", "12 lb".
+export function formatWeight(weight: number): string {
+  return `${Number(weight.toFixed(2))} lb`;
+}
+
+export function totalWeight(items: { weight: number; quantity: number }[]): number {
+  return items.reduce((sum, item) => sum + item.weight * item.quantity, 0);
+}
+
+// The API returns inventory rows in no fixed order, so after an edit a card
+// could jump elsewhere in the grid. Category, then name, keeps it stable;
+// uncategorised items go last.
+export function sortItems<T extends { category: string; name: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) =>
+    (a.category ? 0 : 1) - (b.category ? 0 : 1)
+    || a.category.localeCompare(b.category)
+    || a.name.localeCompare(b.name));
+}

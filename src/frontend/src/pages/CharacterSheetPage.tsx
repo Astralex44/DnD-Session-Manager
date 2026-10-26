@@ -6,14 +6,14 @@ import { AutoResizeTextarea } from '../components/AutoResizeTextarea.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { CustomSelect } from '../components/CustomSelect.tsx';
 import { NumberInput } from '../components/NumberInput.tsx';
-import { ABILITY_SHORT, fmtMod, modifier, toUpdateCharacterInput } from '../lib/dnd.ts';
+import { ABILITY_SHORT, fmtMod, formatWeight, modifier, sortItems, toUpdateCharacterInput, totalWeight } from '../lib/dnd.ts';
+import { InventoryModal } from '../components/InventoryModal.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
 import type { CharacterCurrency } from '../types/currency.ts';
 import type {
   CreateAttackInput,
-  CreateItemInput,
   CreateLevelSheetInput,
   CreateSpellInput,
   UpdateCharacterInput,
@@ -63,9 +63,9 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const me = useMe();
   const navigate = useNavigate();
   const {
-    current, characters, isLoading, error,
-    fetchCharacter, fetchCharacters, updateCharacter, setSkillProficiency, setSaveProficiency,
-    addAttack, updateAttack, removeAttack, addItem, updateItem, removeItem,
+    current, isLoading, error,
+    fetchCharacter, updateCharacter, setSkillProficiency, setSaveProficiency,
+    addAttack, updateAttack, removeAttack,
     createLevelSheet, setActiveLevelSheet, updateHpMax, removeLevelSheet,
     upsertSpellcasting, addSpell, setSpellPrepared, removeSpell,
     upsertSpellSlot, deleteCharacter,
@@ -79,8 +79,7 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteLevelConfirm, setShowDeleteLevelConfirm] = useState(false);
   const [newAttack, setNewAttack] = useState<CreateAttackInput>({ name: '', atkBonus: '', damageType: '' });
-  const [newItem, setNewItem] = useState<CreateItemInput>({ category: '', name: '', quantity: 1, weight: 0, description: '' });
-  const [itemQtyDrafts, setItemQtyDrafts] = useState<Record<string, number>>({});
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [newSpell, setNewSpell] = useState<CreateSpellInput>({ level: 0, name: '', prepared: false, description: '', url: '', isHomebrew: false });
   const [openSpellId, setOpenSpellId] = useState<string | null>(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -88,10 +87,6 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   const [hitDieRoll, setHitDieRoll] = useState(0);
   const [spellcastingForm, setSpellcastingForm] = useState<UpsertSpellcastingInput | null>(null);
   const [showSpellcastingForm, setShowSpellcastingForm] = useState(false);
-
-  useEffect(() => {
-    fetchCharacters(gameId);
-  }, [gameId, fetchCharacters]);
 
   useEffect(() => {
     if (characterId) fetchCharacter(gameId, characterId);
@@ -126,7 +121,6 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
   // else allowed in (the DM) gets the whole sheet read-only — controls
   // render disabled or hidden rather than failing with a 403 on blur.
   const isOwner = current.ownerUserId === me.userId;
-  const ownCharacterCount = characters.filter((c) => c.ownerUserId === me.userId).length;
 
   function updateField<K extends keyof UpdateCharacterInput>(key: K, value: UpdateCharacterInput[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -224,12 +218,6 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
     setNewAttack({ name: '', atkBonus: '', damageType: '' });
   }
 
-  async function handleAddItemRow() {
-    if (!newItem.name.trim()) return;
-    await addItem(gameId, characterId, newItem);
-    setNewItem({ category: '', name: '', quantity: 1, weight: 0, description: '' });
-  }
-
   async function handleAddSpellRow() {
     if (!newSpell.name.trim() || !sheet) return;
     await addSpell(gameId, characterId, sheet.id, newSpell);
@@ -281,10 +269,9 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
           </a>
           {/* Back to the table in one click; the character list stays reachable
               for switching or creating — "Characters" in a player's sidebar
-              now jumps straight to the active character instead. */}
-          {(me.role === 'Dm' || ownCharacterCount > 1) && (
-            <Link className="back-link no-print" to="/characters">{me.role === 'Dm' ? 'All characters' : 'All my characters'}</Link>
-          )}
+              jumps straight to the active character, so this link is the
+              only way back to the list and shows even with one character. */}
+          <Link className="back-link no-print" to="/characters">{me.role === 'Dm' ? 'All characters' : 'All my characters'}</Link>
           <Link className="back-link no-print" to="/board">‹ Board</Link>
         </div>
       </div>
@@ -569,44 +556,36 @@ function CharacterSheetContent({ characterId }: { characterId: string }) {
 
       <div className="sheet-section box">
         <h3 className="section-title">Equipment</h3>
-        <fieldset className="ro-fieldset" disabled={!isOwner}>
+        {/* Read-only here; editing happens in the inventory modal (Severin, 2026-10-26). */}
+        {current.items.length === 0 && <p className="hint" style={{ margin: '0 0 10px' }}>No items yet.</p>}
         <div className="item-list">
-          {current.items.map((item) => {
-            const qty = itemQtyDrafts[item.id] ?? item.quantity;
-            const commitItem = (patch: Partial<CreateItemInput>) =>
-              updateItem(gameId, characterId, item.id, {
-                category: item.category, name: item.name, quantity: item.quantity, weight: item.weight,
-                description: item.description, ...patch,
-              });
-            return (
-              <div key={item.id} className="item-row">
-                <NumberInput
-                  className="item-qty" min={1} value={qty}
-                  onChange={(v) => setItemQtyDrafts((d) => ({ ...d, [item.id]: v }))}
-                  onBlur={() => qty !== item.quantity && commitItem({ quantity: qty })}
-                />
-                <span className="item-qty-x">×</span>
-                <input
-                  className="item-name" defaultValue={item.name}
-                  onBlur={(e) => e.target.value !== item.name && commitItem({ name: e.target.value })}
-                />
-                <input
-                  className="item-category" placeholder="Category" defaultValue={item.category}
-                  onBlur={(e) => e.target.value !== item.category && commitItem({ category: e.target.value })}
-                />
-                <button className="row-remove" onClick={() => removeItem(gameId, characterId, item.id)}>✕</button>
-              </div>
-            );
-          })}
+          {sortItems(current.items).map((item) => (
+            <div key={item.id} className="item-row readonly" title={item.description || undefined}>
+              <span className="item-qty-ro">{item.quantity}×</span>
+              <span className="item-name-ro">{item.name}</span>
+              {item.category && <span className="item-category-ro">{item.category}</span>}
+              {item.weight > 0 && <span className="item-weight-ro">{formatWeight(item.weight * item.quantity)}</span>}
+            </div>
+          ))}
         </div>
-        {isOwner && <div className="add-row">
-          <input placeholder="Name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} onKeyDown={onEnter(() => void handleAddItemRow())} />
-          <input placeholder="Category" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} onKeyDown={onEnter(() => void handleAddItemRow())} />
-          <NumberInput className="item-qty" min={1} value={newItem.quantity} onChange={(v) => setNewItem({ ...newItem, quantity: v })} onKeyDown={onEnter(() => void handleAddItemRow())} />
-          <button onClick={handleAddItemRow}>+ Add</button>
-        </div>}
-        </fieldset>
+        <div className="inventory-footer">
+          {totalWeight(current.items) > 0 && (
+            <span className="inventory-total">Total weight: <strong>{formatWeight(totalWeight(current.items))}</strong></span>
+          )}
+          <button className="no-print" onClick={() => setInventoryOpen(true)}>View inventory</button>
+        </div>
       </div>
+
+      {inventoryOpen && (
+        <InventoryModal
+          gameId={gameId}
+          characterId={characterId}
+          characterName={current.name}
+          items={current.items}
+          editable={isOwner}
+          onClose={() => setInventoryOpen(false)}
+        />
+      )}
 
       {sheet && (
         <div className={`sheet-section box${sheet.spellcasting ? ' print-page-start' : ' no-print'}`}>

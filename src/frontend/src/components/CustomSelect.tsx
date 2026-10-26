@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface CustomSelectOption {
   value: string;
@@ -19,20 +20,72 @@ interface CustomSelectProps {
   placeholder?: string;
 }
 
+const MENU_MAX_HEIGHT = 260;
+const MENU_GAP = 5;
+const VIEWPORT_EDGE = 8;
+
+interface MenuPosition {
+  left: number;
+  width: number;
+  maxHeight: number;
+  top?: number;
+  bottom?: number;
+}
+
 // Standing UI convention: no native <select> anywhere, see mockups/*.html
 // for the .custom-select / .cs-option pattern this replicates.
+//
+// The open menu is portalled to <body> with position: fixed. Rendered inside
+// the select it got clipped by any ancestor with overflow (every Board
+// .panel has overflow: hidden â€” the DM's "menu behind the card" bug,
+// 2026-10-26), so now it floats above everything, follows its trigger on
+// scroll/resize, and opens upwards when there's no room below.
 export function CustomSelect({ options, value, onChange, placeholder = 'Selectâ€¦' }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<MenuPosition | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
 
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    function place() {
+      const trigger = rootRef.current?.getBoundingClientRect();
+      if (!trigger) return;
+      const wanted = Math.min(menuRef.current?.scrollHeight ?? MENU_MAX_HEIGHT, MENU_MAX_HEIGHT);
+      const below = window.innerHeight - trigger.bottom - MENU_GAP - VIEWPORT_EDGE;
+      const above = trigger.top - MENU_GAP - VIEWPORT_EDGE;
+      const openUp = below < wanted && above > below;
+      const maxHeight = Math.max(Math.min(MENU_MAX_HEIGHT, openUp ? above : below), 80);
+      setPosition(openUp
+        ? { left: trigger.left, width: trigger.width, maxHeight, bottom: window.innerHeight - trigger.top + MENU_GAP }
+        : { left: trigger.left, width: trigger.width, maxHeight, top: trigger.bottom + MENU_GAP });
+    }
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
   }, [open]);
 
   return (
@@ -41,7 +94,14 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Selectâ€
         <span>{selected?.label ?? placeholder}</span>
         <span className="cs-arrow">â–¼</span>
       </button>
-      <div className="custom-select-menu">
+      {open && createPortal(
+      <div
+        ref={menuRef}
+        className="custom-select-menu"
+        style={position
+          ? { left: position.left, width: position.width, maxHeight: position.maxHeight, top: position.top, bottom: position.bottom }
+          : { visibility: 'hidden', left: 0, top: 0 }}
+      >
         {options.flatMap((option, i) => {
           const nodes = [];
           if (option.group !== undefined && option.group !== options[i - 1]?.group) {
@@ -64,7 +124,9 @@ export function CustomSelect({ options, value, onChange, placeholder = 'Selectâ€
           );
           return nodes;
         })}
-      </div>
+      </div>,
+      document.body,
+      )}
     </div>
   );
 }

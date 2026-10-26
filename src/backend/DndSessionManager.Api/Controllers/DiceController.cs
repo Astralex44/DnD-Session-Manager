@@ -30,4 +30,15 @@ public class DiceController(IDiceFacade diceFacade) : ControllerBase
         if (forbidden) return Forbid();
         return Ok(roll);
     }
+
+    [HttpDelete]
+    public async Task<IActionResult> ClearHistory(Guid gameId)
+    {
+        await diceFacade.ClearHistoryAsync(gameId, HttpContext.GetGameCaller());
+        return NoContent();
+    }
+
+    [HttpDelete("{rollId:guid}")]
+    public async Task<IActionResult> DeleteRoll(Guid gameId, Guid rollId) =>
+        await diceFacade.DeleteRollAsync(gameId, HttpContext.GetGameCaller(), rollId) ? NoContent() : NotFound();
 }

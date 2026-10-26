@@ -13,4 +13,8 @@ public interface IDiceFacade
 
     // Forbidden when a player sets ForUserId, or the target isn't a member.
     Task<(DiceRollDto? Roll, bool Forbidden)> RecordPhysicalAsync(Guid gameId, GameCaller caller, RecordPhysicalRollDto input);
+
+    // Only ever the caller's own history. False when the roll isn't theirs.
+    Task<bool> DeleteRollAsync(Guid gameId, GameCaller caller, Guid rollId);
+    Task ClearHistoryAsync(Guid gameId, GameCaller caller);
 }

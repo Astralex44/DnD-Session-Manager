@@ -186,7 +186,17 @@ public class CharacterSheetDocument(CharacterDetailDto character) : IDocument
                 foreach (var item in character.Items)
                 {
                     var suffix = item.Category.Length > 0 ? $" ({item.Category})" : "";
-                    list.Item().Text($"• {item.Name}{suffix} ({item.Quantity}×)").FontSize(9.5f);
+                    var weight = item.Weight > 0 ? $" · {item.Weight * item.Quantity:0.##} lb" : "";
+                    list.Item().Text($"• {item.Name}{suffix} ({item.Quantity}×){weight}").FontSize(9.5f);
+                    if (item.Description.Length > 0)
+                    {
+                        list.Item().PaddingLeft(9).Text(item.Description).FontSize(8.5f).FontColor(TextMuted);
+                    }
+                }
+                var totalWeight = character.Items.Sum(item => item.Weight * item.Quantity);
+                if (totalWeight > 0)
+                {
+                    list.Item().PaddingTop(4).Text($"Total weight: {totalWeight:0.##} lb").FontSize(9.5f).Bold();
                 }
             });
 

@@ -67,6 +67,29 @@ public class DiceFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
         return (ToDto(roll, caller.UserId), false);
     }
 
+    // A roll the DM entered for a player belongs to the player, so only they
+    // can remove it — the same "own history only" rule as reading.
+    public async Task<bool> DeleteRollAsync(Guid gameId, GameCaller caller, Guid rollId)
+    {
+        var roll = await unitOfWork.DiceRolls.GetByIdAsync(rollId);
+        if (roll is null || roll.GameId != gameId || roll.UserId != caller.UserId) return false;
+
+        unitOfWork.DiceRolls.Remove(roll);
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "dice");
+        return true;
+    }
+
+    public async Task ClearHistoryAsync(Guid gameId, GameCaller caller)
+    {
+        foreach (var roll in await unitOfWork.DiceRolls.GetByGameAndUserAsync(gameId, caller.UserId))
+        {
+            unitOfWork.DiceRolls.Remove(roll);
+        }
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "dice");
+    }
+
     // Insert, then drop anything beyond the newest 5 for that person, in one
     // save. "dice" goes out like every other live event (no payload): each
     // client just refetches its *own* history, so a roll the DM enters for a

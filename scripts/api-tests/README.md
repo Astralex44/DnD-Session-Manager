@@ -23,6 +23,7 @@ ASPNETCORE_URLS=http://localhost:5001 dotnet run
 # 3. In another shell, from the repo root
 scripts/api-tests/access-matrix.sh      # who gets in, DM-only vs member endpoints, files, hub, failed-login redirect
 scripts/api-tests/ownership-matrix.sh   # characters/notes per account, note adoption, sharing, purchases, filtering
+scripts/api-tests/shop-timer-dice-matrix.sh  # shop categories/weight, purchase → inventory, timers per character, clearing dice, 100 MB uploads
 ```
 
 To run them next to your own local stack without touching it, point them at a second API and database:

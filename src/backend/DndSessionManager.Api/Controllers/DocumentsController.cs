@@ -1,6 +1,7 @@
 using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using DndSessionManager.Api.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,6 +24,8 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
     }
 
     [Authorize(Policy = GamePolicies.Dm)]
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.MaxRequestBytes)]
     [HttpPost]
     public async Task<ActionResult<DocumentDto>> Create(Guid gameId, [FromForm] CreateDocumentDto input)
     {
@@ -31,6 +34,8 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
     }
 
     [Authorize(Policy = GamePolicies.Dm)]
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.MaxRequestBytes)]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<DocumentDto>> Update(Guid gameId, Guid id, [FromForm] UpdateDocumentDto input)
     {

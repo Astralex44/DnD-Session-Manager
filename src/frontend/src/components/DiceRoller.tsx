@@ -23,7 +23,7 @@ interface DiceRollerProps {
 export function DiceRoller({ enterFor }: DiceRollerProps) {
   const gameId = useGameId();
   const isDm = useIsDm();
-  const { history, fetchHistory, roll, recordPhysical } = useDiceStore();
+  const { history, fetchHistory, roll, recordPhysical, clearHistory, removeRoll } = useDiceStore();
   const showToast = useToastStore((t) => t.showToast);
   const [die, setDie] = useState(20);
   const [count, setCount] = useState(1);
@@ -131,10 +131,17 @@ export function DiceRoller({ enterFor }: DiceRollerProps) {
       {/* History last: roll or record above, results collect at the bottom. */}
       {history.length > 0 && (
         <div className="roll-history">
+          <div className="roll-history-head">
+            <span>Your last rolls</span>
+            <button className="row-remove" onClick={() => void clearHistory(gameId)}>Clear all</button>
+          </div>
           {history.map((r) => (
-            <div key={r.id} title={r.dice ? `Dice: ${r.dice}` : undefined}>
-              {r.expression} → <strong>{r.total}</strong>
-              {r.isPhysical && <span className="roll-tag">{r.enteredByOther ? 'entered by DM' : 'real dice'}</span>}
+            <div key={r.id} className="roll-history-row" title={r.dice ? `Dice: ${r.dice}` : undefined}>
+              <span>
+                {r.expression} → <strong>{r.total}</strong>
+                {r.isPhysical && <span className="roll-tag">{r.enteredByOther ? 'entered by DM' : 'real dice'}</span>}
+              </span>
+              <button className="row-remove" title="Remove this roll" onClick={() => void removeRoll(gameId, r.id)}>✕</button>
             </div>
           ))}
         </div>

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect.tsx';
+import { formatWeight } from '../lib/dnd.ts';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
-import { shareState } from '../types/shop.ts';
+import { groupByCategory, shareState } from '../types/shop.ts';
 import type { Shop, ShopItem } from '../types/shop.ts';
 import type { CharacterCurrency } from '../types/currency.ts';
 
@@ -132,7 +133,10 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
             finds it again later after closing that view. */}
         {visibleShops.map((shop) => (
           <div key={shop.id} className="init-row">
-            <span className="name">{shop.name}</span>
+            <div className="shop-item-info">
+              <span className="name">{shop.name}</span>
+              {shop.location && <span className="shop-location">📍 {shop.location}</span>}
+            </div>
             <button className="btn-ghost" onClick={() => openShop(shop)}>Open</button>
           </div>
         ))}
@@ -142,13 +146,28 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
         <div className="dialog-overlay" onClick={() => setViewingShop(null)}>
           <div className="dialog-box wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{viewingShop.name}</h3>
+              <h3>
+                {viewingShop.name}
+                {viewingShop.location && <span className="shop-location">📍 {viewingShop.location}</span>}
+              </h3>
               <span className="modal-close" onClick={() => setViewingShop(null)}>✕</span>
             </div>
             {viewingShop.description && <p className="hint">{viewingShop.description}</p>}
-            {openShopLive!.items.filter((item) => !isSoldOut(item)).map((item) => (
+            {groupByCategory(openShopLive!.items.filter((item) => !isSoldOut(item))).map(({ category, items }) => (
+              <div key={category}>
+              <div className="shop-cat-label">{category}</div>
+              {items.map((item) => (
               <div key={item.id} className={`init-row${canAfford(item) ? '' : ' too-expensive'}`}>
-                <span className="name">{item.name}</span>
+                <div className="shop-item-info">
+                  <span className="name">{item.name}</span>
+                  {(item.weight > 0 || item.description) && (
+                    <span className="shop-item-meta">
+                      {item.weight > 0 && formatWeight(item.weight)}
+                      {item.weight > 0 && item.description && ' · '}
+                      {item.description}
+                    </span>
+                  )}
+                </div>
                 <div className="price-pills">
                   {item.prices.map((p) => (
                     <span key={p.denominationId} className="coin-pill-sm">
@@ -169,6 +188,8 @@ export function ShopPlayerPanel({ onlyCharacterIds }: ShopPlayerPanelProps) {
                 >
                   Buy
                 </button>
+              </div>
+              ))}
               </div>
             ))}
             {openShopLive!.items.filter((item) => !isSoldOut(item)).length === 0 && <p className="hint" style={{ margin: 0 }}>Nothing for sale right now.</p>}

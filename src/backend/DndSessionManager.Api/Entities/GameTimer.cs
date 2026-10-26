@@ -12,4 +12,8 @@ public class GameTimer
     public DateTime EndsAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public Game? Game { get; set; }
+
+    // Who sees the timer. Empty = everyone at the table; otherwise only the
+    // owners of these characters (and the DM, who always sees every timer).
+    public ICollection<GameTimerTarget> Targets { get; set; } = new List<GameTimerTarget>();
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NumberInput } from './NumberInput.tsx';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { useTimersStore } from '../store/timersStore.ts';
+import { useCharactersStore } from '../store/charactersStore.ts';
 import { useGameId } from '../store/authStore.ts';
 
 
@@ -25,6 +26,10 @@ export function TimerPanel({ editable }: TimerPanelProps) {
   const [label, setLabel] = useState('');
   const [duration, setDuration] = useState(60);
   const [now, setNow] = useState(() => Date.now());
+  // Empty = everyone. The DM's own Board already keeps the character list
+  // live (CharacterLivePanel), so this only reads it.
+  const [targetIds, setTargetIds] = useState<string[]>([]);
+  const characters = useCharactersStore((s) => s.characters).filter((c) => c.status === 'active');
 
   useLiveFetch(gameId, 'timers', fetchTimers);
 
@@ -35,9 +40,14 @@ export function TimerPanel({ editable }: TimerPanelProps) {
 
   async function handleAdd() {
     if (!label.trim()) return;
-    await createTimer(gameId, { label: label.trim(), durationSeconds: duration });
+    await createTimer(gameId, { label: label.trim(), durationSeconds: duration, characterIds: targetIds });
     setLabel('');
     setDuration(60);
+    setTargetIds([]);
+  }
+
+  function toggleTarget(characterId: string) {
+    setTargetIds((ids) => (ids.includes(characterId) ? ids.filter((id) => id !== characterId) : [...ids, characterId]));
   }
 
   return (
@@ -49,7 +59,12 @@ export function TimerPanel({ editable }: TimerPanelProps) {
         {timers.length === 0 && <p className="hint" style={{ margin: 0 }}>No timers running.</p>}
         {timers.map((timer) => (
           <div key={timer.id} className={`timer-row${new Date(timer.endsAt).getTime() <= now ? ' done' : ''}`}>
-            <span>{timer.label}</span>
+            <span>
+              {timer.label}
+              {editable && timer.targets.length > 0 && (
+                <span className="timer-for">for {timer.targets.map((t) => t.name).join(', ')}</span>
+              )}
+            </span>
             <span className="timer-time">{new Date(timer.endsAt).getTime() <= now ? 'done' : formatRemaining(timer.endsAt, now)}</span>
             {editable && <button className="row-remove" onClick={() => removeTimer(gameId, timer.id)}>✕</button>}
           </div>
@@ -67,6 +82,20 @@ export function TimerPanel({ editable }: TimerPanelProps) {
           <NumberInput value={duration} onChange={setDuration} min={1} />
           <span className="hint" style={{ margin: 0 }}>seconds</span>
         </div>
+        {characters.length > 0 && (
+          <div className="timer-targets">
+            <button
+              type="button" className={`timer-target-chip${targetIds.length === 0 ? ' on' : ''}`}
+              onClick={() => setTargetIds([])}
+            >Everyone</button>
+            {characters.map((c) => (
+              <button
+                key={c.id} type="button" className={`timer-target-chip${targetIds.includes(c.id) ? ' on' : ''}`}
+                onClick={() => toggleTarget(c.id)}
+              >{c.name}</button>
+            ))}
+          </div>
+        )}
         <button className="add-btn" style={{ marginTop: 8 }} onClick={handleAdd}>+ Start Timer</button>
         </>}
       </div>

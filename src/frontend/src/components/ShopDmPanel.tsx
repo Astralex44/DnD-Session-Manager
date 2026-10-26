@@ -6,7 +6,9 @@ import { useCharactersStore } from '../store/charactersStore.ts';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
 import { useToastStore } from '../store/toastStore.ts';
-import { shareState } from '../types/shop.ts';
+import {
+  ALL_LOCATIONS, groupByCategory, locationFilterOptions, matchesLocation, NO_LOCATION_LABEL, shareState, shopLocations,
+} from '../types/shop.ts';
 import type { CreateShopItemPriceInput, ShopItem } from '../types/shop.ts';
 import { useGameId } from '../store/authStore.ts';
 
@@ -32,6 +34,7 @@ export function ShopDmPanel() {
   const showToast = useToastStore((s) => s.showToast);
 
   const [shopId, setShopId] = useState<string | null>(null);
+  const [locationFilter, setLocationFilter] = useState(ALL_LOCATIONS);
   const [shareTarget, setShareTarget] = useState('');
   const [sellTarget, setSellTarget] = useState<SellTarget | null>(null);
   const [characterId, setCharacterId] = useState('');
@@ -54,7 +57,20 @@ export function ShopDmPanel() {
   }, [shopId]);
 
   const shop = shops.find((s) => s.id === shopId) ?? null;
-  const shopOptions = shops.map((s) => ({ value: s.id, label: s.name }));
+  // The picker groups shops by location (located ones first, A–Z), and the
+  // location filter narrows it — with many shops across a campaign, the DM
+  // finds "the smith in this town" without scrolling through all of them.
+  const hasLocations = shopLocations(shops).length > 0;
+  const shopOptions = shops
+    .filter((s) => matchesLocation(s, locationFilter))
+    .sort((a, b) => (a.location ? 0 : 1) - (b.location ? 0 : 1) || a.location.localeCompare(b.location) || a.name.localeCompare(b.name))
+    .map((s) => ({ value: s.id, label: s.name, group: hasLocations ? (s.location || NO_LOCATION_LABEL) : undefined }));
+
+  function changeLocationFilter(filter: string) {
+    setLocationFilter(filter);
+    const first = shops.find((s) => matchesLocation(s, filter));
+    if (first && !(shop && matchesLocation(shop, filter))) setShopId(first.id);
+  }
   const characterOptions = characters.map((c) => ({ value: c.id, label: `${c.name} (${c.playerName})` }));
 
   const sharedIds = new Set(shop?.shares.map((s) => s.characterId) ?? []);
@@ -101,12 +117,20 @@ export function ShopDmPanel() {
       <div className="panel-body">
         {shops.length === 0 && <p className="hint" style={{ margin: 0 }}>No shops set up yet.</p>}
 
+        {shops.length > 1 && hasLocations && (
+          <div className="field" style={{ marginBottom: 10 }}>
+            <label>Location</label>
+            <CustomSelect value={locationFilter} onChange={changeLocationFilter} options={locationFilterOptions(shops)} />
+          </div>
+        )}
+
         {shops.length > 1 && (
           <div className="field" style={{ marginBottom: 10 }}>
             <label>Shop</label>
             <CustomSelect value={shopId ?? ''} onChange={setShopId} options={shopOptions} />
           </div>
         )}
+        {shop && shop.location && <p className="shop-location" style={{ margin: '0 0 8px' }}>📍 {shop.location}</p>}
 
         {shop && (
           <>
@@ -147,7 +171,10 @@ export function ShopDmPanel() {
 
         {shop && shop.items.length === 0 && <p className="hint" style={{ margin: '10px 0 0' }}>No items in this shop.</p>}
 
-        {shop && shop.items.map((item) => (
+        {shop && groupByCategory(shop.items).map(({ category, items }) => (
+          <div key={category}>
+          <div className="shop-cat-label">{category}</div>
+          {items.map((item) => (
           <div key={item.id} className={`init-row${item.saleMode === 'SharedStock' && item.stockQuantity === 0 ? ' sold-out' : ''}`}>
             <span className="name">{item.name}</span>
             <div className="price-pills">
@@ -167,6 +194,8 @@ export function ShopDmPanel() {
             >
               Sell
             </button>
+          </div>
+          ))}
           </div>
         ))}
       </div>

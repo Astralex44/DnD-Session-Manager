@@ -1,6 +1,7 @@
 using DndSessionManager.Api.Auth;
 using DndSessionManager.Api.Dtos;
 using DndSessionManager.Api.Facades;
+using DndSessionManager.Api.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,8 @@ public class MonstersController(IMonsterFacade monsterFacade) : ControllerBase
         return monster is null ? NotFound() : Ok(monster);
     }
 
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.MaxRequestBytes)]
     [HttpPost]
     public async Task<ActionResult<MonsterDto>> Create(Guid gameId, [FromForm] CreateMonsterDto input)
     {
@@ -29,6 +32,8 @@ public class MonstersController(IMonsterFacade monsterFacade) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { gameId, id = monster.Id }, monster);
     }
 
+    [RequestSizeLimit(UploadLimits.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.MaxRequestBytes)]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<MonsterDto>> Update(Guid gameId, Guid id, [FromForm] UpdateMonsterDto input)
     {

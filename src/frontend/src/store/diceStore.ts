@@ -7,6 +7,8 @@ interface DiceState {
   fetchHistory: (gameId: string) => Promise<void>;
   roll: (gameId: string, sides: number, count: number, modifier: number) => Promise<void>;
   recordPhysical: (gameId: string, expression: string, total: number, forUserId: string | null) => Promise<boolean>;
+  clearHistory: (gameId: string) => Promise<void>;
+  removeRoll: (gameId: string, rollId: string) => Promise<void>;
 }
 
 // The logged-in person's own last 5 rolls (FA-06, always private). Refetched
@@ -35,5 +37,15 @@ export const useDiceStore = create<DiceState>((set, get) => ({
     } catch {
       return false;
     }
+  },
+
+  clearHistory: async (gameId) => {
+    await diceApi.clear(gameId);
+    set({ history: [] });
+  },
+
+  removeRoll: async (gameId, rollId) => {
+    await diceApi.remove(gameId, rollId);
+    set({ history: get().history.filter((r) => r.id !== rollId) });
   },
 }));

@@ -6,7 +6,10 @@ import { useToastStore } from '../store/toastStore.ts';
 import { NumberInput } from '../components/NumberInput.tsx';
 import { useCurrencyStore } from '../store/currencyStore.ts';
 import { useShopsStore } from '../store/shopStore.ts';
-import { shareState } from '../types/shop.ts';
+import {
+  ALL_LOCATIONS, groupByCategory, locationFilterOptions, matchesLocation, shareState, shopLocations, SHOP_ITEM_CATEGORIES,
+} from '../types/shop.ts';
+import { formatWeight } from '../lib/dnd.ts';
 import type { CreateShopItemInput, Shop, ShopItem, ShopSaleMode } from '../types/shop.ts';
 import { useGameId } from '../store/authStore.ts';
 
@@ -18,8 +21,13 @@ const SALE_MODE_OPTIONS: { value: ShopSaleMode; label: string; description: stri
   { value: 'PerPlayerLimited', label: 'Per Player Limited', description: 'Each character buys on their own, up to a limit — no shared counter.' },
 ];
 
+const LOCATION_LIST_ID = 'shop-location-suggestions';
+
+const CATEGORY_OPTIONS = SHOP_ITEM_CATEGORIES.map((c) => ({ value: c, label: c }));
+
 const EMPTY_ITEM_FORM: CreateShopItemInput = {
-  name: '', description: '', icon: '', saleMode: 'SharedStock', stockQuantity: 1, maxPerCharacter: null, prices: [],
+  name: '', description: '', icon: '', category: 'Miscellaneous', weight: 0,
+  saleMode: 'SharedStock', stockQuantity: 1, maxPerCharacter: null, prices: [],
 };
 
 interface ItemModalTarget {
@@ -52,10 +60,14 @@ export function ShopsManagePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newLocation, setNewLocation] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [search, setSearch] = useState('');
+  const [locationFilter, setLocationFilter] = useState(ALL_LOCATIONS);
   const [deleteTarget, setDeleteTarget] = useState<Shop | null>(null);
 
   const [itemModal, setItemModal] = useState<ItemModalTarget | null>(null);
@@ -68,10 +80,11 @@ export function ShopsManagePage() {
 
   async function handleCreate() {
     if (!newName.trim()) return;
-    const ok = await createShop(gameId, { name: newName.trim(), description: newDescription });
+    const ok = await createShop(gameId, { name: newName.trim(), description: newDescription, location: newLocation.trim() });
     if (ok) {
       setNewName('');
       setNewDescription('');
+      setNewLocation('');
       setShowCreate(false);
     }
   }
@@ -80,11 +93,12 @@ export function ShopsManagePage() {
     setEditingId(shop.id);
     setEditName(shop.name);
     setEditDescription(shop.description);
+    setEditLocation(shop.location);
   }
 
   async function handleSaveEdit(shop: Shop) {
     if (!editName.trim()) return;
-    const ok = await updateShop(gameId, shop.id, { name: editName.trim(), description: editDescription });
+    const ok = await updateShop(gameId, shop.id, { name: editName.trim(), description: editDescription, location: editLocation.trim() });
     if (ok) setEditingId(null);
   }
 
@@ -98,6 +112,8 @@ export function ShopsManagePage() {
       name: item.name,
       description: item.description,
       icon: item.icon,
+      category: item.category,
+      weight: item.weight,
       saleMode: item.saleMode,
       stockQuantity: item.stockQuantity,
       maxPerCharacter: item.maxPerCharacter,
@@ -135,6 +151,12 @@ export function ShopsManagePage() {
     closeItemModal();
   }
 
+  // Search matches name or location; the dropdown narrows to one location.
+  const query = search.trim().toLowerCase();
+  const visibleShops = shops.filter((shop) =>
+    matchesLocation(shop, locationFilter)
+    && (!query || shop.name.toLowerCase().includes(query) || shop.location.toLowerCase().includes(query)));
+
   function qtyLabel(item: ShopItem) {
     return item.saleMode === 'PerPlayerLimited' ? (item.maxPerCharacter ?? '—') : (item.stockQuantity ?? '∞');
   }
@@ -162,6 +184,10 @@ export function ShopsManagePage() {
             <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. The Weary Traveler" />
           </div>
           <div className="field" style={{ marginTop: 10 }}>
+            <label>Location</label>
+            <input list={LOCATION_LIST_ID} value={newLocation} onChange={(e) => setNewLocation(e.target.value)} placeholder="e.g. Waterdeep, Dock Ward" />
+          </div>
+          <div className="field" style={{ marginTop: 10 }}>
             <label>Description</label>
             <AutoResizeTextarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Optional flavor text" />
           </div>
@@ -174,13 +200,34 @@ export function ShopsManagePage() {
 
       {isLoading && <p className="hint">Loading…</p>}
 
+      {/* Suggestions for the Location fields: every location already in use,
+          so one place isn't spelled two ways. */}
+      <datalist id={LOCATION_LIST_ID}>
+        {shopLocations(shops).map((l) => <option key={l} value={l} />)}
+      </datalist>
+
+      {shops.length > 0 && (
+        <div className="shop-filters">
+          <div className="field">
+            <label>Search</label>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Shop name or location" />
+          </div>
+          <div className="field">
+            <label>Location</label>
+            <CustomSelect value={locationFilter} onChange={setLocationFilter} options={locationFilterOptions(shops)} />
+          </div>
+        </div>
+      )}
+      {shops.length > 0 && visibleShops.length === 0 && <p className="hint">No shops match.</p>}
+
       <div className="card-list">
-        {shops.map((shop) => {
+        {visibleShops.map((shop) => {
           return (
           <div key={shop.id} className="row-card">
             <div className="row-top">
               <div>
                 <div className="row-title">{shop.name}</div>
+                {shop.location && <div className="shop-location">📍 {shop.location}</div>}
               </div>
               <div className="row-actions">
                 <button onClick={() => openAddItemModal(shop.id)}>+ Item</button>
@@ -214,9 +261,14 @@ export function ShopsManagePage() {
               </colgroup>
               <thead><tr><th>Name</th><th>Price</th><th>Qty</th><th>Mode</th><th></th></tr></thead>
               <tbody>
-                {shop.items.map((item) => (
+                {groupByCategory(shop.items).flatMap(({ category, items }) => [
+                  <tr key={`cat-${category}`} className="shop-cat-row"><td colSpan={5}>{category}</td></tr>,
+                  ...items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.name}</td>
+                    <td>
+                      {item.name}
+                      {item.weight > 0 && <span className="item-weight-note">{formatWeight(item.weight)}</span>}
+                    </td>
                     <td>
                       {item.prices.length === 0 ? (
                         '—'
@@ -236,7 +288,8 @@ export function ShopsManagePage() {
                     <td><span className="mode-chip">{item.saleMode === 'SharedStock' ? 'Shared Stock' : 'Per Player'}</span></td>
                     <td><button className="icon-btn" onClick={() => openEditItemModal(shop.id, item)}>Edit</button></td>
                   </tr>
-                ))}
+                  )),
+                ])}
               </tbody>
             </table>
             {shop.items.length === 0 && <p className="hint" style={{ margin: '8px 0 0' }}>No items yet.</p>}
@@ -246,6 +299,10 @@ export function ShopsManagePage() {
                 <div className="field">
                   <label>Shop Name</label>
                   <input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                </div>
+                <div className="field" style={{ marginTop: 10 }}>
+                  <label>Location</label>
+                  <input list={LOCATION_LIST_ID} value={editLocation} onChange={(e) => setEditLocation(e.target.value)} placeholder="e.g. Waterdeep, Dock Ward" />
                 </div>
                 <div className="field" style={{ marginTop: 10 }}>
                   <label>Description</label>
@@ -295,6 +352,24 @@ export function ShopsManagePage() {
             <div className="field" style={{ marginTop: 10 }}>
               <label>Description</label>
               <AutoResizeTextarea value={itemForm.description} onChange={(e) => setItemForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional flavor text" />
+            </div>
+            <div className="item-form-pair">
+              <div className="field">
+                <label>Category</label>
+                <CustomSelect
+                  value={itemForm.category}
+                  onChange={(v) => setItemForm((f) => ({ ...f, category: v }))}
+                  options={CATEGORY_OPTIONS}
+                />
+              </div>
+              <div className="field">
+                <label>Weight (lb)</label>
+                <NumberInput
+                  min={0} step={0.1}
+                  value={itemForm.weight}
+                  onChange={(v) => setItemForm((f) => ({ ...f, weight: Math.max(0, v) }))}
+                />
+              </div>
             </div>
 
             <p className="hint" style={{ marginTop: 14, marginBottom: 6 }}>Price (one or more denominations)</p>

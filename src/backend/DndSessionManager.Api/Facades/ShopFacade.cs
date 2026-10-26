@@ -37,7 +37,7 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
 
     public async Task<ShopDto> CreateShopAsync(Guid gameId, CreateShopDto input)
     {
-        var shop = new Shop { Id = Guid.NewGuid(), GameId = gameId, Name = input.Name.Trim(), Description = input.Description };
+        var shop = new Shop { Id = Guid.NewGuid(), GameId = gameId, Name = input.Name.Trim(), Description = input.Description, Location = input.Location.Trim() };
         await unitOfWork.Shops.AddAsync(shop);
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "shops");
@@ -51,6 +51,7 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
 
         shop.Name = input.Name.Trim();
         shop.Description = input.Description;
+        shop.Location = input.Location.Trim();
 
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "shops");
@@ -131,6 +132,7 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
     {
         if (await GetOwnedShopAsync(gameId, shopId) is null) return null;
         if (!await AllDenominationsBelongToGameAsync(gameId, input.Prices.Select(p => p.DenominationId))) return null;
+        if (ShopItemCategories.Normalize(input.Category) is not { } category) return null;
 
         var item = new ShopItem
         {
@@ -139,6 +141,8 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
             Name = input.Name.Trim(),
             Description = input.Description,
             Icon = input.Icon,
+            Category = category,
+            Weight = input.Weight,
             SaleMode = ParseSaleMode(input.SaleMode),
             StockQuantity = input.StockQuantity,
             MaxPerCharacter = input.MaxPerCharacter,
@@ -162,10 +166,13 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
         var item = await unitOfWork.ShopItems.GetByIdAsync(itemId);
         if (item is null || item.ShopId != shopId) return null;
         if (!await AllDenominationsBelongToGameAsync(gameId, input.Prices.Select(p => p.DenominationId))) return null;
+        if (ShopItemCategories.Normalize(input.Category) is not { } category) return null;
 
         item.Name = input.Name.Trim();
         item.Description = input.Description;
         item.Icon = input.Icon;
+        item.Category = category;
+        item.Weight = input.Weight;
         item.SaleMode = ParseSaleMode(input.SaleMode);
         item.StockQuantity = input.StockQuantity;
         item.MaxPerCharacter = input.MaxPerCharacter;
@@ -300,6 +307,7 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
             PurchasedAt = DateTime.UtcNow,
         };
         await unitOfWork.Purchases.AddAsync(purchase);
+        await AddToInventoryAsync(character.Id, item, input.Quantity);
         await unitOfWork.SaveChangesAsync();
         await broadcaster.NotifyAsync(gameId, "shops");
         await broadcaster.NotifyAsync(gameId, "characters");
@@ -308,6 +316,31 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
             .Select(p => new ShopItemPriceDto(p.DenominationId, p.Abbreviation, p.Color, p.Amount * input.Quantity))
             .ToList();
         return new PurchaseResultDto(true, null, new PurchaseDto(purchase.Id, item.Id, item.Name, character.Id, character.Name, purchase.Quantity, purchase.PurchasedAt, totalPaid));
+    }
+
+    // A bought item lands in the buyer's inventory in the same save as the coins
+    // and stock. Same name already there (case-insensitive) → the quantity goes
+    // up on that row instead of adding a duplicate (DM request 2026-10-26).
+    private async Task AddToInventoryAsync(Guid characterId, ShopItem item, int quantity)
+    {
+        var inventory = await unitOfWork.CharacterItems.GetByCharacterIdAsync(characterId);
+        var existing = inventory.FirstOrDefault(i => string.Equals(i.Name.Trim(), item.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            existing.Quantity += quantity;
+            return;
+        }
+
+        await unitOfWork.CharacterItems.AddAsync(new CharacterItem
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            Category = item.Category,
+            Name = item.Name.Trim(),
+            Quantity = quantity,
+            Weight = item.Weight,
+            Description = item.Description,
+        });
     }
 
     private async Task<bool> AllDenominationsBelongToGameAsync(Guid gameId, IEnumerable<Guid> denominationIds)
@@ -333,14 +366,14 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
 
     // onlyCharacters: a player's view — other characters' share rows left out.
     private static ShopDto ToDto(Shop shop, IReadOnlyDictionary<Guid, string> characterNames, IReadOnlySet<Guid>? onlyCharacters = null) => new(
-        shop.Id, shop.GameId, shop.Name, shop.Description,
+        shop.Id, shop.GameId, shop.Name, shop.Description, shop.Location,
         shop.Items.Select(ToItemDto).ToList(),
         shop.Shares.Where(share => onlyCharacters is null || onlyCharacters.Contains(share.CharacterId)).Select(share => new ShopShareDto(
             share.Id, share.CharacterId, characterNames.GetValueOrDefault(share.CharacterId, "Unknown"),
             share.Hidden, share.Locked)).ToList());
 
     private static ShopItemDto ToItemDto(ShopItem item) => new(
-        item.Id, item.Name, item.Description, item.Icon, item.SaleMode.ToString(),
+        item.Id, item.Name, item.Description, item.Icon, item.Category, item.Weight, item.SaleMode.ToString(),
         item.StockQuantity, item.MaxPerCharacter,
         item.Prices.Select(p => new ShopItemPriceDto(p.CurrencyDenominationId, p.CurrencyDenomination?.Abbreviation ?? "?", p.CurrencyDenomination?.Color ?? "", p.Amount)).ToList());
 }

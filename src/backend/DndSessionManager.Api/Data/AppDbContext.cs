@@ -36,6 +36,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<InitiativeEntry> InitiativeEntries => Set<InitiativeEntry>();
     public DbSet<InitiativeState> InitiativeStates => Set<InitiativeState>();
     public DbSet<GameTimer> GameTimers => Set<GameTimer>();
+    public DbSet<GameTimerTarget> GameTimerTargets => Set<GameTimerTarget>();
     public DbSet<SessionMonster> SessionMonsters => Set<SessionMonster>();
     public DbSet<User> Users => Set<User>();
     public DbSet<GameMember> GameMembers => Set<GameMember>();
@@ -226,6 +227,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Shop>(entity =>
         {
             entity.Property(shop => shop.Name).IsRequired().HasMaxLength(200);
+            entity.Property(shop => shop.Location).IsRequired().HasMaxLength(100);
             entity.HasOne(shop => shop.Game)
                   .WithMany()
                   .HasForeignKey(shop => shop.GameId)
@@ -249,6 +251,8 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         {
             entity.Property(item => item.Name).IsRequired().HasMaxLength(200);
             entity.Property(item => item.SaleMode).HasConversion<string>().HasMaxLength(30);
+            entity.Property(item => item.Category).IsRequired().HasMaxLength(50);
+            entity.Property(item => item.Weight).HasPrecision(10, 2);
             entity.HasOne(item => item.Shop)
                   .WithMany(shop => shop.Items)
                   .HasForeignKey(item => item.ShopId)
@@ -354,6 +358,19 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             entity.HasOne(t => t.Game)
                   .WithMany()
                   .HasForeignKey(t => t.GameId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameTimerTarget>(entity =>
+        {
+            entity.HasIndex(target => new { target.TimerId, target.CharacterId }).IsUnique();
+            entity.HasOne(target => target.Timer)
+                  .WithMany(timer => timer.Targets)
+                  .HasForeignKey(target => target.TimerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(target => target.Character)
+                  .WithMany()
+                  .HasForeignKey(target => target.CharacterId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
