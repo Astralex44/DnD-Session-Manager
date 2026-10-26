@@ -19,6 +19,7 @@ Your character belongs to your account — only you can edit it, and **Character
 - **Editing:** every field saves by itself when you click away (a green note confirms). Skills, saves and inspiration save on click.
 - **Level up:** **+ Level Up** at the top. Enter the new level and your hit-die roll; the app adds your Constitution modifier and proficiency bonus.
 - **Coin purse:** one counter per coin type under Basics, edited like any field.
+- **Inventory:** the sheet lists your items with their weight and the total. **View inventory** opens them as cards: click a card to edit it (it saves when you click away, or with **Done**), **+ New item** adds one. Anything you buy in a shop lands there by itself.
 - **Download PDF** gives a print-ready sheet.
 
 ## At the table — the Board
@@ -28,10 +29,10 @@ The **Board** is the live table: it updates by itself, and **Sheet ›** / **‹
 | Panel | What you do there |
 | --- | --- |
 | Character | Your HP and ability modifiers at a glance; **Sheet ›** opens the full sheet. |
-| Dice | Pick dice, count and modifier, roll. Rolled real dice? Keep the same selection, type the total and record it (e.g. 5d12+3 → 35). Only you see your last 5 results, at the bottom. |
+| Dice | Pick dice, count and modifier, roll. Rolled real dice? Keep the same selection, type the total and record it (e.g. 5d12+3 → 35). Only you see your last 5 results, at the bottom; ✕ removes one, **Clear all** empties the list. |
 | Initiative | The fight order, live. The DM keeps it. |
-| Timer | Spell and effect timers the DM runs, counting down. |
-| Shop | Shops the DM opened for you pop up by themselves. **Buy** works only if you have exactly the listed coins — too expensive shows red, sold out disappears. |
+| Timer | Spell and effect timers the DM runs for everyone or for your character, counting down. |
+| Shop | Shops the DM opened for you pop up by themselves, with their location under the name. Items are grouped by category, with weight and description. **Buy** works only if you have exactly the listed coins — too expensive shows red, sold out disappears. What you buy goes straight into your inventory. |
 | Maps | Maps shared with you, with a preview. A new one pops up: **View now** or **Later**. 👁 hides it, 🔒 keeps it visible after the session ends, ↪ hands it to another character. |
 | My Notes | Your private notes, quick to reach. |
 | Calculator | The four basic operations. |

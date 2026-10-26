@@ -105,6 +105,10 @@ Native `<select>` elements look different on every OS and browser and don't fit 
 binding standard during the mockup work: every dropdown in the tool is a custom-styled component (trigger button plus
 popover), applied back to all existing mockups.
 
+Since `v0.11.0` (2026-10-26) the open popover is rendered at the end of the page (a React portal, `position: fixed`)
+instead of inside the dropdown: inside a Board panel it got cut off by the panel's `overflow: hidden`, which the DM
+hit in the shop. It now floats above everything, dialogs included, and opens upwards when there's no room below.
+
 ## Login: a fixed DM plus invites by Discord username (2026-10-16)
 
 The DM is set in the server configuration (their Discord user ID), not chosen in the app, so nobody can make themselves
@@ -144,3 +148,39 @@ a second shell made that a detour.
 Setting a character active (or creating one) makes the player's other characters inactive. That makes "your
 character" unambiguous, so a player's **Characters** link goes straight to that sheet, and the Board and sheet are
 one click apart.
+
+## Timers per character, not per player account (2026-10-26)
+
+The DM asked to give timers to specific players. Built per **character**, like map and shop shares: a timer is for
+everyone (default) or for chosen characters, and the server sends each player only the timers for everyone or for one
+of their characters. A new character after a death therefore doesn't inherit an old character's timers.
+
+## A purchase lands in the inventory, same name stacks (2026-10-26)
+
+Buying (by the player, or the DM's **Sell**) adds the item to the buyer's inventory in the same save that takes the
+coins and stock, carrying the shop item's category, weight and description. If the character already has an item with
+the same name (case-insensitive), its quantity goes up instead of adding a duplicate. Items a player adds by hand
+don't stack — that's their own list to keep.
+
+## Shop categories are a fixed list, inventory categories stay free (2026-10-26)
+
+The DM gave the shop categories: Armor and shields, Weapons, Adventuring gear, Tools, Spellcasting focus, Gemstones,
+Poisons, Miscellaneous (two typos in his list fixed). The server only accepts these; the shop shows items grouped in
+this order. The list lives in `ShopItemCategories.cs` and is mirrored in the frontend's `types/shop.ts`. The
+inventory keeps free-text categories with these eight as suggestions: the shop is the DM's catalogue, the inventory
+is the player's own backpack, and players already had their own categories.
+
+## The inventory is edited in its own view (2026-10-26)
+
+On the sheet, the inventory is a read-only list with weights and a total; **View inventory** opens a modal where items
+are cards in a grid with a fixed width (180–240px), so a wider window fits more cards per row. Editing happens on the
+card. Severin's call: the sheet stays a calm overview, and the inventory gets room to grow.
+
+## Shop location: free text with suggestions (2026-10-26)
+
+The DM asked for a location on shops, to search and filter by it when creating shops and when picking one. Built as
+free text (`Shop.Location`, up to 100 characters, empty = none), not a managed list of places: the DM names places as
+the campaign goes and shouldn't need a separate setup step first. To keep one place from being spelled two ways, the
+field suggests every location already in use. Manage → Shops has a search (name or location) and a location filter;
+on the Board the DM's shop picker is grouped by location and has the same filter.
+

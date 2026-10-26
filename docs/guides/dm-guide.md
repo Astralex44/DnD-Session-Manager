@@ -26,9 +26,9 @@ Assigning also moves old notes over automatically: notes saved under the charact
 Invite your players first (see Getting in) — everything below can wait, that can't. After that, everything you prepare lives under **Manage**; set it up in this order, because shops need currencies and the Board draws on all of it.
 
 1. **Currencies** (Manage → Settings). Click **+ New Currency** for each coin: name, abbreviation, colour and value. Order them from most valuable (top) to smallest (bottom) with the arrows; the bottom one is the base unit (value 1). Values are only your reference — the app never converts between coins. A coin can't be deleted while shop items still price in it; the app lists which ones.
-2. **Maps and books** (Manage → Documents). Upload PNG, JPG, WEBP or PDF files with a name, one map per room rather than one big map. Books are your reference material. Upload replaces a file; sharing happens on the Board during play.
+2. **Maps and books** (Manage → Documents). Upload PNG, JPG, WEBP or PDF files (up to 100 MB each) with a name, one map per room rather than one big map. Books are your reference material. Upload replaces a file; sharing happens on the Board during play.
 3. **Monsters** (Manage → Monsters). A monster is a template: name, its stat block as a PDF, and default HP. Live HP during a fight is tracked separately on the Board, so the template never changes.
-4. **Shops** (Manage → Shops). **Create Shop** with a name and optional flavour text, then **+ Item** for each thing on sale: name, price and sale mode. A price can mix coins, e.g. 2 gold and 5 silver.
+4. **Shops** (Manage → Shops). **Create Shop** with a name, a location (e.g. *Waterdeep, Dock Ward* — already-used locations are suggested) and optional flavour text, then **+ Item** for each thing on sale: name, category, weight (lb), price and sale mode. A price can mix coins, e.g. 2 gold and 5 silver. Categories come from a fixed list — Armor and shields, Weapons, Adventuring gear, Tools, Spellcasting focus, Gemstones, Poisons, Miscellaneous — and the shop shows items grouped in that order. With many shops, the search box above the list finds a shop by name or location, and the *Location* dropdown shows one place at a time.
 5. **Sessions** (Manage → Sessions). **+ Add Session** with a title, date and time, and your prep in *Session Notes (Prep)*. Sessions number themselves (Session 12, 13 …) and keep their number if you delete an earlier one.
 
 Each shop item has one of two sale modes; **Set all items to…** in a shop's Edit form sets one mode for every item at once — it warns and asks before it overwrites anything.
@@ -48,10 +48,10 @@ The **Board** is your cockpit during play: every panel updates live for everyone
 | --- | --- |
 | Characters | Each character's HP at a glance. **View as** shows the Board exactly as that player sees it; **Sheet** opens their sheet (read-only for you). |
 | Initiative | Type a name and value, tick *Monster* if it is one, **+ Entry** (or press Enter, then type the next name straight away). **Next Turn** moves the marker, **Clear** ends the fight. Players see the order live. |
-| Dice | Pick a die, count and modifier, then roll — only you see your rolls. Rolled real dice? Keep the same dice selection, type the total and record it (shown as e.g. 5d12+3 → 35) — for yourself, or *For: ‹player›* to file it in that player's history. Results collect at the bottom of the panel. |
-| Timer | Label, length in seconds, **+ Start Timer** — for spells, effects and rituals. Players see them count down; finished ones show *done* until you remove them with ✕. |
+| Dice | Pick a die, count and modifier, then roll — only you see your rolls. Rolled real dice? Keep the same dice selection, type the total and record it (shown as e.g. 5d12+3 → 35) — for yourself, or *For: ‹player›* to file it in that player's history. Results collect at the bottom of the panel; ✕ removes one, **Clear all** empties your history. |
+| Timer | Label, length in seconds, who it's for — *Everyone*, or tick one or more characters — then **+ Start Timer**. For spells, effects and rituals. Only those characters' players see it count down (you see every timer, with *for ‹name›* under it); finished ones show *done* until you remove them with ✕. |
 | Monsters | Pick a template or *Custom monster*, set Max HP, **+ Monster**. Add the same template several times for several goblins; change each one's HP as it takes damage. **Clear Encounter** after the fight. Players never see this panel. |
-| Shop | Pick a shop. *Share with…* opens it for chosen characters — it pops open on their screen at once. **Sell** sells for a player at the table: choose the buyer and quantity, and change the price if you haggled. |
+| Shop | Pick a shop — the list is grouped by location, and the *Location* filter above it narrows it to one place. *Share with…* opens it for chosen characters — it pops open on their screen at once. **Sell** sells for a player at the table: choose the buyer and quantity, and change the price if you haggled. Whatever is bought lands in the buyer's inventory with its weight, description and category; more of the same item adds to the count. |
 | Maps | Click a map and tick who sees it under *Visible to*; every map shows a small preview (PDFs their first page), and those players get a *View now / Later* pop-up. **End session** hides every shared map again, except maps a player locked. |
 | Session Notes | Your prep for the next session by date (switchable), across the full width of the Board and editable right here. |
 | My Notes | Your private notebook, compact; **All pages ›** opens the Notes page. |
@@ -63,7 +63,7 @@ The **Board** is your cockpit during play: every panel updates live for everyone
 
 You can read every character but edit none of them; your own writing lives in your notebooks and the quote list.
 
-- **Characters** lists every player's characters with their owner, and *unassigned* on any you still need to give a player. A sheet opens read-only for you, with a note saying whose it is — levelling up, HP and everything else is the player's job, even for a replacement character after a death.
+- **Characters** lists every player's characters with their owner, and *unassigned* on any you still need to give a player. A sheet opens read-only for you, with a note saying whose it is (**View inventory** shows their items as cards, also read-only) — levelling up, HP and everything else is the player's job, even for a replacement character after a death.
 - **Notes** holds your private notebooks. *My notes* is your own; *Notes on ‹character›* is a running notebook per player character, not tied to any session. Each notebook has as many pages as you like; pages save with the **Save** button, not automatically.
 - **Quotes** (Manage → Quotes) collects memorable lines: **+ Add Quote**, link it to a session and to the character whose player said it. A new quote starts hidden; its *Hidden* button switches it to *Shared*, and back; shared quotes appear on everyone's Dashboard. Filter the list by who said it and by session.
 - **Session titles** you set in Manage → Sessions are visible to players; your prep notes in the same place are not.
@@ -74,7 +74,7 @@ These are built in and checked on the server, so they hold no matter what anyone
 
 - **Notes are private.** Only the person who wrote them can read them — you can't read players' notes, and they can't read yours.
 - **Dice are private.** Everyone sees only their own last 5 rolls. A real-dice roll you record for a player lands in their history; you can't look at it afterwards.
-- **Players see only what's theirs or shared.** Their own characters; maps and shops shared with one of their characters; shared quotes; session titles; initiative and timers. Never monsters, your prep notes, or other players' sheets and notes.
+- **Players see only what's theirs or shared.** Their own characters; maps and shops shared with one of their characters; shared quotes; session titles; initiative; timers meant for everyone or for their character. Never monsters, your prep notes, or other players' sheets and notes.
 - **Sharing is per character, never automatic.** A new character starts with nothing shared, even if the same player had maps before — share again deliberately.
 - **Coins never convert.** A price must be paid in exactly the coins listed; enough value in other coins doesn't count. When you sell at the table you can change the price for that one sale.
 - **Ability modifiers below 10 are your house rule:** each point below 10 is −1 (9 = −1, 8 = −2, 7 = −3). From 10 up it's standard 5e. The sheet marks this so it doesn't look like a mistake.
