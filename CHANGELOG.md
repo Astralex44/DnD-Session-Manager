@@ -2,7 +2,7 @@
 
 User-facing changes, newest first. Internal work (refactors, tooling, groundwork nobody can see yet) is left out.
 
-## [Unreleased]
+## v0.12.0-alpha — 2026-10-31
 
 ### Added
 - **Big map view:** a map opens almost full screen with zoom (mouse wheel, pinch, −/+ buttons, double-click), drag to
