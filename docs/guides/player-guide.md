@@ -28,12 +28,13 @@ The **Board** is the live table: it updates by itself, and **Sheet ›** / **‹
 
 | Panel | What you do there |
 | --- | --- |
-| Character | Your HP and ability modifiers at a glance; **Sheet ›** opens the full sheet. |
+| Character | Your HP, ability modifiers and coins (with their colours) at a glance; **Sheet ›** opens the full sheet. |
 | Dice | Pick dice, count and modifier, roll. Rolled real dice? Keep the same selection, type the total and record it (e.g. 5d12+3 → 35). Only you see your last 5 results, at the bottom; ✕ removes one, **Clear all** empties the list. |
 | Initiative | The fight order, live. The DM keeps it. |
 | Timer | Spell and effect timers the DM runs for everyone or for your character, counting down. |
 | Shop | Shops the DM opened for you pop up by themselves, with their location under the name. Items are grouped by category, with weight and description. **Buy** works only if you have exactly the listed coins — too expensive shows red, sold out disappears. What you buy goes straight into your inventory. |
-| Maps | Maps shared with you, with a preview. A new one pops up: **View now** or **Later**. 👁 hides it, 🔒 keeps it visible after the session ends, ↪ hands it to another character. |
+| Maps | Maps shared with you, with a preview. A new one pops up: **View now** or **Later**. Click a map to see it almost full screen: zoom with the mouse wheel, pinch or **−/+**, drag to move around, **Fit** to see all of it; **↗** opens it in a new tab. 👁 hides it, 🔒 keeps it visible after the session ends, ↪ hands it to another character. |
+| Documents | Letters, books and handouts the DM shared with you — same as Maps: a pop-up when a new one arrives, the big view (PDFs with page and zoom controls), 👁, 🔒 and ↪. Documents stay visible after the session ends. |
 | My Notes | Your private notes, quick to reach. |
 | Calculator | The four basic operations. |
 
@@ -55,7 +56,7 @@ The **Board** is the live table: it updates by itself, and **Sheet ›** / **‹
 | --- | --- |
 | *You're not invited yet* | Give your DM your exact Discord username. |
 | No character after logging in | Create one, or ask the DM to assign your old one. |
-| A shared map is missing | You may have hidden it: *Show hidden maps* at the bottom of the Maps panel. |
+| A shared map or document is missing | You may have hidden it: *Show hidden maps* / *Show hidden documents* at the bottom of the panel. |
 | Buy is greyed out | You lack the exact coins listed — check your purse on the sheet. |
 | A page looks out of date | Reload it; nothing is lost. |
 | Something is broken | Tell the DM or Severin what you clicked. |

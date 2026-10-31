@@ -184,3 +184,20 @@ the campaign goes and shouldn't need a separate setup step first. To keep one pl
 field suggests every location already in use. Manage → Shops has a search (name or location) and a location filter;
 on the Board the DM's shop picker is grouped by location and has the same filter.
 
+
+## Share with everyone: one server call, locks kept (2026-10-31)
+
+The DM asked for one button to share a map, document or shop with every player at once. It is a server endpoint per
+type (`PUT …/{id}/shares` and `DELETE …/{id}/shares`, DM only), not a loop over the per-character calls in the
+browser: one save and one live update, so players get a single pop-up instead of one per refetch. "Everyone" means
+every character in the game, since sharing is per character. Missing shares are added, a share a player had hidden is
+shown again (the DM pressing *everyone* means "look at this now"), and a player's lock stays untouched.
+
+## Documents get the Maps panel; the map view gets big (2026-10-31)
+
+Books from Manage → Documents had no place on the Board, so players never saw them. They now use the Maps panel's
+component with a type switch (`MapDmPanel` / `MapPlayerPanel` with `type="Book"`, titled *Documents*), so sharing,
+hide, lock, hand-on and the arrival pop-up behave identically. *End session* stays maps-only: documents are reference
+material players keep. Opening a map or document uses one viewer (`FileViewer`): images zoom and pan in the app,
+PDFs go to the browser's built-in viewer in an iframe instead of a pdf.js page viewer — it already has pages, zoom and
+search, at no extra code. *Open in new tab* covers second screens and phones that don't show PDFs inline.
