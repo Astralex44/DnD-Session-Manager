@@ -31,6 +31,13 @@ export const documentsApi = {
   removeShare: (gameId: string, documentId: string, characterId: string) =>
     apiClient.delete<void>(`/games/${gameId}/documents/${documentId}/shares/${characterId}`),
 
+  // DM: share with every character in the game at once / remove every share.
+  shareWithAll: (gameId: string, documentId: string) =>
+    apiClient.put<void>(`/games/${gameId}/documents/${documentId}/shares`, {}),
+
+  removeAllShares: (gameId: string, documentId: string) =>
+    apiClient.delete<void>(`/games/${gameId}/documents/${documentId}/shares`),
+
   fileUrl: (fileUrl: string) => `${API_BASE_URL.replace(/\/api$/, '')}${fileUrl}`,
 
   // DM: hide every unlocked map share for every player (FA-01 "end of session").

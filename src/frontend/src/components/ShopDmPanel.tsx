@@ -28,7 +28,7 @@ interface SellTarget {
 // the same coin-pill pattern as ShopsManagePage.
 export function ShopDmPanel() {
   const gameId = useGameId();
-  const { shops, fetchShops, purchase, setShare, removeShare } = useShopsStore();
+  const { shops, fetchShops, purchase, setShare, removeShare, shareWithAll, removeAllShares } = useShopsStore();
   const { characters, fetchCharacters } = useCharactersStore();
   const { denominations, fetchDenominations } = useCurrencyStore();
   const showToast = useToastStore((s) => s.showToast);
@@ -166,6 +166,14 @@ export function ShopDmPanel() {
                 </button>
               </div>
             )}
+            <div className="share-add-row">
+              {shareableCharacters.length > 0 && (
+                <button className="btn-ghost btn-sm" onClick={() => shareWithAll(gameId, shop.id)}>Share with everyone</button>
+              )}
+              {shop.shares.length > 0 && (
+                <button className="btn-ghost btn-sm" onClick={() => removeAllShares(gameId, shop.id)}>Unshare all</button>
+              )}
+            </div>
           </>
         )}
 

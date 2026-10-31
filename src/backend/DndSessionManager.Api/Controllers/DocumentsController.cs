@@ -57,6 +57,16 @@ public class DocumentsController(IDocumentFacade documentFacade) : ControllerBas
     }
 
     [Authorize(Policy = GamePolicies.Dm)]
+    [HttpPut("{id:guid}/shares")]
+    public async Task<IActionResult> ShareWithAll(Guid gameId, Guid id) =>
+        await documentFacade.ShareWithAllAsync(gameId, id) ? NoContent() : NotFound();
+
+    [Authorize(Policy = GamePolicies.Dm)]
+    [HttpDelete("{id:guid}/shares")]
+    public async Task<IActionResult> RemoveAllShares(Guid gameId, Guid id) =>
+        await documentFacade.RemoveAllSharesAsync(gameId, id) ? NoContent() : NotFound();
+
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPost("end-session")]
     public async Task<ActionResult<object>> EndSession(Guid gameId) =>
         Ok(new { hidden = await documentFacade.EndSessionAsync(gameId) });

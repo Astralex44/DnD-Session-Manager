@@ -17,6 +17,8 @@ interface DocumentsState {
   removeDocument: (gameId: string, documentId: string) => Promise<void>;
   setShare: (gameId: string, documentId: string, characterId: string, hidden: boolean, locked: boolean) => Promise<void>;
   removeShare: (gameId: string, documentId: string, characterId: string) => Promise<void>;
+  shareWithAll: (gameId: string, documentId: string) => Promise<void>;
+  removeAllShares: (gameId: string, documentId: string) => Promise<void>;
 }
 
 export const useDocumentsStore = create<DocumentsState>((set, get) => {
@@ -88,6 +90,24 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => {
     removeShare: async (gameId, documentId, characterId) => {
       try {
         await documentsApi.removeShare(gameId, documentId, characterId);
+        await refetch(gameId);
+      } catch (err) {
+        set({ error: describeError(err) });
+      }
+    },
+
+    shareWithAll: async (gameId, documentId) => {
+      try {
+        await documentsApi.shareWithAll(gameId, documentId);
+        await refetch(gameId);
+      } catch (err) {
+        set({ error: describeError(err) });
+      }
+    },
+
+    removeAllShares: async (gameId, documentId) => {
+      try {
+        await documentsApi.removeAllShares(gameId, documentId);
         await refetch(gameId);
       } catch (err) {
         set({ error: describeError(err) });

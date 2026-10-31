@@ -2,6 +2,19 @@
 
 User-facing changes, newest first. Internal work (refactors, tooling, groundwork nobody can see yet) is left out.
 
+## [Unreleased]
+
+### Added
+- **Big map view:** a map opens almost full screen with zoom (mouse wheel, pinch, −/+ buttons, double-click), drag to
+  move around, *Fit* and *100%*. **Open in new tab** shows the file on its own, e.g. on a second screen. The DM gets it
+  too, from the map's share dialog (*Open big*).
+- **Documents on the Board:** the books from Manage → Documents now have their own Board panel for the DM and the
+  players, working like Maps — preview, sharing, a pop-up when one arrives, hide, lock and hand on. PDFs open in the
+  big view with the browser's page and zoom controls. *End session* leaves documents shared.
+- **Share with everyone / Unshare all** for maps, documents and shops: one click opens it for every character at the
+  table (maps a player had hidden show again, locks stay) or closes it for all.
+- **Coin colours on the Board:** the character panel shows each coin with its colour, like the sheet.
+
 ## v0.11.0-alpha — 2026-10-26
 
 ### Added

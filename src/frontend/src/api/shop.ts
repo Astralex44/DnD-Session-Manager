@@ -29,6 +29,11 @@ export const shopApi = {
   removeShare: (gameId: string, shopId: string, characterId: string) =>
     apiClient.delete<void>(`/games/${gameId}/shops/${shopId}/shares/${characterId}`),
 
+  // DM: share with every character in the game at once / remove every share.
+  shareWithAll: (gameId: string, shopId: string) => apiClient.put<void>(`/games/${gameId}/shops/${shopId}/shares`, {}),
+
+  removeAllShares: (gameId: string, shopId: string) => apiClient.delete<void>(`/games/${gameId}/shops/${shopId}/shares`),
+
   addItem: (gameId: string, shopId: string, input: CreateShopItemInput) =>
     apiClient.post<ShopItem>(`/games/${gameId}/shops/${shopId}/items`, input),
 

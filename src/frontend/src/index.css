@@ -1088,7 +1088,7 @@ button.inventory-card.add-card:hover { border-color: var(--primary); background:
 .sheet-grid .ab-score { font-family: var(--font-data); font-size: 15px; font-weight: bold; }
 
 .currency-badge { display: flex; gap: 8px; margin-top: 12px; font-family: var(--font-data); font-size: 12px; flex-wrap: wrap; }
-.currency-badge span { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 2px 8px; }
+.currency-badge > span { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 2px 8px; }
 
 .dashboard-cta {
   display: inline-block; background: var(--primary); color: var(--bg); text-decoration: none;
@@ -1310,7 +1310,7 @@ button.inventory-card.add-card:hover { border-color: var(--primary); background:
 
 /* v0.8.1: a create form gets breathing room from the list below it */
 .map-edit-panel.create-panel { margin: 0 0 18px; }
-.board-grid .span-full .board-notes-text { min-height: 280px; }
+.board-grid .span-full .board-notes-text, .board-grid .span-2 .board-notes-text { min-height: 280px; }
 .hint.warn { color: var(--error); font-style: normal; }
 .sale-mode-all { width: auto; max-width: 260px; }
 /* Session prep notes: lots of room, and it grows with the text */
@@ -1324,3 +1324,50 @@ button.inventory-card.add-card:hover { border-color: var(--primary); background:
 /* Board character panel: level tag + "Sheet ›" side by side in the header */
 .panel-header-actions { display: flex; align-items: center; gap: 8px; }
 a.panel-header-btn { text-decoration: none; }
+
+/* ===== Big map/document viewer (FileViewer) — nearly full screen, still a
+   modal over the Board. Images zoom and pan inside the stage; PDFs use the
+   browser's own viewer in an iframe. ===== */
+.file-viewer {
+  width: 96vw; height: 94vh; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(29, 26, 16, 0.3); overflow: hidden;
+}
+.file-viewer-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.file-viewer-bar h3 {
+  font-family: var(--font-display); font-size: 17px; font-weight: normal; margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.file-viewer-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.file-viewer-controls .btn-ghost { padding: 5px 10px; text-decoration: none; }
+.file-viewer-zoom { font-size: 13px; color: var(--text-muted); min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; }
+.file-viewer-stage {
+  position: relative; flex: 1; overflow: hidden; cursor: grab; touch-action: none;
+  background: var(--bg);
+}
+.file-viewer-stage:active { cursor: grabbing; }
+.file-viewer-stage img {
+  position: absolute; top: 0; left: 0; max-width: none; transform-origin: 0 0;
+  user-select: none; -webkit-user-drag: none;
+}
+.file-viewer-pdf { flex: 1; width: 100%; border: 0; background: var(--bg); }
+.map-dialog-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+/* Documents panel: one column wide, so two portrait thumbnails per row,
+   showing the top of the first page. */
+.map-grid.doc-grid { grid-template-columns: repeat(2, 1fr); }
+.map-grid.doc-grid .map-thumb { aspect-ratio: 3/4; }
+.map-grid.doc-grid .map-thumb img { object-position: top; }
+.map-preview.clickable { cursor: zoom-in; }
+.share-all-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 4px; }
+.share-all-row .hint { margin-right: auto !important; }
+.btn-ghost.btn-sm { padding: 5px 10px; font-size: 13px; }
+.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .file-viewer { width: 100vw; height: 100dvh; border-radius: 0; border: 0; }
+  .file-viewer-bar { padding: 8px 10px; gap: 6px; }
+  .file-viewer-bar h3 { flex-basis: 100%; font-size: 15px; }
+  .file-viewer-label { display: none; }
+}

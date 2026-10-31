@@ -4,10 +4,11 @@ import { useToastStore } from '../store/toastStore.ts';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
 import { FileThumb } from './FileThumb.tsx';
+import { FileViewer } from './FileViewer.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useDocumentsStore } from '../store/documentsStore.ts';
 import { shareState } from '../types/document.ts';
-import type { GameDocument } from '../types/document.ts';
+import type { DocumentType, GameDocument } from '../types/document.ts';
 import { useGameId } from '../store/authStore.ts';
 
 
@@ -29,13 +30,24 @@ function dotState(doc: GameDocument, characterCount: number): DotState {
 // feedback_manage_vs_board_actions) — Documents kept a share editor in
 // Manage too (its own explicit, scoped exception), so DM edits from either
 // page reach the same DocumentShare rows and both stay in sync live.
-export function MapDmPanel() {
+//
+// Since 2026-10-31 the same panel also shows documents (type "Book", titled
+// "Documents"): same thumbnails, share dot and share dialog. "End session"
+// stays maps-only — documents are reference material players keep.
+interface MapDmPanelProps {
+  type?: DocumentType;
+}
+
+export function MapDmPanel({ type = 'Map' }: MapDmPanelProps) {
   const gameId = useGameId();
-  const { documents, fetchDocuments, setShare, removeShare } = useDocumentsStore();
+  const { documents, fetchDocuments, setShare, removeShare, shareWithAll, removeAllShares } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
 
   const [shareTargetId, setShareTargetId] = useState<string | null>(null);
   const [confirmEndSession, setConfirmEndSession] = useState(false);
+  const [viewing, setViewing] = useState<GameDocument | null>(null);
+  const isMaps = type === 'Map';
+  const noun = isMaps ? 'map' : 'document';
   const showToast = useToastStore((t) => t.showToast);
 
   // FA-01: at the end of a session every map is hidden again for players —
@@ -56,7 +68,7 @@ export function MapDmPanel() {
   useLiveFetch(gameId, 'documents', fetchDocuments);
   useLiveFetch(gameId, 'characters', fetchCharacters);
 
-  const maps = documents.filter((d) => d.type === 'Map');
+  const maps = documents.filter((d) => d.type === type);
   // Derived from the live list (not a captured snapshot) so the share
   // checkboxes stay correct after a toggle refetches, or a push from
   // elsewhere updates this same document while the modal is open.
@@ -76,12 +88,14 @@ export function MapDmPanel() {
   }
 
   return (
-    <div className="panel span-2">
+    <div className={`panel${isMaps ? ' span-2' : ''}`}>
       <div className="panel-header">
-        <h3>Maps</h3>
-        <button className="panel-header-btn" onClick={() => setConfirmEndSession(true)} title="Hide every unlocked map for all players">
-          End session
-        </button>
+        <h3>{isMaps ? 'Maps' : 'Documents'}</h3>
+        {isMaps && (
+          <button className="panel-header-btn" onClick={() => setConfirmEndSession(true)} title="Hide every unlocked map for all players">
+            End session
+          </button>
+        )}
       </div>
       {confirmEndSession && (
         <ConfirmDialog
@@ -93,8 +107,8 @@ export function MapDmPanel() {
         />
       )}
       <div className="panel-body">
-        {maps.length === 0 && <p className="hint" style={{ margin: 0 }}>No maps uploaded yet — add some in Manage → Documents.</p>}
-        <div className="map-grid">
+        {maps.length === 0 && <p className="hint" style={{ margin: 0 }}>No {noun}s uploaded yet — add some in Manage → Documents.</p>}
+        <div className={`map-grid${isMaps ? '' : ' doc-grid'}`}>
           {maps.map((doc) => {
             const state = dotState(doc, characters.length);
             return (
@@ -116,9 +130,27 @@ export function MapDmPanel() {
               <span className="modal-close" onClick={() => setShareTargetId(null)}>✕</span>
             </div>
             {isImage(shareTarget.fileUrl) && (
-              <img className="map-preview" src={documentsApi.fileUrl(shareTarget.fileUrl)} alt={shareTarget.name} />
+              <img
+                className="map-preview clickable"
+                src={documentsApi.fileUrl(shareTarget.fileUrl)}
+                alt={shareTarget.name}
+                title="Open big"
+                onClick={() => setViewing(shareTarget)}
+              />
             )}
-            <p className="hint" style={{ marginTop: 12, marginBottom: 4 }}>Visible to:</p>
+            <div className="map-dialog-actions">
+              <button className="btn-ghost" onClick={() => setViewing(shareTarget)}>Open big</button>
+              <a className="btn-ghost" href={documentsApi.fileUrl(shareTarget.fileUrl)} target="_blank" rel="noreferrer">Open in new tab ↗</a>
+            </div>
+            <div className="share-all-row">
+              <p className="hint" style={{ margin: 0 }}>Visible to:</p>
+              <button className="btn-ghost btn-sm" onClick={() => shareWithAll(gameId, shareTarget.id)} disabled={characters.length === 0}>
+                Share with everyone
+              </button>
+              <button className="btn-ghost btn-sm" onClick={() => removeAllShares(gameId, shareTarget.id)} disabled={shareTarget.shares.length === 0}>
+                Unshare all
+              </button>
+            </div>
             <div className="map-share-list">
               {characters.length === 0 && <p className="hint" style={{ margin: 0 }}>No characters yet.</p>}
               {characters.map((c) => (
@@ -137,6 +169,10 @@ export function MapDmPanel() {
             </div>
           </div>
         </div>
+      )}
+
+      {viewing && (
+        <FileViewer url={documentsApi.fileUrl(viewing.fileUrl)} name={viewing.name} onClose={() => setViewing(null)} />
       )}
     </div>
   );

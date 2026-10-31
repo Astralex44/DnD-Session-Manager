@@ -108,6 +108,40 @@ public class ShopFacade(IUnitOfWork unitOfWork, IGameEventsBroadcaster broadcast
         return true;
     }
 
+    public async Task<bool> ShareWithAllAsync(Guid gameId, Guid shopId)
+    {
+        var shop = await GetOwnedShopAsync(gameId, shopId);
+        if (shop is null) return false;
+
+        foreach (var character in await unitOfWork.Characters.GetByGameIdAsync(gameId))
+        {
+            var share = shop.Shares.FirstOrDefault(s => s.CharacterId == character.Id);
+            if (share is null)
+            {
+                await unitOfWork.ShopShares.AddAsync(new ShopShare { Id = Guid.NewGuid(), ShopId = shopId, CharacterId = character.Id });
+            }
+            else
+            {
+                share.Hidden = false;
+            }
+        }
+
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "shops");
+        return true;
+    }
+
+    public async Task<bool> RemoveAllSharesAsync(Guid gameId, Guid shopId)
+    {
+        var shop = await GetOwnedShopAsync(gameId, shopId);
+        if (shop is null) return false;
+
+        foreach (var share in shop.Shares.ToList()) unitOfWork.ShopShares.Remove(share);
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "shops");
+        return true;
+    }
+
     public async Task<ShopDto?> SetSaleModeForAllItemsAsync(Guid gameId, Guid shopId, SetShopSaleModeDto input)
     {
         if (!Enum.TryParse<ShopSaleMode>(input.SaleMode, true, out var mode)) return null;

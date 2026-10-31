@@ -21,6 +21,14 @@ public interface IDocumentFacade
     Task<(DocumentShareDto? Share, bool Forbidden)> SetShareAsync(Guid gameId, Guid documentId, Guid characterId, UpsertDocumentShareDto input, GameCaller caller);
     Task<bool> RemoveShareAsync(Guid gameId, Guid documentId, Guid characterId);
 
+    // DM, "share with everyone": every character in the game sees the
+    // document — missing shares are added, hidden ones shown again, locks
+    // kept. One save, one broadcast. False = document not found.
+    Task<bool> ShareWithAllAsync(Guid gameId, Guid documentId);
+
+    // DM, "unshare all": removes every share of the document.
+    Task<bool> RemoveAllSharesAsync(Guid gameId, Guid documentId);
+
     // FA-01 "after a session, maps are hidden for players unless they locked
     // them": an explicit DM action, not a session-live flag (the Board stays
     // a cockpit, not a gate). Hides every unlocked share of every Map in the

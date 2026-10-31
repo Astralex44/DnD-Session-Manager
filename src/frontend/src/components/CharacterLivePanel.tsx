@@ -145,7 +145,11 @@ export function CharacterLivePanel({ onlyCharacterIds }: CharacterLivePanelProps
         {denominations.length > 0 && (
           <div className="currency-badge">
             {denominations.map((d) => (
-              <span key={d.id}>{wallet.find((w) => w.denominationId === d.id)?.quantity ?? 0} {d.abbreviation}</span>
+              <span key={d.id} className="coin-pill-sm">
+                <span className="coin-dot" style={{ background: d.color }} />
+                <span className="coin-amount">{wallet.find((w) => w.denominationId === d.id)?.quantity ?? 0}</span>
+                <span className="coin-abbr">{d.abbreviation}</span>
+              </span>
             ))}
           </div>
         )}

@@ -17,6 +17,8 @@ interface ShopsState {
   removeShop: (gameId: string, shopId: string) => Promise<void>;
   setShare: (gameId: string, shopId: string, characterId: string, input: UpsertShopShareInput) => Promise<void>;
   removeShare: (gameId: string, shopId: string, characterId: string) => Promise<void>;
+  shareWithAll: (gameId: string, shopId: string) => Promise<void>;
+  removeAllShares: (gameId: string, shopId: string) => Promise<void>;
   addItem: (gameId: string, shopId: string, input: CreateShopItemInput) => Promise<boolean>;
   updateItem: (gameId: string, shopId: string, itemId: string, input: CreateShopItemInput) => Promise<boolean>;
   removeItem: (gameId: string, shopId: string, itemId: string) => Promise<void>;
@@ -95,6 +97,24 @@ export const useShopsStore = create<ShopsState>((set, get) => {
     removeShare: async (gameId, shopId, characterId) => {
       try {
         await shopApi.removeShare(gameId, shopId, characterId);
+        await refetch(gameId);
+      } catch (err) {
+        set({ error: describeError(err) });
+      }
+    },
+
+    shareWithAll: async (gameId, shopId) => {
+      try {
+        await shopApi.shareWithAll(gameId, shopId);
+        await refetch(gameId);
+      } catch (err) {
+        set({ error: describeError(err) });
+      }
+    },
+
+    removeAllShares: async (gameId, shopId) => {
+      try {
+        await shopApi.removeAllShares(gameId, shopId);
         await refetch(gameId);
       } catch (err) {
         set({ error: describeError(err) });

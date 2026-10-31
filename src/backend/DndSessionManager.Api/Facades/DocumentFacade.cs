@@ -147,6 +147,40 @@ public class DocumentFacade(IUnitOfWork unitOfWork, IDocumentFileStorage fileSto
         return true;
     }
 
+    public async Task<bool> ShareWithAllAsync(Guid gameId, Guid documentId)
+    {
+        var document = await GetOwnedDocumentAsync(gameId, documentId);
+        if (document is null) return false;
+
+        foreach (var character in await unitOfWork.Characters.GetByGameIdAsync(gameId))
+        {
+            var share = document.Shares.FirstOrDefault(s => s.CharacterId == character.Id);
+            if (share is null)
+            {
+                await unitOfWork.DocumentShares.AddAsync(new DocumentShare { Id = Guid.NewGuid(), DocumentId = documentId, CharacterId = character.Id });
+            }
+            else
+            {
+                share.Hidden = false;
+            }
+        }
+
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "documents");
+        return true;
+    }
+
+    public async Task<bool> RemoveAllSharesAsync(Guid gameId, Guid documentId)
+    {
+        var document = await GetOwnedDocumentAsync(gameId, documentId);
+        if (document is null) return false;
+
+        foreach (var share in document.Shares.ToList()) unitOfWork.DocumentShares.Remove(share);
+        await unitOfWork.SaveChangesAsync();
+        await broadcaster.NotifyAsync(gameId, "documents");
+        return true;
+    }
+
     public async Task<int> EndSessionAsync(Guid gameId)
     {
         var hidden = 0;

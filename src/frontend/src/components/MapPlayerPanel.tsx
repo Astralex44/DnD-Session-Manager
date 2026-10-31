@@ -5,15 +5,12 @@ import { useToastStore } from '../store/toastStore.ts';
 import { useLiveFetch } from '../hooks/useLiveFetch.ts';
 import { documentsApi } from '../api/documents.ts';
 import { FileThumb } from './FileThumb.tsx';
+import { FileViewer } from './FileViewer.tsx';
 import { useCharactersStore } from '../store/charactersStore.ts';
 import { useDocumentsStore } from '../store/documentsStore.ts';
-import type { GameDocument } from '../types/document.ts';
+import type { DocumentType, GameDocument } from '../types/document.ts';
 import { useGameId } from '../store/authStore.ts';
 
-
-function isImage(fileUrl: string): boolean {
-  return /\.(png|jpe?g|webp)$/i.test(fileUrl);
-}
 
 // FA-01, player side — maps the DM shared with this character. "Hide" is a
 // per-viewer declutter toggle (the map stays shared, just tucked away here);
@@ -25,9 +22,14 @@ interface MapPlayerPanelProps {
   // "View as player" (DM): only this player's characters are pickable, so
   // the panel shows exactly what that player sees.
   onlyCharacterIds?: string[];
+  // "Book" = the Documents panel (2026-10-31): the same panel for what the DM
+  // shares from Manage → Documents → Books.
+  type?: DocumentType;
 }
 
-export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
+export function MapPlayerPanel({ onlyCharacterIds, type = 'Map' }: MapPlayerPanelProps) {
+  const isMaps = type === 'Map';
+  const noun = isMaps ? 'map' : 'document';
   const gameId = useGameId();
   const { documents, loaded: documentsLoaded, fetchDocuments, setShare } = useDocumentsStore();
   const { characters, fetchCharacters } = useCharactersStore();
@@ -80,7 +82,7 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
   // 3-way "none/hidden/locked/visible" helper used elsewhere would swallow
   // "locked AND hidden" into just "locked" and hide it from the hidden bucket.
   const shared = documents
-    .filter((d) => d.type === 'Map')
+    .filter((d) => d.type === type)
     .map((d) => ({ doc: d, share: d.shares.find((s) => s.characterId === characterId) }))
     .filter((entry): entry is { doc: GameDocument; share: NonNullable<typeof entry.share> } => entry.share !== undefined);
 
@@ -122,8 +124,8 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
   }
 
   return (
-    <div className="panel span-2">
-      <div className="panel-header"><h3>Maps</h3></div>
+    <div className={`panel${isMaps ? ' span-2' : ''}`}>
+      <div className="panel-header"><h3>{isMaps ? 'Maps' : 'Documents'}</h3></div>
       <div className="panel-body">
         {characterOptions.length > 1 && (
           <div className="field" style={{ marginBottom: 10 }}>
@@ -132,10 +134,10 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
           </div>
         )}
 
-        {shared.length === 0 && <p className="hint" style={{ margin: 0 }}>No maps shared with you yet.</p>}
+        {shared.length === 0 && <p className="hint" style={{ margin: 0 }}>No {noun}s shared with you yet.</p>}
 
         {visible.length > 0 && (
-          <div className="map-grid">
+          <div className={`map-grid${isMaps ? '' : ' doc-grid'}`}>
             {visible.map(({ doc, share }) => (
               <div key={doc.id} className="map-thumb" onClick={() => setViewing(doc)}>
                 <FileThumb url={documentsApi.fileUrl(doc.fileUrl)} alt={doc.name} />
@@ -166,10 +168,10 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
         {hidden.length > 0 && (
           <>
             <p className="hint" style={{ marginTop: 10, cursor: 'pointer' }} onClick={() => setShowHidden((s) => !s)}>
-              {showHidden ? 'Hide' : 'Show'} hidden maps ({hidden.length}) {showHidden ? '↑' : '↓'}
+              {showHidden ? 'Hide' : 'Show'} hidden {noun}s ({hidden.length}) {showHidden ? '↑' : '↓'}
             </p>
             {showHidden && (
-              <div className="map-grid">
+              <div className={`map-grid${isMaps ? '' : ' doc-grid'}`}>
                 {hidden.map(({ doc, share }) => (
                   <div key={doc.id} className="map-thumb hidden-map" onClick={() => setViewing(doc)}>
                     <FileThumb url={documentsApi.fileUrl(doc.fileUrl)} alt={doc.name} />
@@ -193,7 +195,7 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
       {mapAlertQueue.length > 0 && (
         <div className="dialog-overlay" onClick={() => setMapAlertQueue((q) => q.slice(1))}>
           <div className="dialog-box" onClick={(e) => e.stopPropagation()}>
-            <h3>Map shared</h3>
+            <h3>{isMaps ? 'Map' : 'Document'} shared</h3>
             <p>&ldquo;{mapAlertQueue[0].name}&rdquo; was shared with you. View now?</p>
             <div className="form-actions">
               <button className="btn-ghost" onClick={() => setMapAlertQueue((q) => q.slice(1))}>Later</button>
@@ -204,21 +206,7 @@ export function MapPlayerPanel({ onlyCharacterIds }: MapPlayerPanelProps) {
       )}
 
       {viewing && (
-        <div className="dialog-overlay" onClick={() => setViewing(null)}>
-          <div className="dialog-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{viewing.name}</h3>
-              <span className="modal-close" onClick={() => setViewing(null)}>✕</span>
-            </div>
-            {isImage(viewing.fileUrl)
-              ? <img className="map-preview" src={documentsApi.fileUrl(viewing.fileUrl)} alt={viewing.name} />
-              : (
-                <a className="btn-ghost" href={documentsApi.fileUrl(viewing.fileUrl)} target="_blank" rel="noreferrer">
-                  Open PDF →
-                </a>
-              )}
-          </div>
-        </div>
+        <FileViewer url={documentsApi.fileUrl(viewing.fileUrl)} name={viewing.name} onClose={() => setViewing(null)} />
       )}
       {handingOn && (
         <div className="dialog-overlay" onClick={() => setHandingOn(null)}>

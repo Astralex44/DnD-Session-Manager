@@ -10,11 +10,11 @@ import { useToastStore } from '../store/toastStore.ts';
 // notebook, compact — pick a page, write, save. Creating many pages,
 // renaming and deleting stay on the Notes page.
 interface NotesPanelProps {
-  // Across the whole Board row (the player Board's last row).
-  fullWidth?: boolean;
+  // Two columns wide, next to the Calculator on the Board's last row.
+  wide?: boolean;
 }
 
-export function NotesPanel({ fullWidth }: NotesPanelProps) {
+export function NotesPanel({ wide }: NotesPanelProps) {
   const gameId = useGameId();
   const { notes, fetchNotes, createNote, updateNote } = useNotesStore();
   const showToast = useToastStore((s) => s.showToast);
@@ -40,7 +40,7 @@ export function NotesPanel({ fullWidth }: NotesPanelProps) {
   }
 
   return (
-    <div className={`panel${fullWidth ? ' span-full' : ''}`}>
+    <div className={`panel${wide ? ' span-2' : ''}`}>
       <div className="panel-header">
         <h3>My Notes</h3>
         <Link className="panel-header-link" to="/notes">All pages ›</Link>

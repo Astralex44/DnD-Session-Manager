@@ -54,7 +54,7 @@ export function BoardPage() {
       <h2>Board</h2>
       <p className="hint">
         {isDm
-          ? 'Live, synced across every viewer — Characters, Initiative, Dice, Timer, Monsters, Shop, and Maps.'
+          ? 'Live, synced across every viewer — Characters, Initiative, Dice, Timer, Monsters, Shop, Maps, and Documents.'
           : 'Live, synced with the table — your character, the initiative order, dice, and what the DM shares with you.'}
       </p>
 
@@ -70,9 +70,10 @@ export function BoardPage() {
           <MonsterPanel />
           <ShopDmPanel />
           <MapDmPanel />
+          <MapDmPanel type="Book" />
           <CalculatorPanel />
+          <NotesPanel wide />
           <SessionNotesPanel />
-          <NotesPanel />
         </div>
       ) : (
         <PlayerBoard />
@@ -92,7 +93,7 @@ function PlayerBoard({ onlyCharacterIds, enterDiceFor }: PlayerBoardProps) {
   return (
     // Three full-width columns like the DM's Board, ordered so no row has a
     // gap: character (2) + dice / initiative, timer, shop / maps (2) +
-    // calculator / notes across the whole row.
+    // documents / calculator + notes (2).
     <div className="board-grid player">
       <CharacterLivePanel onlyCharacterIds={onlyCharacterIds} />
       <div className="panel">
@@ -103,8 +104,9 @@ function PlayerBoard({ onlyCharacterIds, enterDiceFor }: PlayerBoardProps) {
       <TimerPanel editable={false} />
       <ShopPlayerPanel onlyCharacterIds={onlyCharacterIds} />
       <MapPlayerPanel onlyCharacterIds={onlyCharacterIds} />
+      <MapPlayerPanel onlyCharacterIds={onlyCharacterIds} type="Book" />
       <CalculatorPanel />
-      {!enterDiceFor && <NotesPanel fullWidth />}
+      {!enterDiceFor && <NotesPanel wide />}
     </div>
   );
 }

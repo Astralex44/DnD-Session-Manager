@@ -52,6 +52,16 @@ public class ShopsController(IShopFacade shopFacade) : ControllerBase
     }
 
     [Authorize(Policy = GamePolicies.Dm)]
+    [HttpPut("{id:guid}/shares")]
+    public async Task<IActionResult> ShareWithAll(Guid gameId, Guid id) =>
+        await shopFacade.ShareWithAllAsync(gameId, id) ? NoContent() : NotFound();
+
+    [Authorize(Policy = GamePolicies.Dm)]
+    [HttpDelete("{id:guid}/shares")]
+    public async Task<IActionResult> RemoveAllShares(Guid gameId, Guid id) =>
+        await shopFacade.RemoveAllSharesAsync(gameId, id) ? NoContent() : NotFound();
+
+    [Authorize(Policy = GamePolicies.Dm)]
     [HttpPut("{id:guid}/sale-mode")]
     public async Task<ActionResult<ShopDto>> SetSaleModeForAllItems(Guid gameId, Guid id, [FromBody] SetShopSaleModeDto input)
     {
